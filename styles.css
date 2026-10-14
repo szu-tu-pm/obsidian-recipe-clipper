@@ -6,3 +6,28 @@
 	margin-bottom: 0.75em;
 	opacity: 0.85;
 }
+
+.recipe-clipper-root,
+.recipe-clipper-view {
+	padding: 0.75em 1em;
+}
+
+.recipe-clipper-view-note {
+	margin: 0.5em 0 1em;
+	opacity: 0.85;
+}
+
+.recipe-clipper-view-meta {
+	display: grid;
+	gap: 0.5em 1em;
+	margin: 0 0 1em;
+}
+
+.recipe-clipper-view-meta dt {
+	font-size: 0.85em;
+	opacity: 0.75;
+}
+
+.recipe-clipper-view-meta dd {
+	margin: 0;
+}
