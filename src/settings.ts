@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting, type TextComponent } from "obsidian";
 import type RecipePlugin from "./main";
 
 export interface RecipePluginSettings {
@@ -37,6 +37,20 @@ function parsePositiveInt(value: string, fallback: number): number {
 	return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function persistTextOnBlur(
+	text: TextComponent,
+	apply: (raw: string) => string,
+	assign: (next: string) => void,
+	save: () => Promise<void>,
+): void {
+	text.inputEl.addEventListener("blur", () => {
+		const next = apply(text.getValue());
+		assign(next);
+		text.setValue(String(next));
+		void save();
+	});
+}
+
 export class RecipeSettingTab extends PluginSettingTab {
 	plugin: RecipePlugin;
 
@@ -49,6 +63,8 @@ export class RecipeSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
+		const save = () => this.plugin.saveSettings();
+
 		containerEl.createEl("h2", { text: "Recipe Manager & Shopping Lists" });
 
 		containerEl.createEl("h3", { text: "Vault folders" });
@@ -56,50 +72,53 @@ export class RecipeSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Recipes folder")
 			.setDesc("Markdown recipes are stored here (schemaVersion 1).")
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder(DEFAULT_SETTINGS.recipesFolder)
-					.setValue(this.plugin.settings.recipesFolder)
-					.onChange(async (value) => {
-						this.plugin.settings.recipesFolder = normalizeFolder(
-							value,
-							DEFAULT_SETTINGS.recipesFolder,
-						);
-						await this.plugin.saveSettings();
-					}),
-			);
+					.setValue(this.plugin.settings.recipesFolder);
+				persistTextOnBlur(
+					text,
+					(raw) => normalizeFolder(raw, DEFAULT_SETTINGS.recipesFolder),
+					(next) => {
+						this.plugin.settings.recipesFolder = next;
+					},
+					save,
+				);
+			});
 
 		new Setting(containerEl)
 			.setName("Shopping lists folder")
 			.setDesc("Generated shopping lists are stored independently from recipes.")
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder(DEFAULT_SETTINGS.shoppingListsFolder)
-					.setValue(this.plugin.settings.shoppingListsFolder)
-					.onChange(async (value) => {
-						this.plugin.settings.shoppingListsFolder = normalizeFolder(
-							value,
-							DEFAULT_SETTINGS.shoppingListsFolder,
-						);
-						await this.plugin.saveSettings();
-					}),
-			);
+					.setValue(this.plugin.settings.shoppingListsFolder);
+				persistTextOnBlur(
+					text,
+					(raw) => normalizeFolder(raw, DEFAULT_SETTINGS.shoppingListsFolder),
+					(next) => {
+						this.plugin.settings.shoppingListsFolder = next;
+					},
+					save,
+				);
+			});
 
 		new Setting(containerEl)
 			.setName("Recipe attachments folder")
 			.setDesc("Recipe images are stored under this folder, grouped by recipe id.")
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder(DEFAULT_SETTINGS.attachmentsFolder)
-					.setValue(this.plugin.settings.attachmentsFolder)
-					.onChange(async (value) => {
-						this.plugin.settings.attachmentsFolder = normalizeFolder(
-							value,
-							DEFAULT_SETTINGS.attachmentsFolder,
-						);
-						await this.plugin.saveSettings();
-					}),
-			);
+					.setValue(this.plugin.settings.attachmentsFolder);
+				persistTextOnBlur(
+					text,
+					(raw) => normalizeFolder(raw, DEFAULT_SETTINGS.attachmentsFolder),
+					(next) => {
+						this.plugin.settings.attachmentsFolder = next;
+					},
+					save,
+				);
+			});
 
 		containerEl.createEl("h3", { text: "Local Ollama" });
 		containerEl.createEl("p", {
@@ -109,74 +128,97 @@ export class RecipeSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Ollama endpoint")
 			.setDesc("Base URL for the local Ollama server (chat path is /api/chat).")
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder(DEFAULT_SETTINGS.ollamaEndpoint)
-					.setValue(this.plugin.settings.ollamaEndpoint)
-					.onChange(async (value) => {
-						this.plugin.settings.ollamaEndpoint = normalizeEndpoint(value);
-						await this.plugin.saveSettings();
-					}),
-			);
+					.setValue(this.plugin.settings.ollamaEndpoint);
+				persistTextOnBlur(
+					text,
+					normalizeEndpoint,
+					(next) => {
+						this.plugin.settings.ollamaEndpoint = next;
+					},
+					save,
+				);
+			});
 
 		new Setting(containerEl)
 			.setName("Default model")
 			.setDesc("Primary local model for structured recipe extraction.")
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder(DEFAULT_SETTINGS.ollamaModel)
-					.setValue(this.plugin.settings.ollamaModel)
-					.onChange(async (value) => {
-						this.plugin.settings.ollamaModel =
-							value.trim() || DEFAULT_SETTINGS.ollamaModel;
-						await this.plugin.saveSettings();
-					}),
-			);
+					.setValue(this.plugin.settings.ollamaModel);
+				persistTextOnBlur(
+					text,
+					(raw) => raw.trim() || DEFAULT_SETTINGS.ollamaModel,
+					(next) => {
+						this.plugin.settings.ollamaModel = next;
+					},
+					save,
+				);
+			});
 
 		new Setting(containerEl)
 			.setName("Lightweight model")
 			.setDesc("Optional smaller local model (llama3.2:3b-instruct or qwen2.5:3b-instruct).")
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder(DEFAULT_SETTINGS.ollamaLightweightModel)
-					.setValue(this.plugin.settings.ollamaLightweightModel)
-					.onChange(async (value) => {
-						this.plugin.settings.ollamaLightweightModel =
-							value.trim() || DEFAULT_SETTINGS.ollamaLightweightModel;
-						await this.plugin.saveSettings();
-					}),
-			);
+					.setValue(this.plugin.settings.ollamaLightweightModel);
+				persistTextOnBlur(
+					text,
+					(raw) => raw.trim() || DEFAULT_SETTINGS.ollamaLightweightModel,
+					(next) => {
+						this.plugin.settings.ollamaLightweightModel = next;
+					},
+					save,
+				);
+			});
 
 		new Setting(containerEl)
 			.setName("Health-check timeout (ms)")
 			.setDesc("Fail fast when Ollama is not reachable before starting extraction.")
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder(String(DEFAULT_SETTINGS.ollamaHealthCheckMs))
-					.setValue(String(this.plugin.settings.ollamaHealthCheckMs))
-					.onChange(async (value) => {
-						this.plugin.settings.ollamaHealthCheckMs = parsePositiveInt(
-							value,
-							DEFAULT_SETTINGS.ollamaHealthCheckMs,
-						);
-						await this.plugin.saveSettings();
-					}),
-			);
+					.setValue(String(this.plugin.settings.ollamaHealthCheckMs));
+				persistTextOnBlur(
+					text,
+					(raw) =>
+						String(
+							parsePositiveInt(raw, DEFAULT_SETTINGS.ollamaHealthCheckMs),
+						),
+					(next) => {
+						this.plugin.settings.ollamaHealthCheckMs = Number.parseInt(next, 10);
+					},
+					save,
+				);
+			});
 
 		new Setting(containerEl)
 			.setName("Extraction timeout (ms)")
 			.setDesc("Maximum wait for a local Ollama extraction response.")
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder(String(DEFAULT_SETTINGS.ollamaTimeoutMs))
-					.setValue(String(this.plugin.settings.ollamaTimeoutMs))
-					.onChange(async (value) => {
-						this.plugin.settings.ollamaTimeoutMs = parsePositiveInt(
-							value,
-							DEFAULT_SETTINGS.ollamaTimeoutMs,
-						);
-						await this.plugin.saveSettings();
-					}),
-			);
+					.setValue(String(this.plugin.settings.ollamaTimeoutMs));
+				persistTextOnBlur(
+					text,
+					(raw) => String(parsePositiveInt(raw, DEFAULT_SETTINGS.ollamaTimeoutMs)),
+					(next) => {
+						this.plugin.settings.ollamaTimeoutMs = Number.parseInt(next, 10);
+					},
+					save,
+				);
+			});
+	}
+
+	hide(): void {
+		const active = this.containerEl.ownerDocument.activeElement;
+		if (active instanceof HTMLElement && this.containerEl.contains(active)) {
+			active.blur();
+		}
+		super.hide();
 	}
 }

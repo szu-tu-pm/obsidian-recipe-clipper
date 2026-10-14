@@ -1,7 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output
+# Build output — generate locally with `npm run build` / `npm run dev`.
+# Do not commit main.js; Obsidian loads it from the plugin folder after a build.
 main.js
 *.js.map
 
