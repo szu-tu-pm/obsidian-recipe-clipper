@@ -1,4 +1,5 @@
-import { createContext, useContext, type PropsWithChildren } from "react";
+import { createContext, useContext, useSyncExternalStore, type PropsWithChildren } from "react";
+import type { RecipePluginSettings } from "../settings";
 import type { PluginServices } from "./PluginServiceAdapter";
 
 const WrapperContext = createContext<PluginServices | null>(null);
@@ -18,4 +19,12 @@ export function usePluginServices(): PluginServices {
 		throw new Error("usePluginServices must be used within WrapperProvider.");
 	}
 	return services;
+}
+
+export function usePluginSettings(): RecipePluginSettings {
+	const services = usePluginServices();
+	return useSyncExternalStore(
+		(onStoreChange) => services.subscribeSettings(onStoreChange),
+		() => services.getSettings(),
+	);
 }

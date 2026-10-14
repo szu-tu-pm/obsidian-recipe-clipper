@@ -1,5 +1,5 @@
 import { ItemView, type WorkspaceLeaf } from "obsidian";
-import { createElement } from "react";
+import { StrictMode, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { PluginServices } from "./PluginServiceAdapter";
 import { RecipeViewRoot } from "./RecipeViewRoot";
@@ -45,9 +45,13 @@ export class RecipeItemView extends ItemView {
 		this.reactRoot = createRoot(host);
 		this.reactRoot.render(
 			createElement(
-				WrapperProvider,
-				{ services: this.services },
-				createElement(RecipeViewRoot),
+				StrictMode,
+				null,
+				createElement(
+					WrapperProvider,
+					{ services: this.services },
+					createElement(RecipeViewRoot),
+				),
 			),
 		);
 	}

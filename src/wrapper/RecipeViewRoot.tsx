@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { usePluginServices } from "./WrapperContext";
+import { usePluginServices, usePluginSettings } from "./WrapperContext";
 
 export function RecipeViewRoot(): JSX.Element {
 	const services = usePluginServices();
-	const settings = services.getSettings();
+	const settings = usePluginSettings();
 	const [lastEvent, setLastEvent] = useState("Listening for vault changes…");
 
 	useEffect(() => {

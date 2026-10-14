@@ -8,6 +8,8 @@ interface SettingManager {
 }
 
 function getSettingManager(plugin: RecipePlugin): SettingManager | null {
+	// `app.setting` is an undocumented Obsidian internal. It is the usual way
+	// to open a plugin settings tab from code, but it can change without notice.
 	const setting = (plugin.app as unknown as { setting?: SettingManager }).setting;
 	return setting ?? null;
 }

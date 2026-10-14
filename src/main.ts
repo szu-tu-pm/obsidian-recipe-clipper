@@ -49,10 +49,12 @@ export default class RecipePlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.adapter?.notifySettingsChanged();
 	}
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
+		this.adapter?.notifySettingsChanged();
 	}
 
 	async activateView(): Promise<void> {
