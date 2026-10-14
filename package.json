@@ -1,0 +1,30 @@
+{
+	"name": "obsidian-recipe-clipper",
+	"version": "0.1.0",
+	"description": "Obsidian plugin for capturing recipes and generating shopping lists.",
+	"main": "main.js",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && node scripts/check-bundle-size.mjs",
+		"version": "node version-bump.mjs && git add manifest.json versions.json"
+	},
+	"keywords": [
+		"obsidian",
+		"plugin",
+		"recipes",
+		"shopping-list"
+	],
+	"author": "Greg Szu-Tu",
+	"license": "MIT",
+	"engines": {
+		"node": ">=20"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.1",
+		"builtin-modules": "4.0.0",
+		"esbuild": "^0.24.2",
+		"obsidian": "latest",
+		"tslib": "2.8.1",
+		"typescript": "^5.6.3"
+	}
+}

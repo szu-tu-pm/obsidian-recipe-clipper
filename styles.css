@@ -1,0 +1,8 @@
+/* Plugin-scoped styles for Recipe Manager & Shopping Lists.
+   Views and React UI added in later Phase 1 tasks should keep selectors
+   under .recipe-clipper so they stay compatible with Obsidian themes. */
+
+.recipe-clipper-settings-note {
+	margin-bottom: 0.75em;
+	opacity: 0.85;
+}

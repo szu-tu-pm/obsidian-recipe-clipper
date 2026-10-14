@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+main.js
+*.js.map
+
+# Local secrets and vault data
+.env
+.env.*
+!.env.example
+data.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Personal Obsidian vaults must never be committed
+.obsidian/
+Recipes/
+Shopping Lists/

@@ -1,0 +1,9 @@
+{
+	"id": "obsidian-recipe-clipper",
+	"name": "Recipe Manager & Shopping Lists",
+	"version": "0.1.0",
+	"minAppVersion": "1.7.7",
+	"description": "Capture recipes from a URL or manual entry, store them as structured Markdown, and generate shopping lists.",
+	"author": "Greg Szu-Tu",
+	"isDesktopOnly": true
+}
