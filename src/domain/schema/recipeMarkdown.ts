@@ -1,6 +1,6 @@
+import { parseIngredientLine } from "../aggregation/stage1LexicalParser";
 import {
 	computeBodyHash,
-	ingredientFromRaw,
 	parseRecipeFrontmatter,
 	type RecipeDocument,
 	type RecipeFrontmatter,
@@ -223,7 +223,7 @@ export function parseRecipeFile(
 		author: parsedBody.author ?? frontmatter.author,
 		ingredients:
 			parsedBody.ingredientLines.length > 0
-				? parsedBody.ingredientLines.map(ingredientFromRaw)
+				? parsedBody.ingredientLines.map(parseIngredientLine)
 				: frontmatter.ingredients,
 		updatedAt: new Date().toISOString(),
 	};

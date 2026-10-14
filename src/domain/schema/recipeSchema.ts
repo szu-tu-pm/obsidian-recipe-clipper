@@ -72,7 +72,10 @@ export const recipeIngredientSchema = z.object({
 	preparation: z.string().nullable().default(null),
 	qualifiers: z.array(z.string()).default([]),
 	optional: z.boolean().default(false),
-	parseConfidence: z.number().min(0).max(1).nullable().default(null),
+	parseConfidence: z
+		.enum(["exact", "range", "non_numeric", "ambiguous"])
+		.nullable()
+		.default(null),
 });
 
 export const ratingSchema = z.union([
@@ -107,6 +110,7 @@ export const recipeFrontmatterSchema = z.object({
 });
 
 export type ExtractionMethod = z.infer<typeof extractionMethodSchema>;
+export type UnitSystem = z.infer<typeof unitSystemSchema>;
 export type RecipeImage = z.infer<typeof recipeImageSchema>;
 export type RecipeIngredient = z.infer<typeof recipeIngredientSchema>;
 export type RecipeFrontmatter = z.infer<typeof recipeFrontmatterSchema>;
