@@ -1,4 +1,5 @@
 import { createContext, useContext, useSyncExternalStore, type PropsWithChildren } from "react";
+import type { RecipeIndexEntry } from "../domain/vault/recipeIndexer";
 import type { RecipePluginSettings } from "../settings";
 import type { PluginServices } from "./PluginServiceAdapter";
 
@@ -26,5 +27,13 @@ export function usePluginSettings(): RecipePluginSettings {
 	return useSyncExternalStore(
 		(onStoreChange) => services.subscribeSettings(onStoreChange),
 		() => services.getSettings(),
+	);
+}
+
+export function useRecipeIndex(): RecipeIndexEntry[] {
+	const services = usePluginServices();
+	return useSyncExternalStore(
+		(onStoreChange) => services.subscribeRecipes(onStoreChange),
+		() => services.listRecipes(),
 	);
 }

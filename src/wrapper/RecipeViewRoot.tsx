@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { usePluginServices, usePluginSettings } from "./WrapperContext";
+import { usePluginServices, usePluginSettings, useRecipeIndex } from "./WrapperContext";
 
 export function RecipeViewRoot(): JSX.Element {
 	const services = usePluginServices();
 	const settings = usePluginSettings();
+	const recipes = useRecipeIndex();
 	const [lastEvent, setLastEvent] = useState("Listening for vault changes…");
 
 	useEffect(() => {
@@ -28,6 +29,10 @@ export function RecipeViewRoot(): JSX.Element {
 				<div>
 					<dt>Shopping lists folder</dt>
 					<dd>{settings.shoppingListsFolder}</dd>
+				</div>
+				<div>
+					<dt>Indexed recipes</dt>
+					<dd>{recipes.length}</dd>
 				</div>
 			</dl>
 			<p className="recipe-clipper-view-note" aria-live="polite">

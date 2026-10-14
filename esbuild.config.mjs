@@ -18,7 +18,7 @@ const context = await esbuild.context({
 	},
 	entryPoints: ["src/main.ts"],
 	bundle: true,
-	// React is a runtime dependency bundled into main.js. Do not add it to `external`.
+	// React and Zod are runtime dependencies bundled into main.js. Do not add them to `external`.
 	external: [
 		"obsidian",
 		"electron",
