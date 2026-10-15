@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from "react";
+import { useEscapeToClose } from "../useEscapeToClose";
 
 export function ConfirmDialog({
 	title,
@@ -19,6 +20,8 @@ export function ConfirmDialog({
 	useEffect(() => {
 		cancelRef.current?.focus();
 	}, []);
+
+	useEscapeToClose(onCancel);
 
 	return (
 		<div className="recipe-clipper-modal-backdrop" role="presentation" onClick={onCancel}>

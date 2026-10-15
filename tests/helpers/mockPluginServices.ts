@@ -30,13 +30,18 @@ function indexEntry(recipe: RecipeDocument): RecipeIndexEntry {
 	};
 }
 
+export interface MockPluginServices extends PluginServices {
+	removedImages: string[];
+}
+
 export function createMockPluginServices(
 	store: MockRecipeStore = { recipes: [], settings: { ...DEFAULT_SETTINGS } },
-): PluginServices {
+): MockPluginServices {
 	const recipeListeners = new Set<() => void>();
 	const settingsListeners = new Set<() => void>();
 	const vaultListeners = new Set<VaultChangeListener>();
 	const urls = new Map<string, string>();
+	const removedImages: string[] = [];
 	let recipeSnapshot: RecipeIndexEntry[] = store.recipes.map(indexEntry);
 
 	function emitRecipes(): void {
@@ -103,9 +108,11 @@ export function createMockPluginServices(
 		},
 		removeRecipeImage: async (image) => {
 			urls.delete(image.path);
+			removedImages.push(image.path);
 		},
 		getImageUrl: (path) => urls.get(path) ?? null,
 		openSettings: () => {},
+		removedImages,
 	};
 }
 

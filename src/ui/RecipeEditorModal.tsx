@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { parseIngredientLine } from "../domain/aggregation/stage1LexicalParser";
 import {
 	createManualRecipe,
@@ -8,6 +8,7 @@ import {
 } from "../domain/schema/recipeSchema";
 import { ImageGalleryPicker } from "./components/ImageGalleryPicker";
 import { StarRating } from "./components/StarRating";
+import { useEscapeToClose } from "./useEscapeToClose";
 import type { PluginServices } from "../wrapper/PluginServiceAdapter";
 
 export function RecipeEditorModal({
@@ -40,8 +41,42 @@ export function RecipeEditorModal({
 	const [error, setError] = useState<string | null>(null);
 	const [imageError, setImageError] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
+	const sessionUploads = useRef<RecipeImage[]>([]);
+	const closingRef = useRef(false);
+	const servicesRef = useRef(services);
+	servicesRef.current = services;
 
 	const heading = initial ? "Edit recipe" : "New recipe";
+
+	useEffect(() => {
+		return () => {
+			const pending = sessionUploads.current.splice(0);
+			for (const image of pending) {
+				void servicesRef.current.removeRecipeImage(image);
+			}
+		};
+	}, []);
+
+	async function discardSessionUploads(): Promise<void> {
+		const pending = sessionUploads.current.splice(0);
+		await Promise.all(pending.map((image) => services.removeRecipeImage(image)));
+	}
+
+	async function requestClose(): Promise<void> {
+		if (busy || closingRef.current) {
+			return;
+		}
+		closingRef.current = true;
+		try {
+			await discardSessionUploads();
+		} finally {
+			onClose();
+		}
+	}
+
+	useEscapeToClose(() => {
+		void requestClose();
+	}, !busy);
 
 	async function readFileBytes(file: File): Promise<ArrayBuffer> {
 		if (typeof file.arrayBuffer === "function") {
@@ -92,6 +127,7 @@ export function RecipeEditorModal({
 					setImageError(`Could not attach ${file.name}.`);
 					break;
 				}
+				sessionUploads.current.push(added);
 				current = [...current, added];
 			}
 			updateImages(current);
@@ -110,6 +146,7 @@ export function RecipeEditorModal({
 		setBusy(true);
 		try {
 			await services.removeRecipeImage(target);
+			sessionUploads.current = sessionUploads.current.filter((image) => image.path !== path);
 			updateImages(images.filter((image) => image.path !== path));
 		} finally {
 			setBusy(false);
@@ -167,6 +204,7 @@ export function RecipeEditorModal({
 				setError("Could not save the recipe.");
 				return;
 			}
+			sessionUploads.current = [];
 			setRecipe(saved);
 			onClose();
 		} finally {
@@ -284,7 +322,7 @@ export function RecipeEditorModal({
 						</p>
 					) : null}
 					<div className="recipe-clipper-modal-actions">
-						<button type="button" onClick={onClose} disabled={busy}>
+						<button type="button" onClick={() => void requestClose()} disabled={busy}>
 							Cancel
 						</button>
 						<button type="submit" className="mod-cta" disabled={busy}>
