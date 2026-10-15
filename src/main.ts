@@ -175,6 +175,18 @@ export default class RecipePlugin extends Plugin {
 				return this.repository.save(recipe);
 			},
 			deleteRecipe: (id) => this.repository?.remove(id) ?? Promise.resolve(),
+			addImage: (recipeId, filename, data, existing) => {
+				if (!this.attachments) {
+					return Promise.reject(new Error("Attachment manager is unavailable."));
+				}
+				return this.attachments.addImage(recipeId, filename, data, existing);
+			},
+			removeImage: (image) => {
+				if (!this.attachments) {
+					return Promise.resolve();
+				}
+				return this.attachments.removeImage(image);
+			},
 			rebuildIndex: () => {
 				if (this.indexer && this.frontmatterCache) {
 					this.indexer.rebuildFromCache(this.frontmatterCache);

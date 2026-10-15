@@ -1,4 +1,4 @@
-import type { EventRef } from "obsidian";
+import { TFile, type EventRef } from "obsidian";
 import type RecipePlugin from "../main";
 import type { PluginServiceHost, VaultChangeEvent } from "./PluginServiceAdapter";
 
@@ -24,6 +24,13 @@ export function createObsidianPluginHost(plugin: RecipePlugin): PluginServiceHos
 			}
 			setting.open();
 			setting.openTabById(plugin.manifest.id);
+		},
+		getResourcePath: (path) => {
+			const file = plugin.app.vault.getAbstractFileByPath(path);
+			if (file instanceof TFile) {
+				return plugin.app.vault.getResourcePath(file);
+			}
+			return null;
 		},
 		registerVaultListener: (listener) => {
 			const { vault, metadataCache } = plugin.app;

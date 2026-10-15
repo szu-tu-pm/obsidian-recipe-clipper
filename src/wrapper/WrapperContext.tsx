@@ -1,6 +1,6 @@
 import { createContext, useContext, useSyncExternalStore, type PropsWithChildren } from "react";
 import type { RecipeIndexEntry } from "../domain/vault/recipeIndexer";
-import type { RecipePluginSettings } from "../settings";
+import type { RecipePluginSettings } from "../pluginSettings";
 import type { PluginServices } from "./PluginServiceAdapter";
 
 const WrapperContext = createContext<PluginServices | null>(null);

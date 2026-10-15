@@ -1,6 +1,5 @@
 /* Plugin-scoped styles for Recipe Manager & Shopping Lists.
-   Views and React UI added in later Phase 1 tasks should keep selectors
-   under .recipe-clipper so they stay compatible with Obsidian themes. */
+   Keep selectors under .recipe-clipper so they stay compatible with Obsidian themes. */
 
 .recipe-clipper-settings-note {
 	margin-bottom: 0.75em;
@@ -12,22 +11,176 @@
 	padding: 0.75em 1em;
 }
 
-.recipe-clipper-view-note {
-	margin: 0.5em 0 1em;
+.recipe-clipper-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.recipe-clipper-collection-header,
+.recipe-clipper-toolbar,
+.recipe-clipper-selection-bar,
+.recipe-clipper-editor-row,
+.recipe-clipper-modal-actions,
+.recipe-clipper-gallery-actions,
+.recipe-clipper-row-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75em;
+	align-items: flex-end;
+}
+
+.recipe-clipper-collection-header {
+	justify-content: space-between;
+	align-items: center;
+}
+
+.recipe-clipper-toolbar label,
+.recipe-clipper-editor-form label,
+.recipe-clipper-file-label {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25em;
+	flex: 1 1 12em;
+}
+
+.recipe-clipper-hint,
+.recipe-clipper-empty,
+.recipe-clipper-status {
+	margin: 0.5em 0;
 	opacity: 0.85;
 }
 
-.recipe-clipper-view-meta {
-	display: grid;
-	gap: 0.5em 1em;
-	margin: 0 0 1em;
+.recipe-clipper-error {
+	color: var(--text-error);
+	margin: 0.5em 0;
 }
 
-.recipe-clipper-view-meta dt {
-	font-size: 0.85em;
+.recipe-clipper-recipe-list {
+	list-style: none;
+	margin: 0.75em 0 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+}
+
+.recipe-clipper-recipe-row {
+	display: grid;
+	grid-template-columns: auto 4.5em 1fr auto;
+	gap: 0.75em;
+	align-items: center;
+	padding: 0.5em 0;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.recipe-clipper-cover {
+	width: 4.5em;
+	height: 4.5em;
+	object-fit: cover;
+	border-radius: 4px;
+	background: var(--background-modifier-border);
+}
+
+.recipe-clipper-cover-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.75em;
+	text-align: center;
 	opacity: 0.75;
 }
 
-.recipe-clipper-view-meta dd {
-	margin: 0;
+.recipe-clipper-title-button {
+	display: block;
+	padding: 0;
+	background: none;
+	border: none;
+	box-shadow: none;
+	font-weight: 600;
+	text-align: left;
+	color: var(--text-normal);
+}
+
+.recipe-clipper-rating-badge {
+	display: inline-block;
+	margin-top: 0.25em;
+	font-size: 0.85em;
+	opacity: 0.8;
+}
+
+.recipe-clipper-modal-backdrop {
+	position: absolute;
+	inset: 0;
+	background: color-mix(in srgb, var(--background-primary) 30%, black);
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 1.5em 1em;
+	overflow: auto;
+	z-index: 20;
+}
+
+.recipe-clipper-modal {
+	width: min(40em, 100%);
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	padding: 1em 1.25em 1.25em;
+	box-shadow: 0 8px 24px color-mix(in srgb, black 25%, transparent);
+}
+
+.recipe-clipper-editor-form {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75em;
+}
+
+.recipe-clipper-stars {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 0.5em 0.75em;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4em;
+	align-items: center;
+}
+
+.recipe-clipper-star-option[aria-pressed="true"] {
+	font-weight: 700;
+}
+
+.recipe-clipper-star-count {
+	margin-left: 0.2em;
+}
+
+.recipe-clipper-gallery-list {
+	list-style: none;
+	margin: 0.5em 0 0;
+	padding: 0;
+	display: grid;
+	gap: 0.75em;
+}
+
+.recipe-clipper-gallery-item img,
+.recipe-clipper-gallery-missing {
+	width: 8em;
+	height: 8em;
+	object-fit: cover;
+	border-radius: 4px;
+	background: var(--background-modifier-border);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.recipe-clipper-modal-actions {
+	justify-content: flex-end;
+	margin-top: 0.5em;
 }
