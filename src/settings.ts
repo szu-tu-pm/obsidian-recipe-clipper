@@ -1,27 +1,8 @@
 import { App, PluginSettingTab, Setting, type TextComponent } from "obsidian";
 import type RecipePlugin from "./main";
+import { DEFAULT_SETTINGS, type RecipePluginSettings } from "./pluginSettings";
 
-export interface RecipePluginSettings {
-	recipesFolder: string;
-	shoppingListsFolder: string;
-	attachmentsFolder: string;
-	ollamaEndpoint: string;
-	ollamaModel: string;
-	ollamaLightweightModel: string;
-	ollamaTimeoutMs: number;
-	ollamaHealthCheckMs: number;
-}
-
-export const DEFAULT_SETTINGS: RecipePluginSettings = {
-	recipesFolder: "Recipes",
-	shoppingListsFolder: "Shopping Lists",
-	attachmentsFolder: "Recipes/_attachments",
-	ollamaEndpoint: "http://127.0.0.1:11434",
-	ollamaModel: "qwen2.5:7b-instruct",
-	ollamaLightweightModel: "llama3.2:3b-instruct",
-	ollamaTimeoutMs: 25_000,
-	ollamaHealthCheckMs: 1_500,
-};
+export { DEFAULT_SETTINGS, type RecipePluginSettings };
 
 function normalizeFolder(value: string, fallback: string): string {
 	const trimmed = value.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
@@ -71,7 +52,7 @@ export class RecipeSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Recipes folder")
-			.setDesc("Markdown recipes are stored here (schemaVersion 1).")
+			.setDesc("Markdown recipes are stored here (schemaVersion 2).")
 			.addText((text) => {
 				text
 					.setPlaceholder(DEFAULT_SETTINGS.recipesFolder)

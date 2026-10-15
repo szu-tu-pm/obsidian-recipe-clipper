@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseIngredientLine } from "../../src/domain/aggregation/stage1LexicalParser";
+import {
+	inferUnitSystem,
+	normalizeUnit,
+	parseIngredientLine,
+} from "../../src/domain/aggregation/stage1LexicalParser";
 
 describe("stage1LexicalParser", () => {
 	it("preserves verbatim raw text", () => {
@@ -76,5 +80,26 @@ describe("stage1LexicalParser", () => {
 		expect(parsed.parseConfidence).toBe("ambiguous");
 		expect(parsed.raw).toBe("   ");
 		expect(parsed.quantity).toBeNull();
+	});
+
+	it("keeps non_numeric when a qualifier is present even if the line also has digits", () => {
+		const parsed = parseIngredientLine("salt to taste, leftover from step 2");
+		expect(parsed.parseConfidence).toBe("non_numeric");
+		expect(parsed.quantity).toBeNull();
+		expect(parsed.raw).toBe("salt to taste, leftover from step 2");
+	});
+
+	it("normalizes unit aliases used for unitSystem classification", () => {
+		expect(normalizeUnit("fl. oz.")).toBe("fl oz");
+		expect(normalizeUnit("T")).toBe("tbsp");
+		expect(normalizeUnit("T.")).toBe("tbsp");
+		expect(normalizeUnit("t.")).toBe("tsp");
+		expect(normalizeUnit("c")).toBe("cup");
+		expect(normalizeUnit("milligrams")).toBe("milligrams");
+		expect(inferUnitSystem("fl. oz.")).toBe("imperial");
+		expect(inferUnitSystem("T")).toBe("imperial");
+		expect(inferUnitSystem("T.")).toBe("imperial");
+		expect(inferUnitSystem("c")).toBe("imperial");
+		expect(inferUnitSystem("milligrams")).toBe("metric");
 	});
 });

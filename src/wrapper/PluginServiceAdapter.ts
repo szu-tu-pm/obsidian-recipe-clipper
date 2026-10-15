@@ -1,7 +1,7 @@
-import type { RecipeDocument } from "../domain/schema/recipeSchema";
+import type { RecipeDocument, RecipeImage } from "../domain/schema/recipeSchema";
 import type { RecipeIndexEntry } from "../domain/vault/recipeIndexer";
 import type { RecipeLoadResult } from "../domain/vault/recipeRepository";
-import { DEFAULT_SETTINGS, type RecipePluginSettings } from "../settings";
+import { DEFAULT_SETTINGS, type RecipePluginSettings } from "../pluginSettings";
 
 export type VaultChangeKind = "create" | "modify" | "delete" | "rename" | "metadata";
 
@@ -18,6 +18,13 @@ export interface RecipeWorkspace {
 	loadRecipe(id: string): Promise<RecipeLoadResult>;
 	saveRecipe(recipe: RecipeDocument): Promise<RecipeDocument>;
 	deleteRecipe(id: string): Promise<void>;
+	addImage(
+		recipeId: string,
+		filename: string,
+		data: ArrayBuffer,
+		existing: RecipeImage[],
+	): Promise<RecipeImage>;
+	removeImage(image: RecipeImage): Promise<void>;
 	rebuildIndex(): void;
 	applyVaultEvent(event: VaultChangeEvent): void;
 }
@@ -31,6 +38,14 @@ export interface PluginServices {
 	loadRecipe(id: string): Promise<RecipeLoadResult>;
 	saveRecipe(recipe: RecipeDocument): Promise<RecipeDocument | null>;
 	deleteRecipe(id: string): Promise<void>;
+	addRecipeImage(
+		recipeId: string,
+		filename: string,
+		data: ArrayBuffer,
+		existing: RecipeImage[],
+	): Promise<RecipeImage | null>;
+	removeRecipeImage(image: RecipeImage): Promise<void>;
+	getImageUrl(path: string): string | null;
 	openSettings(): void;
 }
 
@@ -38,6 +53,7 @@ export interface PluginServiceHost {
 	getSettings(): RecipePluginSettings;
 	openSettings(): void;
 	registerVaultListener(listener: VaultChangeListener): () => void;
+	getResourcePath(path: string): string | null;
 	logError(message: string, error?: unknown): void;
 }
 
@@ -129,6 +145,46 @@ export class PluginServiceAdapter implements PluginServices {
 			this.emitRecipeListeners();
 		} catch (error) {
 			this.host.logError("Failed to delete recipe", error);
+		}
+	}
+
+	async addRecipeImage(
+		recipeId: string,
+		filename: string,
+		data: ArrayBuffer,
+		existing: RecipeImage[],
+	): Promise<RecipeImage | null> {
+		if (this.disposed || !this.workspace) {
+			return null;
+		}
+		try {
+			return await this.workspace.addImage(recipeId, filename, data, existing);
+		} catch (error) {
+			this.host.logError("Failed to attach recipe image", error);
+			return null;
+		}
+	}
+
+	async removeRecipeImage(image: RecipeImage): Promise<void> {
+		if (this.disposed || !this.workspace) {
+			return;
+		}
+		try {
+			await this.workspace.removeImage(image);
+		} catch (error) {
+			this.host.logError("Failed to remove recipe image", error);
+		}
+	}
+
+	getImageUrl(path: string): string | null {
+		if (this.disposed) {
+			return null;
+		}
+		try {
+			return this.host.getResourcePath(path);
+		} catch (error) {
+			this.host.logError("Failed to resolve image URL", error);
+			return null;
 		}
 	}
 

@@ -26,7 +26,7 @@ npm run dev
 
 `main.js` is a generated artifact and is gitignored. Run `npm run build` (or `npm run dev`) before loading the plugin in Obsidian. Do not commit `main.js`; keep TypeScript as the source of truth.
 
-To load the plugin locally, copy or symlink this folder into `.obsidian/plugins/obsidian-recipe-clipper/` in a dedicated test vault (never a personal vault used for real recipes). After enabling the plugin, use the ribbon icon or the **Open recipe manager** command. React UI mounts through `RecipeItemView` and talks to Obsidian only via `PluginServiceAdapter`. Recipes are stored as `schemaVersion: 1` Markdown with stable `rec_*` IDs, indexed from Obsidian `metadataCache`, and images go under `Recipes/_attachments/<recipe-id>/`.
+To load the plugin locally, copy or symlink this folder into `.obsidian/plugins/obsidian-recipe-clipper/` in a dedicated test vault (never a personal vault used for real recipes). After enabling the plugin, use the ribbon icon or the **Open recipe manager** command. React UI mounts through `RecipeItemView` and talks to Obsidian only via `PluginServiceAdapter`. Recipes are stored as `schemaVersion: 2` Markdown with stable `rec_*` IDs, indexed from Obsidian `metadataCache`, and images go under `Recipes/_attachments/<recipe-id>/`. v1 files are migrated on read (`parseConfidence` 0–1 scores become `null`).
 
 ## Settings
 
