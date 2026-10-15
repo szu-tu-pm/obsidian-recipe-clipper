@@ -92,10 +92,13 @@ describe("stage1LexicalParser", () => {
 	it("normalizes unit aliases used for unitSystem classification", () => {
 		expect(normalizeUnit("fl. oz.")).toBe("fl oz");
 		expect(normalizeUnit("T")).toBe("tbsp");
+		expect(normalizeUnit("T.")).toBe("tbsp");
+		expect(normalizeUnit("t.")).toBe("tsp");
 		expect(normalizeUnit("c")).toBe("cup");
 		expect(normalizeUnit("milligrams")).toBe("milligrams");
 		expect(inferUnitSystem("fl. oz.")).toBe("imperial");
 		expect(inferUnitSystem("T")).toBe("imperial");
+		expect(inferUnitSystem("T.")).toBe("imperial");
 		expect(inferUnitSystem("c")).toBe("imperial");
 		expect(inferUnitSystem("milligrams")).toBe("metric");
 	});

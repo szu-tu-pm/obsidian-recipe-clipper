@@ -90,16 +90,8 @@ const IMPERIAL_UNITS = new Set([
 ]);
 
 const UNIT_ALIASES: Record<string, string> = {
-	t: "tsp",
-	tbsp: "tbsp",
-	tsp: "tsp",
 	c: "cup",
-	cup: "cup",
-	cups: "cups",
 	floz: "fl oz",
-	"fl oz": "fl oz",
-	milligrams: "milligrams",
-	milligram: "milligram",
 };
 
 const DUAL_UNIT_PAREN = /^\s*[\d./\s-]+\s*[a-zA-Zµμ.]+\s*$/;
@@ -138,10 +130,11 @@ export function normalizeUnit(unit: string): string {
 	if (!trimmed) {
 		return "";
 	}
-	if (trimmed === "T") {
+	const withoutPeriod = trimmed.replace(/\.+$/g, "");
+	if (withoutPeriod === "T") {
 		return "tbsp";
 	}
-	if (trimmed === "t") {
+	if (withoutPeriod === "t") {
 		return "tsp";
 	}
 	const collapsed = trimmed
