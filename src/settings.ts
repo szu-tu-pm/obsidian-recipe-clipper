@@ -71,7 +71,7 @@ export class RecipeSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Recipes folder")
-			.setDesc("Markdown recipes are stored here (schemaVersion 1).")
+			.setDesc("Markdown recipes are stored here (schemaVersion 2).")
 			.addText((text) => {
 				text
 					.setPlaceholder(DEFAULT_SETTINGS.recipesFolder)

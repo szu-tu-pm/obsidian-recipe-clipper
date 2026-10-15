@@ -1,11 +1,12 @@
 import { parseIngredient } from "@jlucaspains/sharp-recipe-parser";
 import {
 	generateIngredientId,
+	type ParseConfidence,
 	type RecipeIngredient,
 	type UnitSystem,
 } from "../schema/recipeSchema";
 
-export type ParseConfidence = "exact" | "range" | "non_numeric" | "ambiguous";
+export type { ParseConfidence };
 
 const VULGAR_FRACTIONS: Record<string, string> = {
 	"¼": "1/4",
@@ -47,9 +48,12 @@ const METRIC_UNITS = new Set([
 	"kilograms",
 	"mg",
 	"milligram",
+	"milligrams",
 	"ml",
 	"milliliter",
 	"millilitre",
+	"milliliters",
+	"millilitres",
 	"l",
 	"liter",
 	"litre",
@@ -85,6 +89,19 @@ const IMPERIAL_UNITS = new Set([
 	"fluid ounces",
 ]);
 
+const UNIT_ALIASES: Record<string, string> = {
+	t: "tsp",
+	tbsp: "tbsp",
+	tsp: "tsp",
+	c: "cup",
+	cup: "cup",
+	cups: "cups",
+	floz: "fl oz",
+	"fl oz": "fl oz",
+	milligrams: "milligrams",
+	milligram: "milligram",
+};
+
 const DUAL_UNIT_PAREN = /^\s*[\d./\s-]+\s*[a-zA-Zµμ.]+\s*$/;
 
 export function normalizeVulgarFractions(text: string): string {
@@ -115,11 +132,31 @@ function extractParentheticals(text: string): { text: string; notes: string[] } 
 	return { text: stripped.replace(/\s+/g, " ").trim(), notes };
 }
 
-function inferUnitSystem(unit: string | null): UnitSystem | null {
+/** Canonicalize unit tokens so aliases like `fl. oz.`, `T`, and `c` classify correctly. */
+export function normalizeUnit(unit: string): string {
+	const trimmed = unit.trim();
+	if (!trimmed) {
+		return "";
+	}
+	if (trimmed === "T") {
+		return "tbsp";
+	}
+	if (trimmed === "t") {
+		return "tsp";
+	}
+	const collapsed = trimmed
+		.toLowerCase()
+		.replace(/\./g, "")
+		.replace(/\s+/g, " ")
+		.trim();
+	return UNIT_ALIASES[collapsed] ?? collapsed;
+}
+
+export function inferUnitSystem(unit: string | null): UnitSystem | null {
 	if (!unit) {
 		return null;
 	}
-	const key = unit.toLowerCase();
+	const key = normalizeUnit(unit);
 	if (METRIC_UNITS.has(key)) {
 		return "metric";
 	}
@@ -134,15 +171,14 @@ function classify(
 	quantity: number | null,
 	quantityMax: number | null,
 ): ParseConfidence {
-	if (isNonNumericQualifier(text) && !hasExplicitNumericQuantity(text)) {
-		return "non_numeric";
-	}
 	if (quantity !== null && quantityMax !== null && quantityMax !== quantity) {
 		return "range";
 	}
 	if (quantity !== null) {
 		return "exact";
 	}
+	// No parsed quantity. A qualifier still wins when the line also has digits
+	// (e.g. "salt to taste, leftover from step 2") so we do not mark it ambiguous.
 	if (isNonNumericQualifier(text)) {
 		return "non_numeric";
 	}

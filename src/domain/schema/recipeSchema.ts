@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-export const RECIPE_SCHEMA_VERSION = 1 as const;
+export const RECIPE_SCHEMA_VERSION = 2 as const;
+export const RECIPE_SCHEMA_VERSION_V1 = 1 as const;
 export const RECIPE_TYPE = "recipe" as const;
 
 const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
@@ -45,6 +46,13 @@ export const extractionMethodSchema = z.enum([
 
 export const unitSystemSchema = z.enum(["metric", "imperial", "unknown"]);
 
+export const parseConfidenceSchema = z.enum([
+	"exact",
+	"range",
+	"non_numeric",
+	"ambiguous",
+]);
+
 export const recipeIdSchema = z.string().regex(RECIPE_ID_PATTERN);
 export const ingredientIdSchema = z.string().regex(INGREDIENT_ID_PATTERN);
 
@@ -72,10 +80,7 @@ export const recipeIngredientSchema = z.object({
 	preparation: z.string().nullable().default(null),
 	qualifiers: z.array(z.string()).default([]),
 	optional: z.boolean().default(false),
-	parseConfidence: z
-		.enum(["exact", "range", "non_numeric", "ambiguous"])
-		.nullable()
-		.default(null),
+	parseConfidence: parseConfidenceSchema.nullable().default(null),
 });
 
 export const ratingSchema = z.union([
@@ -111,6 +116,7 @@ export const recipeFrontmatterSchema = z.object({
 
 export type ExtractionMethod = z.infer<typeof extractionMethodSchema>;
 export type UnitSystem = z.infer<typeof unitSystemSchema>;
+export type ParseConfidence = z.infer<typeof parseConfidenceSchema>;
 export type RecipeImage = z.infer<typeof recipeImageSchema>;
 export type RecipeIngredient = z.infer<typeof recipeIngredientSchema>;
 export type RecipeFrontmatter = z.infer<typeof recipeFrontmatterSchema>;
@@ -212,10 +218,53 @@ export function joinVaultPath(...parts: string[]): string {
 		.replace(/^\/+|\/+$/g, "");
 }
 
+function migrateParseConfidence(value: unknown): unknown {
+	if (value == null) {
+		return null;
+	}
+	const parsed = parseConfidenceSchema.safeParse(value);
+	if (parsed.success) {
+		return parsed.data;
+	}
+	// v1 stored a 0-1 score. Drop it rather than inventing a label.
+	return null;
+}
+
+function migrateIngredient(value: unknown): unknown {
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		return value;
+	}
+	const ingredient = value as Record<string, unknown>;
+	return {
+		...ingredient,
+		parseConfidence: migrateParseConfidence(ingredient.parseConfidence),
+	};
+}
+
+/** Lift v1 frontmatter (numeric parseConfidence) to the current schema version. */
+export function migrateRecipeFrontmatterInput(value: unknown): unknown {
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		return value;
+	}
+	const input = value as Record<string, unknown>;
+	const version = input.schemaVersion;
+	if (version !== RECIPE_SCHEMA_VERSION_V1 && version !== RECIPE_SCHEMA_VERSION) {
+		return value;
+	}
+	const ingredients = Array.isArray(input.ingredients)
+		? input.ingredients.map(migrateIngredient)
+		: input.ingredients;
+	return {
+		...input,
+		schemaVersion: RECIPE_SCHEMA_VERSION,
+		ingredients,
+	};
+}
+
 export function parseRecipeFrontmatter(value: unknown): RecipeFrontmatter {
-	return recipeFrontmatterSchema.parse(value);
+	return recipeFrontmatterSchema.parse(migrateRecipeFrontmatterInput(value));
 }
 
 export function safeParseRecipeFrontmatter(value: unknown) {
-	return recipeFrontmatterSchema.safeParse(value);
+	return recipeFrontmatterSchema.safeParse(migrateRecipeFrontmatterInput(value));
 }

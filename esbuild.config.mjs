@@ -19,7 +19,7 @@ const context = await esbuild.context({
 	entryPoints: ["src/main.ts"],
 	bundle: true,
 	// React, Zod, and sharp-recipe-parser are runtime dependencies bundled into main.js.
-	// Do not add them to `external`.
+	// Do not add them to `external`. Production builds are gated at 500 KB by check-bundle-size.mjs.
 	external: [
 		"obsidian",
 		"electron",
