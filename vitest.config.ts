@@ -4,7 +4,10 @@ export default defineConfig({
 	test: {
 		environment: "node",
 		include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
-		environmentMatchGlobs: [["**/*.test.tsx", "jsdom"]],
+		environmentMatchGlobs: [
+			["**/*.test.tsx", "jsdom"],
+			["tests/unit/extraction/**/*.test.ts", "jsdom"],
+		],
 		coverage: {
 			include: ["src/domain/aggregation/stage1LexicalParser.ts"],
 			branches: 90,

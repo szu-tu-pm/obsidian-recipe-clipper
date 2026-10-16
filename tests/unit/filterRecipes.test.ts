@@ -10,6 +10,7 @@ function entry(title: string, rating: RecipeIndexEntry["rating"] = null): Recipe
 		path: `Recipes/${title}.md`,
 		title,
 		rating,
+		sourceUrl: null,
 		primaryImagePath: null,
 		updatedAt: recipe.frontmatter.updatedAt,
 		schemaVersion: recipe.frontmatter.schemaVersion,
