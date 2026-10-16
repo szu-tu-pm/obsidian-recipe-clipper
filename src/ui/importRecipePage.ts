@@ -1,3 +1,4 @@
+import type { ImportActivity } from "../domain/extraction/importSession";
 import { extractRecipeFromPage } from "../domain/extraction/urlClipper";
 import type { UrlExtractionResult } from "../domain/extraction/types";
 import type { PluginServices } from "../wrapper/PluginServiceAdapter";
@@ -19,11 +20,14 @@ export async function importRecipePage(
 	url: string,
 	services: PluginServices,
 	signal: AbortSignal,
+	onProgress?: (phase: ImportActivity) => void,
 	fetchImpl: typeof fetch = fetch,
 ): Promise<UrlExtractionResult> {
 	const settings = services.getSettings();
+	onProgress?.("fetching");
 	const response = await fetchImpl(url, { signal });
 	const html = await response.text();
+	onProgress?.("extracting");
 	return extractRecipeFromPage({
 		html,
 		pageUrl: url,

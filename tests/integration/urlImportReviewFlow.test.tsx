@@ -64,7 +64,8 @@ describe("url import review", () => {
 		});
 		fireEvent.click(screen.getByRole("button", { name: "Start import" }));
 		await waitFor(() => expect(seen).toEqual(["https://allrecipes.com/recipe/123"]));
-		expect(screen.getByText("stop after the URL is prepared")).toBeTruthy();
+		expect(await screen.findByText(/stop after the URL is prepared/)).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Manual entry" })).toBeTruthy();
 	});
 
 	it("offers Import URL and Add manually on an empty collection", () => {
