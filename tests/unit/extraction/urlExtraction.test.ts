@@ -12,7 +12,7 @@ import {
 	selectExtractionCandidate,
 } from "../../../src/domain/extraction/urlClipper";
 import { normalizeRecipeSourceUrl } from "../../../src/domain/extraction/text";
-import { parseUntrustedHtml } from "../../../src/domain/extraction/untrustedHtml";
+import { MAX_HTML_CHARS, parseUntrustedHtml } from "../../../src/domain/extraction/untrustedHtml";
 import { RecipeIndexer } from "../../../src/domain/vault/recipeIndexer";
 import type { OllamaExtractOptions } from "../../../src/domain/extraction/ollamaExtractor";
 
@@ -403,6 +403,24 @@ describe("extractRecipeFromPage", () => {
 		expect(result.status).toBe("manual-fallback");
 		expect(result.succeeded).toBe(false);
 		expect(result.warnings.some((warning) => /schema/i.test(warning))).toBe(true);
+	});
+
+	it("truncates HTML past 5,000,000 characters before parsing", async () => {
+		const marker = "TAIL_NOT_PARSED";
+		const html = `<html><body><p>${"x".repeat(MAX_HTML_CHARS)}</p>${marker}</body></html>`;
+		const parsed = parseUntrustedHtml(html);
+		expect(parsed.truncated).toBe(true);
+		expect(parsed.document.body?.textContent ?? "").not.toContain(marker);
+		expect(parseUntrustedHtml("<html><body><p>short</p></body></html>").truncated).toBe(false);
+
+		const result = await extractRecipeFromPage({
+			html,
+			pageUrl: "https://example.com/huge",
+			now: () => NOW,
+		});
+		expect(result.warnings.some((warning) => warning.includes(String(MAX_HTML_CHARS)))).toBe(
+			true,
+		);
 	});
 
 	it("returns a cancelled fallback when the caller aborts", async () => {

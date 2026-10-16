@@ -25,7 +25,7 @@ import type {
 	UrlExtractionSuccess,
 } from "./types";
 import { hasExtractedContent, isCompleteExtraction } from "./types";
-import { elementText, pageText, parseUntrustedHtml } from "./untrustedHtml";
+import { elementText, MAX_HTML_CHARS, pageText, parseUntrustedHtml } from "./untrustedHtml";
 
 export interface ClipPageOptions {
 	html: string;
@@ -342,6 +342,9 @@ export async function extractRecipeFromPage(options: ClipPageOptions): Promise<U
 		warnings.push(error instanceof Error ? error.message : "HTML could not be parsed.");
 		parsed = parseUntrustedHtml("<html><body></body></html>");
 	}
+	if (parsed.truncated) {
+		warnings.push(`Page HTML was truncated to ${MAX_HTML_CHARS} characters.`);
+	}
 
 	const duplicatesFor = (sourceUrl: string | null) =>
 		findDuplicateSourceUrls(sourceUrl, options.existingRecipes ?? [], options.excludeRecipeId);
@@ -365,6 +368,16 @@ export async function extractRecipeFromPage(options: ClipPageOptions): Promise<U
 		parsed.document,
 		options.pageUrl,
 	);
+	if (options.signal?.aborted) {
+		return fallbackResult(
+			parsed.document,
+			options.pageUrl,
+			"cancelled",
+			now,
+			duplicatesFor(options.pageUrl),
+			warnings,
+		);
+	}
 	const dom = extractDomHeuristicRecipes(parsed.document, options.pageUrl);
 	let fields = chooseFields(structured, dom);
 	let ollamaAttribution: { author: string | null; siteName: string | null } | null = null;

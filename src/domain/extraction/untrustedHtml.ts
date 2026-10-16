@@ -1,9 +1,13 @@
 import { cleanText } from "./text";
 
+/** Guard against pathological pages before DOMParser allocates the tree. */
+export const MAX_HTML_CHARS = 5_000_000;
+
 export interface ParsedHtml {
 	document: Document;
 	jsonLdBlocks: string[];
 	hasVideoEmbed: boolean;
+	truncated: boolean;
 }
 
 /**
@@ -14,7 +18,9 @@ export function parseUntrustedHtml(html: string): ParsedHtml {
 	if (typeof DOMParser === "undefined") {
 		throw new Error("DOMParser is not available in this runtime.");
 	}
-	const document = new DOMParser().parseFromString(html, "text/html");
+	const truncated = html.length > MAX_HTML_CHARS;
+	const bounded = truncated ? html.slice(0, MAX_HTML_CHARS) : html;
+	const document = new DOMParser().parseFromString(bounded, "text/html");
 	const hasVideoEmbed = Boolean(
 		document.querySelector(
 			"video, iframe[src*='youtube'], iframe[src*='youtu.be'], iframe[src*='vimeo'], iframe[src*='tiktok']",
@@ -49,7 +55,7 @@ export function parseUntrustedHtml(html: string): ParsedHtml {
 			}
 		}
 	}
-	return { document, jsonLdBlocks, hasVideoEmbed };
+	return { document, jsonLdBlocks, hasVideoEmbed, truncated };
 }
 
 export function pageText(document: Document): string {
