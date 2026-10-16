@@ -10,13 +10,14 @@ import { ImportReviewModal } from "./components/ImportReviewModal";
 import { MultiRecipePickerModal } from "./components/MultiRecipePickerModal";
 import { ratingBadge } from "./components/StarRating";
 import { filterRecipes, type RatingFilter } from "./filterRecipes";
-import { downloadSourceImage, importRecipePage } from "./importRecipePage";
+import { downloadSourceImage, ensureHttpsUrl, importRecipePage } from "./importRecipePage";
 import { RecipeEditorModal } from "./RecipeEditorModal";
 import { useEscapeToClose } from "./useEscapeToClose";
 
 export function CollectionView({
 	importPage = importRecipePage,
 	downloadImage = (url: string) => downloadSourceImage(url),
+	notify = () => undefined,
 }: {
 	importPage?: (
 		url: string,
@@ -24,6 +25,7 @@ export function CollectionView({
 		signal: AbortSignal,
 	) => Promise<UrlExtractionResult>;
 	downloadImage?: (url: string) => Promise<ArrayBuffer | null>;
+	notify?: (message: string) => void;
 } = {}): JSX.Element {
 	const services = usePluginServices();
 	const recipes = useRecipeIndex();
@@ -78,9 +80,12 @@ export function CollectionView({
 	}
 
 	async function startImport(): Promise<void> {
-		const url = urlValue.trim();
+		const url = ensureHttpsUrl(urlValue);
 		if (!url || importing) {
 			return;
+		}
+		if (url !== urlValue) {
+			setUrlValue(url);
 		}
 		const controller = new AbortController();
 		importAbort.current = controller;
@@ -289,7 +294,13 @@ export function CollectionView({
 					result={review}
 					services={services}
 					downloadImage={downloadImage}
-					onClose={() => setReview(null)}
+					onClose={(notice) => {
+						setReview(null);
+						if (notice) {
+							setStatus(notice);
+							notify(notice);
+						}
+					}}
 				/>
 			) : null}
 
@@ -339,6 +350,7 @@ function ImportUrlDialog({
 			>
 				<h3 id="recipe-import-url-title">Import URL</h3>
 				<form
+					noValidate
 					className="recipe-clipper-editor-form"
 					onSubmit={(event) => {
 						event.preventDefault();

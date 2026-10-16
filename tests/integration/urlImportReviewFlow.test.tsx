@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { extractRecipeFromPage } from "../../src/domain/extraction/urlClipper";
+import { ensureHttpsUrl } from "../../src/ui/importRecipePage";
 import type { UrlExtractionResult } from "../../src/domain/extraction/types";
 import { DEFAULT_SETTINGS } from "../../src/pluginSettings";
 import { CollectionView } from "../../src/ui/CollectionView";
@@ -19,15 +20,20 @@ const NOW = "2026-10-16T16:00:00.000Z";
 
 function renderCollection(
 	store: MockRecipeStore,
-	importPage: () => Promise<UrlExtractionResult>,
+	importPage: (url: string) => Promise<UrlExtractionResult>,
 	downloadImage: (url: string) => Promise<ArrayBuffer | null> = async () => {
 		throw new Error("image download was not confirmed");
 	},
+	notify: (message: string) => void = () => undefined,
 ) {
 	const services = createMockPluginServices(store);
 	render(
 		<WrapperProvider services={services}>
-			<CollectionView importPage={async () => importPage()} downloadImage={downloadImage} />
+			<CollectionView
+				importPage={async (url) => importPage(url)}
+				downloadImage={downloadImage}
+				notify={notify}
+			/>
 		</WrapperProvider>,
 	);
 	return services;
@@ -44,6 +50,23 @@ async function openImport(result: UrlExtractionResult, store?: MockRecipeStore) 
 }
 
 describe("url import review", () => {
+	it("prepends https:// when a pasted URL has no protocol", async () => {
+		expect(ensureHttpsUrl("https://example.com/chili")).toBe("https://example.com/chili");
+		expect(ensureHttpsUrl("http://example.com/chili")).toBe("http://example.com/chili");
+		const seen: string[] = [];
+		renderCollection({ recipes: [], settings: { ...DEFAULT_SETTINGS } }, async (url) => {
+			seen.push(url);
+			throw new Error("stop after the URL is prepared");
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Import URL" }));
+		fireEvent.change(screen.getByLabelText("Recipe URL"), {
+			target: { value: "allrecipes.com/recipe/123" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Start import" }));
+		await waitFor(() => expect(seen).toEqual(["https://allrecipes.com/recipe/123"]));
+		expect(screen.getByText("stop after the URL is prepared")).toBeTruthy();
+	});
+
 	it("offers Import URL and Add manually on an empty collection", () => {
 		renderCollection({ recipes: [], settings: { ...DEFAULT_SETTINGS } }, async () => {
 			throw new Error("import should not start");
@@ -202,5 +225,33 @@ describe("url import review", () => {
 		expect(store.recipes[0]?.frontmatter.images[0]?.sourceUrl).toBe(
 			"https://cdn.example/pancakes.jpg",
 		);
+	});
+
+	it("keeps the saved recipe and says so when a confirmed image cannot be downloaded", async () => {
+		const store: MockRecipeStore = { recipes: [], settings: { ...DEFAULT_SETTINGS } };
+		const result = await extractRecipeFromPage({
+			html: `<html><body><script type="application/ld+json">
+				{"@type":"Recipe","name":"Pancakes","image":"https://cdn.example/pancakes.jpg",
+				"recipeIngredient":["1 cup flour"],"recipeInstructions":["Mix."]}
+			</script></body></html>`,
+			pageUrl: "https://example.com/pancakes",
+			now: () => NOW,
+		});
+		const notify = vi.fn();
+		renderCollection(store, async () => result, async () => null, notify);
+		fireEvent.click(screen.getByRole("button", { name: "Import URL" }));
+		fireEvent.change(screen.getByLabelText("Recipe URL"), {
+			target: { value: "https://example.com/pancakes" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Start import" }));
+		await screen.findByRole("heading", { name: "Review import" });
+		fireEvent.click(screen.getByRole("checkbox", { name: "Download this image into the vault" }));
+		fireEvent.click(screen.getByRole("button", { name: "Save recipe" }));
+		await waitFor(() => expect(store.recipes).toHaveLength(1));
+		expect(store.recipes[0]?.frontmatter.images).toEqual([]);
+		const notice = "The recipe was saved, but the remote image could not be downloaded.";
+		expect(screen.getByText(notice)).toBeTruthy();
+		expect(notify).toHaveBeenCalledWith(notice);
+		expect(screen.queryByRole("dialog")).toBeNull();
 	});
 });

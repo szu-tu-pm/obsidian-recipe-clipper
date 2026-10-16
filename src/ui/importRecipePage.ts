@@ -2,6 +2,19 @@ import { extractRecipeFromPage } from "../domain/extraction/urlClipper";
 import type { UrlExtractionResult } from "../domain/extraction/types";
 import type { PluginServices } from "../wrapper/PluginServiceAdapter";
 
+const EXPLICIT_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+
+export function ensureHttpsUrl(value: string): string {
+	const trimmed = value.trim();
+	if (trimmed.length === 0 || EXPLICIT_SCHEME.test(trimmed)) {
+		return trimmed;
+	}
+	if (trimmed.startsWith("//")) {
+		return `https:${trimmed}`;
+	}
+	return `https://${trimmed}`;
+}
+
 export async function importRecipePage(
 	url: string,
 	services: PluginServices,

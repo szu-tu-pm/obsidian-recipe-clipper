@@ -32,7 +32,7 @@ export function ImportReviewModal({
 	result: ReviewResult;
 	services: PluginServices;
 	downloadImage: (url: string) => Promise<ArrayBuffer | null>;
-	onClose: () => void;
+	onClose: (notice?: string) => void;
 }): JSX.Element {
 	const headingId = useId();
 	const draft =
@@ -81,22 +81,26 @@ export function ImportReviewModal({
 				setError("Could not save the recipe.");
 				return;
 			}
-			const images = await attachConfirmedImages(
+			const attached = await attachConfirmedImages(
 				saved,
 				candidate?.candidateImages ?? [],
 				selectedImages,
 				services,
 				downloadImage,
 			);
-			if (images.length > 0) {
+			if (attached.images.length > 0) {
 				const withImages = await services.saveRecipe({
 					...saved,
-					frontmatter: { ...saved.frontmatter, images },
+					frontmatter: { ...saved.frontmatter, images: attached.images },
 				});
 				if (!withImages) {
-					setError("The recipe was saved, but a confirmed image could not be stored.");
+					onClose("The recipe was saved, but a confirmed image could not be stored.");
 					return;
 				}
+			}
+			if (attached.failed > 0) {
+				onClose("The recipe was saved, but the remote image could not be downloaded.");
+				return;
 			}
 			onClose();
 		} finally {
@@ -215,7 +219,7 @@ export function ImportReviewModal({
 					<button
 						id="recipe-import-cancel"
 						type="button"
-						onClick={onClose}
+						onClick={() => onClose()}
 						disabled={busy}
 					>
 						Cancel
@@ -235,16 +239,23 @@ async function attachConfirmedImages(
 	selected: Set<string>,
 	services: PluginServices,
 	downloadImage: (url: string) => Promise<ArrayBuffer | null>,
-): Promise<RecipeImage[]> {
+): Promise<{ images: RecipeImage[]; failed: number }> {
 	const images: RecipeImage[] = [];
+	let failed = 0;
 	let index = 0;
 	for (const image of candidates) {
 		if (!selected.has(image.sourceUrl)) {
 			continue;
 		}
-		const bytes = await downloadImage(image.sourceUrl);
 		index += 1;
+		let bytes: ArrayBuffer | null = null;
+		try {
+			bytes = await downloadImage(image.sourceUrl);
+		} catch {
+			bytes = null;
+		}
 		if (!bytes) {
+			failed += 1;
 			continue;
 		}
 		const added = await services.addRecipeImage(
@@ -254,6 +265,7 @@ async function attachConfirmedImages(
 			images,
 		);
 		if (!added) {
+			failed += 1;
 			continue;
 		}
 		images.push({
@@ -263,5 +275,5 @@ async function attachConfirmedImages(
 			isPrimary: images.length === 0,
 		});
 	}
-	return images;
+	return { images, failed };
 }
