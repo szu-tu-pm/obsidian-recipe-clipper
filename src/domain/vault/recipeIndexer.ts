@@ -16,6 +16,7 @@ export interface RecipeIndexEntry {
 	path: string;
 	title: string;
 	rating: RecipeFrontmatter["rating"];
+	sourceUrl: string | null;
 	primaryImagePath: string | null;
 	updatedAt: string;
 	schemaVersion: number;
@@ -58,6 +59,7 @@ function entryFromFrontmatter(
 		path,
 		title: recipe.title,
 		rating: recipe.rating,
+		sourceUrl: recipe.sourceUrl,
 		primaryImagePath: primary?.path ?? null,
 		updatedAt: recipe.updatedAt,
 		schemaVersion: recipe.schemaVersion,

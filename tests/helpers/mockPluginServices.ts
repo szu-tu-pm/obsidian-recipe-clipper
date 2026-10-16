@@ -24,6 +24,7 @@ function indexEntry(recipe: RecipeDocument): RecipeIndexEntry {
 		path: recipe.path ?? `Recipes/${recipe.frontmatter.title}.md`,
 		title: recipe.frontmatter.title,
 		rating: recipe.frontmatter.rating,
+		sourceUrl: recipe.frontmatter.sourceUrl,
 		primaryImagePath: primary?.path ?? null,
 		updatedAt: recipe.frontmatter.updatedAt,
 		schemaVersion: recipe.frontmatter.schemaVersion,
