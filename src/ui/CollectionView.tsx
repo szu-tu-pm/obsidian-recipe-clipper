@@ -1,13 +1,32 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import type { UrlExtractionResult } from "../domain/extraction/types";
+import { selectExtractionCandidate } from "../domain/extraction/urlClipper";
 import type { RecipeDocument } from "../domain/schema/recipeSchema";
 import type { RecipeIndexEntry } from "../domain/vault/recipeIndexer";
 import { usePluginServices, useRecipeIndex } from "../wrapper/WrapperContext";
+import type { PluginServices } from "../wrapper/PluginServiceAdapter";
 import { ConfirmDialog } from "./components/ConfirmDialog";
+import { ImportReviewModal } from "./components/ImportReviewModal";
+import { MultiRecipePickerModal } from "./components/MultiRecipePickerModal";
 import { ratingBadge } from "./components/StarRating";
 import { filterRecipes, type RatingFilter } from "./filterRecipes";
+import { downloadSourceImage, ensureHttpsUrl, importRecipePage } from "./importRecipePage";
 import { RecipeEditorModal } from "./RecipeEditorModal";
+import { useEscapeToClose } from "./useEscapeToClose";
 
-export function CollectionView(): JSX.Element {
+export function CollectionView({
+	importPage = importRecipePage,
+	downloadImage = (url: string) => downloadSourceImage(url),
+	notify = () => undefined,
+}: {
+	importPage?: (
+		url: string,
+		services: PluginServices,
+		signal: AbortSignal,
+	) => Promise<UrlExtractionResult>;
+	downloadImage?: (url: string) => Promise<ArrayBuffer | null>;
+	notify?: (message: string) => void;
+} = {}): JSX.Element {
 	const services = usePluginServices();
 	const recipes = useRecipeIndex();
 	const [query, setQuery] = useState("");
@@ -16,6 +35,11 @@ export function CollectionView(): JSX.Element {
 	const [editor, setEditor] = useState<RecipeDocument | null | "new">(null);
 	const [pendingDelete, setPendingDelete] = useState<RecipeIndexEntry | null>(null);
 	const [status, setStatus] = useState<string | null>(null);
+	const [urlOpen, setUrlOpen] = useState(false);
+	const [urlValue, setUrlValue] = useState("");
+	const [importing, setImporting] = useState(false);
+	const [review, setReview] = useState<UrlExtractionResult | null>(null);
+	const importAbort = useRef<AbortController | null>(null);
 
 	const visible = useMemo(
 		() => filterRecipes(recipes, query, rating),
@@ -43,6 +67,52 @@ export function CollectionView(): JSX.Element {
 		setEditor(loaded.recipe);
 	}
 
+	function openImport(): void {
+		setUrlValue("");
+		setUrlOpen(true);
+	}
+
+	function closeImport(): void {
+		importAbort.current?.abort();
+		importAbort.current = null;
+		setImporting(false);
+		setUrlOpen(false);
+	}
+
+	async function startImport(): Promise<void> {
+		const url = ensureHttpsUrl(urlValue);
+		if (!url || importing) {
+			return;
+		}
+		if (url !== urlValue) {
+			setUrlValue(url);
+		}
+		const controller = new AbortController();
+		importAbort.current = controller;
+		setImporting(true);
+		setStatus("Importing page…");
+		try {
+			const result = await importPage(url, services, controller.signal);
+			if (controller.signal.aborted) {
+				return;
+			}
+			if (result.status === "manual-fallback" && result.reason === "cancelled") {
+				setStatus("Import cancelled.");
+				return;
+			}
+			setUrlOpen(false);
+			setReview(result);
+			setStatus(null);
+		} catch (error) {
+			if (!controller.signal.aborted) {
+				setStatus(error instanceof Error ? error.message : "Could not import that URL.");
+			}
+		} finally {
+			setImporting(false);
+			importAbort.current = null;
+		}
+	}
+
 	async function confirmDelete(): Promise<void> {
 		if (!pendingDelete) {
 			return;
@@ -62,9 +132,16 @@ export function CollectionView(): JSX.Element {
 		<div className="recipe-clipper-view recipe-clipper-collection">
 			<header className="recipe-clipper-collection-header">
 				<h4>Recipes</h4>
-				<button type="button" className="mod-cta" onClick={() => setEditor("new")}>
-					New recipe
-				</button>
+				<div className="recipe-clipper-row-actions">
+					{recipes.length > 0 ? (
+						<button type="button" onClick={openImport}>
+							Import URL
+						</button>
+					) : null}
+					<button type="button" className="mod-cta" onClick={() => setEditor("new")}>
+						New recipe
+					</button>
+				</div>
 			</header>
 
 			<div className="recipe-clipper-toolbar">
@@ -121,7 +198,19 @@ export function CollectionView(): JSX.Element {
 				</p>
 			) : null}
 
-			{visible.length === 0 ? (
+			{recipes.length === 0 ? (
+				<div className="recipe-clipper-empty">
+					<p>No recipes yet.</p>
+					<div className="recipe-clipper-row-actions">
+						<button type="button" onClick={openImport}>
+							Import URL
+						</button>
+						<button type="button" onClick={() => setEditor("new")}>
+							Add manually
+						</button>
+					</div>
+				</div>
+			) : visible.length === 0 ? (
 				<p className="recipe-clipper-empty">
 					No recipes match this search. Create a manual recipe to get started.
 				</p>
@@ -182,6 +271,39 @@ export function CollectionView(): JSX.Element {
 				</ul>
 			)}
 
+			{urlOpen ? (
+				<ImportUrlDialog
+					url={urlValue}
+					busy={importing}
+					onChange={setUrlValue}
+					onCancel={closeImport}
+					onSubmit={() => void startImport()}
+				/>
+			) : null}
+
+			{review?.status === "needs-selection" ? (
+				<MultiRecipePickerModal
+					candidates={review.candidates}
+					onCancel={() => setReview(null)}
+					onSelect={(index) => setReview(selectExtractionCandidate(review, index))}
+				/>
+			) : null}
+
+			{review && review.status !== "needs-selection" ? (
+				<ImportReviewModal
+					result={review}
+					services={services}
+					downloadImage={downloadImage}
+					onClose={(notice) => {
+						setReview(null);
+						if (notice) {
+							setStatus(notice);
+							notify(notice);
+						}
+					}}
+				/>
+			) : null}
+
 			{editor !== null ? (
 				<RecipeEditorModal
 					services={services}
@@ -199,6 +321,62 @@ export function CollectionView(): JSX.Element {
 					onConfirm={() => void confirmDelete()}
 				/>
 			) : null}
+		</div>
+	);
+}
+
+function ImportUrlDialog({
+	url,
+	busy,
+	onChange,
+	onCancel,
+	onSubmit,
+}: {
+	url: string;
+	busy: boolean;
+	onChange: (value: string) => void;
+	onCancel: () => void;
+	onSubmit: () => void;
+}): JSX.Element {
+	useEscapeToClose(onCancel, !busy);
+
+	return (
+		<div className="recipe-clipper-modal-backdrop" role="presentation">
+			<div
+				className="recipe-clipper-modal"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="recipe-import-url-title"
+			>
+				<h3 id="recipe-import-url-title">Import URL</h3>
+				<form
+					noValidate
+					className="recipe-clipper-editor-form"
+					onSubmit={(event) => {
+						event.preventDefault();
+						onSubmit();
+					}}
+				>
+					<label>
+						Recipe URL
+						<input
+							type="url"
+							required
+							value={url}
+							autoFocus
+							onChange={(event) => onChange(event.target.value)}
+						/>
+					</label>
+					<div className="recipe-clipper-modal-actions">
+						<button type="button" onClick={onCancel} disabled={busy}>
+							Cancel
+						</button>
+						<button type="submit" className="mod-cta" disabled={busy}>
+							Start import
+						</button>
+					</div>
+				</form>
+			</div>
 		</div>
 	);
 }
