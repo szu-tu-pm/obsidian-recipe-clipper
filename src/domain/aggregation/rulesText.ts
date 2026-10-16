@@ -1,0 +1,41 @@
+/** Lowercase, treat hyphens as spaces, and collapse punctuation so rule lookup is stable. */
+export function normalizePhrase(value: string): string {
+	return value
+		.toLowerCase()
+		.replace(/-/g, " ")
+		.replace(/[^a-z0-9\s]/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+export function containsPhrase(text: string, phrase: string): boolean {
+	if (!phrase) {
+		return false;
+	}
+	return ` ${text} `.includes(` ${phrase} `);
+}
+
+/** Drop blank entries so a missing rule cannot become an identity that matches everything. */
+export function collectPhrases(values: string[]): string[] {
+	const phrases: string[] = [];
+	for (const value of values) {
+		const phrase = normalizePhrase(value);
+		if (!phrase) {
+			continue;
+		}
+		phrases.push(phrase);
+	}
+	return phrases;
+}
+
+export function removePhrase(text: string, phrase: string): string {
+	if (!phrase) {
+		return text;
+	}
+	let next = ` ${text} `;
+	const needle = ` ${phrase} `;
+	while (next.includes(needle)) {
+		next = next.replace(needle, " ");
+	}
+	return next.replace(/\s+/g, " ").trim();
+}

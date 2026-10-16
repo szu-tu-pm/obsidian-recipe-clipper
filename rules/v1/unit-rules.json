@@ -1,0 +1,22 @@
+{
+  "version": "v1",
+  "units": [
+    { "id": "g", "dimension": "mass", "canonical": "g", "factor": 1, "aliases": ["g", "gram", "grams"] },
+    { "id": "kg", "dimension": "mass", "canonical": "g", "factor": 1000, "aliases": ["kg", "kilogram", "kilograms"] },
+    { "id": "oz", "dimension": "mass", "canonical": "g", "factor": 28.349523125, "aliases": ["oz", "ounce", "ounces"] },
+    { "id": "lb", "dimension": "mass", "canonical": "g", "factor": 453.59237, "aliases": ["lb", "lbs", "pound", "pounds"] },
+    { "id": "tsp", "dimension": "us_volume", "canonical": "tsp", "factor": 1, "aliases": ["tsp", "teaspoon", "teaspoons"] },
+    { "id": "tbsp", "dimension": "us_volume", "canonical": "tsp", "factor": 3, "aliases": ["tbsp", "tablespoon", "tablespoons"] },
+    { "id": "fl_oz", "dimension": "us_volume", "canonical": "tsp", "factor": 6, "aliases": ["fl oz", "fl ounce", "fluid ounce", "fluid ounces"] },
+    { "id": "cup_us", "dimension": "us_volume", "canonical": "tsp", "factor": 48, "aliases": ["cup", "cups"] },
+    { "id": "pt_us", "dimension": "us_volume", "canonical": "tsp", "factor": 96, "aliases": ["pt", "pint", "pints"] },
+    { "id": "qt_us", "dimension": "us_volume", "canonical": "tsp", "factor": 192, "aliases": ["qt", "quart", "quarts"] },
+    { "id": "gal_us", "dimension": "us_volume", "canonical": "tsp", "factor": 768, "aliases": ["gal", "gallon", "gallons"] },
+    { "id": "ml", "dimension": "metric_volume", "canonical": "ml", "factor": 1, "aliases": ["ml", "milliliter", "milliliters", "millilitre", "millilitres"] },
+    { "id": "l", "dimension": "metric_volume", "canonical": "ml", "factor": 1000, "aliases": ["l", "liter", "liters", "litre", "litres"] },
+    { "id": "clove", "dimension": "count", "canonical": "clove", "factor": 1, "aliases": ["clove", "cloves"] },
+    { "id": "can", "dimension": "count", "canonical": "can", "factor": 1, "aliases": ["can", "cans"] },
+    { "id": "bunch", "dimension": "count", "canonical": "bunch", "factor": 1, "aliases": ["bunch", "bunches"] },
+    { "id": "piece", "dimension": "count", "canonical": "piece", "factor": 1, "aliases": ["piece", "pieces"] }
+  ]
+}
