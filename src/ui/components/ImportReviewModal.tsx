@@ -131,6 +131,13 @@ export function ImportReviewModal({
 				) : (
 					<p>Nothing is written to the vault until you save this review.</p>
 				)}
+				{result.warnings.length > 0 ? (
+					<ul className="recipe-clipper-review-warnings">
+						{result.warnings.map((warning) => (
+							<li key={warning}>{warning}</li>
+						))}
+					</ul>
+				) : null}
 				<DuplicateUrlWarningBanner matches={duplicates} />
 				{sourceLine ? <p className="recipe-clipper-source-line">{sourceLine}</p> : null}
 				<dl className="recipe-clipper-review-fields">

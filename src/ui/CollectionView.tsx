@@ -1,10 +1,17 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+	startImportSession,
+	type ImportActivity,
+	type ImportSession,
+	type ImportSessionSnapshot,
+} from "../domain/extraction/importSession";
 import type { UrlExtractionResult } from "../domain/extraction/types";
 import { selectExtractionCandidate } from "../domain/extraction/urlClipper";
 import type { RecipeDocument } from "../domain/schema/recipeSchema";
 import type { RecipeIndexEntry } from "../domain/vault/recipeIndexer";
 import { usePluginServices, useRecipeIndex } from "../wrapper/WrapperContext";
 import type { PluginServices } from "../wrapper/PluginServiceAdapter";
+import { ImportProgressBanner } from "./ImportProgressBanner";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { ImportReviewModal } from "./components/ImportReviewModal";
 import { MultiRecipePickerModal } from "./components/MultiRecipePickerModal";
@@ -23,6 +30,7 @@ export function CollectionView({
 		url: string,
 		services: PluginServices,
 		signal: AbortSignal,
+		report?: (phase: ImportActivity) => void,
 	) => Promise<UrlExtractionResult>;
 	downloadImage?: (url: string) => Promise<ArrayBuffer | null>;
 	notify?: (message: string) => void;
@@ -37,9 +45,11 @@ export function CollectionView({
 	const [status, setStatus] = useState<string | null>(null);
 	const [urlOpen, setUrlOpen] = useState(false);
 	const [urlValue, setUrlValue] = useState("");
-	const [importing, setImporting] = useState(false);
 	const [review, setReview] = useState<UrlExtractionResult | null>(null);
-	const importAbort = useRef<AbortController | null>(null);
+	const [progress, setProgress] = useState<ImportSessionSnapshot | null>(null);
+	const sessionRef = useRef<ImportSession | null>(null);
+	const stopSession = useRef<(() => void) | null>(null);
+	const importing = progress?.phase === "fetching" || progress?.phase === "extracting";
 
 	const visible = useMemo(
 		() => filterRecipes(recipes, query, rating),
@@ -73,13 +83,40 @@ export function CollectionView({
 	}
 
 	function closeImport(): void {
-		importAbort.current?.abort();
-		importAbort.current = null;
-		setImporting(false);
 		setUrlOpen(false);
 	}
 
-	async function startImport(): Promise<void> {
+	function cancelImport(): void {
+		sessionRef.current?.cancel();
+	}
+
+	useEffect(() => {
+		return () => {
+			sessionRef.current?.cancel();
+			stopSession.current?.();
+			stopSession.current = null;
+			sessionRef.current = null;
+		};
+	}, []);
+
+	useEffect(() => {
+		if (!progress || progress.phase === "fetching" || progress.phase === "extracting") {
+			return;
+		}
+		const finished = progress;
+		stopSession.current?.();
+		stopSession.current = null;
+		sessionRef.current = null;
+		setProgress(null);
+		if (finished.phase === "cancelled" || !finished.result) {
+			setStatus(finished.message);
+			return;
+		}
+		setReview(finished.result);
+		setStatus(null);
+	}, [progress]);
+
+	function startImport(): void {
 		const url = ensureHttpsUrl(urlValue);
 		if (!url || importing) {
 			return;
@@ -87,30 +124,18 @@ export function CollectionView({
 		if (url !== urlValue) {
 			setUrlValue(url);
 		}
-		const controller = new AbortController();
-		importAbort.current = controller;
-		setImporting(true);
-		setStatus("Importing page…");
-		try {
-			const result = await importPage(url, services, controller.signal);
-			if (controller.signal.aborted) {
-				return;
-			}
-			if (result.status === "manual-fallback" && result.reason === "cancelled") {
-				setStatus("Import cancelled.");
-				return;
-			}
-			setUrlOpen(false);
-			setReview(result);
-			setStatus(null);
-		} catch (error) {
-			if (!controller.signal.aborted) {
-				setStatus(error instanceof Error ? error.message : "Could not import that URL.");
-			}
-		} finally {
-			setImporting(false);
-			importAbort.current = null;
-		}
+		const session = startImportSession({
+			url,
+			run: (report, signal) => importPage(url, services, signal, report),
+		});
+		stopSession.current?.();
+		sessionRef.current = session;
+		stopSession.current = session.subscribe(() => {
+			setProgress(session.snapshot());
+		});
+		setUrlOpen(false);
+		setStatus(null);
+		setProgress(session.snapshot());
 	}
 
 	async function confirmDelete(): Promise<void> {
@@ -191,6 +216,10 @@ export function CollectionView({
 					Generate shopping list
 				</button>
 			</div>
+
+			{importing && progress ? (
+				<ImportProgressBanner message={progress.message} onCancel={cancelImport} />
+			) : null}
 
 			{status ? (
 				<p className="recipe-clipper-status" role="status">
