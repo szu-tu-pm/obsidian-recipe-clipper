@@ -46,6 +46,10 @@ export function CollectionView({
 	const [urlOpen, setUrlOpen] = useState(false);
 	const [urlValue, setUrlValue] = useState("");
 	const [review, setReview] = useState<UrlExtractionResult | null>(null);
+	const [readyImport, setReadyImport] = useState<{
+		result: UrlExtractionResult;
+		message: string;
+	} | null>(null);
 	const [progress, setProgress] = useState<ImportSessionSnapshot | null>(null);
 	const sessionRef = useRef<ImportSession | null>(null);
 	const stopSession = useRef<(() => void) | null>(null);
@@ -109,12 +113,21 @@ export function CollectionView({
 		sessionRef.current = null;
 		setProgress(null);
 		if (finished.phase === "cancelled" || !finished.result) {
+			setReadyImport(null);
 			setStatus(finished.message);
 			return;
 		}
-		setReview(finished.result);
 		setStatus(null);
-	}, [progress]);
+		if (editor !== null) {
+			setReadyImport({
+				result: finished.result,
+				message: finished.phase === "failed" ? finished.message : "Import ready",
+			});
+			return;
+		}
+		setReadyImport(null);
+		setReview(finished.result);
+	}, [editor, progress]);
 
 	function startImport(): void {
 		const url = ensureHttpsUrl(urlValue);
@@ -133,9 +146,18 @@ export function CollectionView({
 		stopSession.current = session.subscribe(() => {
 			setProgress(session.snapshot());
 		});
+		setReadyImport(null);
 		setUrlOpen(false);
 		setStatus(null);
 		setProgress(session.snapshot());
+	}
+
+	function openReadyImport(): void {
+		if (!readyImport || editor !== null) {
+			return;
+		}
+		setReview(readyImport.result);
+		setReadyImport(null);
 	}
 
 	async function confirmDelete(): Promise<void> {
@@ -219,6 +241,18 @@ export function CollectionView({
 
 			{importing && progress ? (
 				<ImportProgressBanner message={progress.message} onCancel={cancelImport} />
+			) : null}
+
+			{readyImport && !review ? (
+				<ImportProgressBanner
+					message={
+						editor !== null
+							? "Import ready. Close the recipe editor to review it."
+							: readyImport.message
+					}
+					onReview={openReadyImport}
+					reviewDisabled={editor !== null}
+				/>
 			) : null}
 
 			{status ? (

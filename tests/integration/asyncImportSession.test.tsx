@@ -106,6 +106,46 @@ describe("async import session", () => {
 		expect(store.recipes[0]?.frontmatter.ingredients).toEqual([]);
 	});
 
+	it("keeps a finished import in the banner while the recipe editor is open", async () => {
+		const recipe = seedRecipe("Weeknight Chili");
+		const store: MockRecipeStore = { recipes: [recipe], settings: { ...DEFAULT_SETTINGS } };
+		const result = await extractRecipeFromPage({
+			html: `<html><body><script type="application/ld+json">
+				{"@type":"Recipe","name":"Chili","recipeIngredient":["1 cup stock"],
+				"recipeInstructions":["Simmer."]}
+			</script></body></html>`,
+			pageUrl: "https://example.com/chili",
+			now: () => NOW,
+		});
+		let resolveImport: (value: UrlExtractionResult) => void = () => undefined;
+		renderCollection(store, () => new Promise((resolve) => {
+			resolveImport = resolve;
+		}));
+
+		start();
+		expect(await screen.findByText("Fetching the page…")).toBeTruthy();
+		fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+		expect(await screen.findByRole("heading", { name: "Edit recipe" })).toBeTruthy();
+		resolveImport(result);
+
+		expect(await screen.findByText("Import ready. Close the recipe editor to review it.")).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Edit recipe" })).toBeTruthy();
+		expect(screen.queryByRole("heading", { name: "Review import" })).toBeNull();
+		expect(document.getElementById("recipe-import-cancel")).toBeNull();
+		expect(
+			(screen.getByRole("button", { name: "Review recipe" }) as HTMLButtonElement).disabled,
+		).toBe(true);
+
+		fireEvent.keyDown(window, { key: "Escape" });
+		await waitFor(() => expect(screen.queryByRole("heading", { name: "Edit recipe" })).toBeNull());
+		expect(screen.queryByRole("heading", { name: "Review import" })).toBeNull();
+		expect(screen.getByText("Import ready")).toBeTruthy();
+
+		fireEvent.click(screen.getByRole("button", { name: "Review recipe" }));
+		expect(await screen.findByRole("heading", { name: "Review import" })).toBeTruthy();
+		expect(store.recipes).toHaveLength(1);
+	});
+
 	it("aborts the signal passed into extraction when cancel arrives during reading", async () => {
 		let seen: AbortSignal | null = null;
 		const session = startImportSession({

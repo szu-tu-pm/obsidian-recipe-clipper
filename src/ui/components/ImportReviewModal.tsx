@@ -133,8 +133,8 @@ export function ImportReviewModal({
 				)}
 				{result.warnings.length > 0 ? (
 					<ul className="recipe-clipper-review-warnings">
-						{result.warnings.map((warning) => (
-							<li key={warning}>{warning}</li>
+						{result.warnings.map((warning, index) => (
+							<li key={`${warning}-${index}`}>{warning}</li>
 						))}
 					</ul>
 				) : null}
