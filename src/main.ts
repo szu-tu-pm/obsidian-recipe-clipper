@@ -8,6 +8,7 @@ import {
 import { AttachmentManager } from "./domain/vault/attachmentManager";
 import { RecipeIndexer } from "./domain/vault/recipeIndexer";
 import { RecipeRepository } from "./domain/vault/recipeRepository";
+import { ShoppingListRepository } from "./domain/vault/shoppingListRepository";
 import type { FrontmatterCachePort, VaultPort } from "./domain/vault/vaultPort";
 import {
 	DEFAULT_SETTINGS,
@@ -26,6 +27,7 @@ export default class RecipePlugin extends Plugin {
 	private adapter: PluginServiceAdapter | null = null;
 	private indexer: RecipeIndexer | null = null;
 	private repository: RecipeRepository | null = null;
+	private shoppingLists: ShoppingListRepository | null = null;
 	private attachments: AttachmentManager | null = null;
 	private vaultPort: VaultPort | null = null;
 	private frontmatterCache: FrontmatterCachePort | null = null;
@@ -48,6 +50,11 @@ export default class RecipePlugin extends Plugin {
 			obsidianYamlCodec,
 			this.indexer,
 			this.settings.recipesFolder,
+		);
+		this.shoppingLists = new ShoppingListRepository(
+			this.vaultPort,
+			obsidianYamlCodec,
+			this.settings.shoppingListsFolder,
 		);
 		this.attachments = new AttachmentManager(
 			this.vaultPort,
@@ -100,6 +107,7 @@ export default class RecipePlugin extends Plugin {
 		this.adapter = null;
 		this.indexer = null;
 		this.repository = null;
+		this.shoppingLists = null;
 		this.attachments = null;
 		this.vaultPort = null;
 		this.frontmatterCache = null;
@@ -144,6 +152,7 @@ export default class RecipePlugin extends Plugin {
 	private applyFolderSettings(): void {
 		this.indexer?.configure(this.settings.recipesFolder, this.settings.attachmentsFolder);
 		this.repository?.configure(this.settings.recipesFolder);
+		this.shoppingLists?.configure(this.settings.shoppingListsFolder);
 		this.attachments?.configure(this.settings.attachmentsFolder);
 		if (this.vaultPort) {
 			this.frontmatterCache = createObsidianFrontmatterCache(
@@ -175,6 +184,24 @@ export default class RecipePlugin extends Plugin {
 				return this.repository.save(recipe);
 			},
 			deleteRecipe: (id) => this.repository?.remove(id) ?? Promise.resolve(),
+			saveShoppingList: (list) => {
+				if (!this.shoppingLists) {
+					return Promise.reject(new Error("Shopping list repository is unavailable."));
+				}
+				return this.shoppingLists.save(list);
+			},
+			listShoppingLists: () => this.shoppingLists?.list() ?? Promise.resolve([]),
+			loadShoppingList: (id) => {
+				if (!this.shoppingLists) {
+					return Promise.resolve({
+						ok: false,
+						path: "",
+						message: "Shopping list repository is unavailable.",
+						raw: null,
+					});
+				}
+				return this.shoppingLists.loadById(id);
+			},
 			addImage: (recipeId, filename, data, existing) => {
 				if (!this.attachments) {
 					return Promise.reject(new Error("Attachment manager is unavailable."));

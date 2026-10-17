@@ -1,6 +1,8 @@
 import type { RecipeDocument, RecipeImage } from "../domain/schema/recipeSchema";
+import type { ShoppingListDocument } from "../domain/schema/shoppingListSchema";
 import type { RecipeIndexEntry } from "../domain/vault/recipeIndexer";
 import type { RecipeLoadResult } from "../domain/vault/recipeRepository";
+import type { ShoppingListLoadResult } from "../domain/vault/shoppingListRepository";
 import { DEFAULT_SETTINGS, type RecipePluginSettings } from "../pluginSettings";
 
 export type VaultChangeKind = "create" | "modify" | "delete" | "rename" | "metadata";
@@ -18,6 +20,9 @@ export interface RecipeWorkspace {
 	loadRecipe(id: string): Promise<RecipeLoadResult>;
 	saveRecipe(recipe: RecipeDocument): Promise<RecipeDocument>;
 	deleteRecipe(id: string): Promise<void>;
+	saveShoppingList(list: ShoppingListDocument): Promise<ShoppingListDocument>;
+	loadShoppingList(id: string): Promise<ShoppingListLoadResult>;
+	listShoppingLists(): Promise<ShoppingListDocument[]>;
 	addImage(
 		recipeId: string,
 		filename: string,
@@ -38,6 +43,9 @@ export interface PluginServices {
 	loadRecipe(id: string): Promise<RecipeLoadResult>;
 	saveRecipe(recipe: RecipeDocument): Promise<RecipeDocument | null>;
 	deleteRecipe(id: string): Promise<void>;
+	saveShoppingList(list: ShoppingListDocument): Promise<ShoppingListDocument | null>;
+	loadShoppingList(id: string): Promise<ShoppingListLoadResult>;
+	listShoppingLists(): Promise<ShoppingListDocument[]>;
 	addRecipeImage(
 		recipeId: string,
 		filename: string,
@@ -145,6 +153,47 @@ export class PluginServiceAdapter implements PluginServices {
 			this.emitRecipeListeners();
 		} catch (error) {
 			this.host.logError("Failed to delete recipe", error);
+		}
+	}
+
+	async saveShoppingList(list: ShoppingListDocument): Promise<ShoppingListDocument | null> {
+		if (this.disposed || !this.workspace) {
+			return null;
+		}
+		try {
+			return await this.workspace.saveShoppingList(list);
+		} catch (error) {
+			this.host.logError("Failed to save shopping list", error);
+			return null;
+		}
+	}
+
+	async listShoppingLists(): Promise<ShoppingListDocument[]> {
+		if (this.disposed || !this.workspace) {
+			return [];
+		}
+		try {
+			return await this.workspace.listShoppingLists();
+		} catch (error) {
+			this.host.logError("Failed to list shopping lists", error);
+			return [];
+		}
+	}
+
+	async loadShoppingList(id: string): Promise<ShoppingListLoadResult> {
+		if (this.disposed || !this.workspace) {
+			return { ok: false, path: "", message: "Recipe workspace is unavailable.", raw: null };
+		}
+		try {
+			return await this.workspace.loadShoppingList(id);
+		} catch (error) {
+			this.host.logError("Failed to load shopping list", error);
+			return {
+				ok: false,
+				path: "",
+				message: error instanceof Error ? error.message : "Failed to load shopping list.",
+				raw: null,
+			};
 		}
 	}
 

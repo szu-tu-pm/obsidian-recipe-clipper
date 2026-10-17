@@ -3,6 +3,7 @@ import {
 	type RecipeDocument,
 	type RecipeImage,
 } from "../../src/domain/schema/recipeSchema";
+import type { ShoppingListDocument } from "../../src/domain/schema/shoppingListSchema";
 import type { RecipeIndexEntry } from "../../src/domain/vault/recipeIndexer";
 import { DEFAULT_SETTINGS, type RecipePluginSettings } from "../../src/pluginSettings";
 import type {
@@ -13,6 +14,7 @@ import type {
 export interface MockRecipeStore {
 	recipes: RecipeDocument[];
 	settings: RecipePluginSettings;
+	shoppingLists?: ShoppingListDocument[];
 }
 
 function indexEntry(recipe: RecipeDocument): RecipeIndexEntry {
@@ -33,6 +35,7 @@ function indexEntry(recipe: RecipeDocument): RecipeIndexEntry {
 
 export interface MockPluginServices extends PluginServices {
 	removedImages: string[];
+	shoppingLists: ShoppingListDocument[];
 }
 
 export function createMockPluginServices(
@@ -43,6 +46,8 @@ export function createMockPluginServices(
 	const vaultListeners = new Set<VaultChangeListener>();
 	const urls = new Map<string, string>();
 	const removedImages: string[] = [];
+	const shoppingLists = store.shoppingLists ?? [];
+	store.shoppingLists = shoppingLists;
 	let recipeSnapshot: RecipeIndexEntry[] = store.recipes.map(indexEntry);
 
 	function emitRecipes(): void {
@@ -94,6 +99,33 @@ export function createMockPluginServices(
 			store.recipes = store.recipes.filter((item) => item.frontmatter.id !== id);
 			emitRecipes();
 		},
+		saveShoppingList: async (list) => {
+			const saved: ShoppingListDocument = {
+				...list,
+				path: list.path ?? `Shopping Lists/${list.frontmatter.title}.md`,
+				frontmatter: {
+					...list.frontmatter,
+					updatedAt: new Date().toISOString(),
+				},
+			};
+			const index = shoppingLists.findIndex(
+				(item) => item.frontmatter.id === saved.frontmatter.id,
+			);
+			if (index === -1) {
+				shoppingLists.push(saved);
+			} else {
+				shoppingLists[index] = saved;
+			}
+			return saved;
+		},
+		loadShoppingList: async (id) => {
+			const list = shoppingLists.find((item) => item.frontmatter.id === id);
+			if (!list) {
+				return { ok: false, path: "", message: `Missing shopping list ${id}`, raw: null };
+			}
+			return { ok: true, list };
+		},
+		listShoppingLists: async () => [...shoppingLists],
 		addRecipeImage: async (_recipeId, filename, _data, existing) => {
 			if (existing.length >= 5) {
 				return null;
@@ -114,6 +146,7 @@ export function createMockPluginServices(
 		getImageUrl: (path) => urls.get(path) ?? null,
 		openSettings: () => {},
 		removedImages,
+		shoppingLists,
 	};
 }
 
