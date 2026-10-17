@@ -5,6 +5,7 @@ node_modules/
 # Do not commit main.js; Obsidian loads it from the plugin folder after a build.
 main.js
 *.js.map
+coverage/
 
 # Local secrets and vault data
 .env

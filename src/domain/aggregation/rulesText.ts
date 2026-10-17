@@ -1,9 +1,13 @@
-/** Lowercase, treat hyphens as spaces, and collapse punctuation so rule lookup is stable. */
+/**
+ * Fold accents, lowercase, treat hyphens as spaces, and collapse punctuation
+ * so rule lookup stays stable for words like jalapeño and crème fraîche.
+ */
 export function normalizePhrase(value: string): string {
-	return value
+	const folded = value.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+	return folded
 		.toLowerCase()
 		.replace(/-/g, " ")
-		.replace(/[^a-z0-9\s]/g, " ")
+		.replace(/[^\p{L}\p{N}\s]/gu, " ")
 		.replace(/\s+/g, " ")
 		.trim();
 }

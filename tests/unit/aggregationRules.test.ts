@@ -139,6 +139,10 @@ describe("aggregation rules", () => {
 		expect(paprika.mergeRuleId).toBe("v1.merge-same-dimension");
 		expect(paprika.canonicalId).toBe("name:paprika");
 
+		const [peppers] = pair("1 tsp jalapeño", "2 tsp jalapeno");
+		expect(peppers.quantity).toBe(3);
+		expect(peppers.canonicalId).toBe("name:jalapeno");
+
 		const smoked = pair("1 tsp paprika", "1 tsp smoked paprika");
 		expect(smoked).toHaveLength(2);
 		expect(smoked.every((row) => row.sourceRefs.length === 1)).toBe(true);
@@ -194,6 +198,9 @@ describe("aggregation rules", () => {
 		expect(containsPhrase("fresh cilantro", "")).toBe(false);
 		expect(removePhrase("onion diced", "")).toBe("onion diced");
 		expect(normalizePhrase("Bone-in")).toBe("bone in");
+		expect(normalizePhrase("jalapeño")).toBe("jalapeno");
+		expect(normalizePhrase("crème fraîche")).toBe("creme fraiche");
+		expect(normalizePhrase("Gruyère")).toBe("gruyere");
 		expect(collectPhrases(["", "  ", "Bone-in", "fresh"])).toEqual(["bone in", "fresh"]);
 
 		const blank = parseIngredientLine("1 tsp salt");
