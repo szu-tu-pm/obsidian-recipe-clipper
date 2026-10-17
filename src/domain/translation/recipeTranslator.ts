@@ -129,11 +129,18 @@ export function translationBase(recipe: RecipeDocument): TranslationBase {
 	};
 }
 
-/** Fingerprint of the displayed title, ingredient lines (with ids) and steps. */
+/**
+ * Fingerprint of everything revert replaces: the title, every field of every
+ * ingredient (keys sorted, so stored key order does not matter) and the steps. Notes,
+ * rating and images are not part of it.
+ */
 function displayedHash(title: string, ingredients: RecipeIngredient[], instructions: string[]): string {
-	return fnv1aHex(
-		JSON.stringify([title, ingredients.map((item) => [item.id, item.raw]), instructions]),
+	const fields = ingredients.map((item) =>
+		Object.keys(item)
+			.sort()
+			.map((key) => [key, item[key as keyof RecipeIngredient]]),
 	);
+	return fnv1aHex(JSON.stringify([title, fields, instructions]));
 }
 
 /** True when the title, ingredients or steps changed after the translation was accepted. */
@@ -239,6 +246,9 @@ interface Quantity {
 	value: string;
 	/** The unit word right after the quantity, as written (case kept). */
 	unit: string | null;
+	/** Character span of the amount in the text. */
+	start: number;
+	end: number;
 }
 
 function lex(text: string): Token[] {
@@ -292,6 +302,7 @@ export function readQuantities(text: string): Quantity[] {
 	const found: Quantity[] = [];
 	for (let index = 0; index < tokens.length; index++) {
 		const token = tokens[index];
+		const start = token.start;
 		const word = token.text.toLowerCase();
 		let value: string | null = null;
 		if (token.numeric) {
@@ -312,7 +323,7 @@ export function readQuantities(text: string): Quantity[] {
 			value = "1";
 		}
 		if (value !== null) {
-			found.push({ value, unit: unitAfter(text, tokens, index) });
+			found.push({ value, unit: unitAfter(text, tokens, index), start, end: tokens[index].end });
 		}
 	}
 	return found;
@@ -376,8 +387,28 @@ function checkLine(label: string, original: string, translated: string, problems
 	}
 }
 
+const RANGE_JOINT = /^\s*(?:-|\u2013|\u2014|to)\s*$/i;
+
+/**
+ * Each amount with the unit that follows it (or none). A range ("1-3 tbsp",
+ * "1 to 3 tbsp", "1–3 tbsp") is one item, so both ends are paired with its unit.
+ */
 function amountUnitPairs(text: string): string[] {
-	return readQuantities(text).map((item) => (item.unit ? `${item.value} ${item.unit}` : item.value));
+	const amounts = readQuantities(text);
+	const pairs: string[] = [];
+	for (let index = 0; index < amounts.length; index++) {
+		const low = amounts[index];
+		const high = amounts[index + 1];
+		let item = low;
+		let value = low.value;
+		if (!low.unit && high && RANGE_JOINT.test(text.slice(low.end, high.start))) {
+			item = high;
+			value = `${low.value}-${high.value}`;
+			index++;
+		}
+		pairs.push(item.unit ? `${value} ${item.unit}` : value);
+	}
+	return pairs;
 }
 
 /**

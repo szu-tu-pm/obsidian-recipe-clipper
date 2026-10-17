@@ -222,6 +222,45 @@ describe("TranslateRecipeModal", () => {
 		expect(await stored()).toEqual(snapshot);
 	});
 
+	it("asks before a revert discards a structured-field edit (same id and text), and cancel keeps it", async () => {
+		const translated = applyTranslation(shrimpRecipe(), FRENCH, "French");
+		const edited: RecipeDocument = {
+			...translated,
+			frontmatter: {
+				...translated.frontmatter,
+				ingredients: translated.frontmatter.ingredients.map((item, index) =>
+					index === 2 ? { ...item, quantity: 6 } : item,
+				),
+			},
+		};
+		const { save, stored } = setup(vi.fn() as unknown as typeof fetch, edited);
+		const dialog = await openTranslate("Spanish");
+		fireEvent.click(within(dialog).getByRole("button", { name: "Restore original" }));
+		const confirm = await screen.findByRole("dialog", { name: "Discard edits?" });
+		fireEvent.click(within(confirm).getByRole("button", { name: "Cancel" }));
+		expect(save).not.toHaveBeenCalled();
+		expect((await stored()).frontmatter.ingredients[2].quantity).toBe(6);
+	});
+
+	it("does not ask before reverting when only notes, rating or images changed", async () => {
+		const translated = applyTranslation(shrimpRecipe(), FRENCH, "French");
+		const cosmetic: RecipeDocument = {
+			...translated,
+			notes: "New notes.",
+			frontmatter: { ...translated.frontmatter, rating: 1, images: [] },
+		};
+		const { stored } = setup(vi.fn() as unknown as typeof fetch, cosmetic);
+		const dialog = await openTranslate("Spanish");
+		fireEvent.click(within(dialog).getByRole("button", { name: "Restore original" }));
+		await screen.findByText("Original recipe text restored.");
+		expect(screen.queryByRole("dialog", { name: "Discard edits?" })).toBeNull();
+		const after = await stored();
+		expect(after.frontmatter.ingredients).toEqual(shrimpRecipe().frontmatter.ingredients);
+		expect(after.notes).toBe("New notes.");
+		expect(after.frontmatter.rating).toBe(1);
+		expect(after.frontmatter.images).toEqual([]);
+	});
+
 	it("after confirming, a revert writes back exactly the stored original", async () => {
 		const original = shrimpRecipe();
 		const { stored } = setup(vi.fn() as unknown as typeof fetch, editedTranslation());

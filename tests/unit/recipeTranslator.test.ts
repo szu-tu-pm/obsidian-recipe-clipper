@@ -149,7 +149,7 @@ describe("translation guards", () => {
 			byCategory.set(response.category, row);
 		}
 		expect(Object.fromEntries(byCategory)).toEqual({
-			valid: { total: 6, matched: 6 },
+			valid: { total: 7, matched: 7 },
 			"add-step": { total: 2, matched: 2 },
 			"change-amount": { total: 3, matched: 3 },
 			"change-unit": { total: 2, matched: 2 },
@@ -159,7 +159,7 @@ describe("translation guards", () => {
 			reorder: { total: 2, matched: 2 },
 			"missing-id": { total: 2, matched: 2 },
 			malformed: { total: 3, matched: 3 },
-			"pair-swap": { total: 2, matched: 2 },
+			"pair-swap": { total: 3, matched: 3 },
 		});
 	});
 
@@ -231,6 +231,27 @@ describe("translation guards", () => {
 				}
 				const instructions = swapIn(r.instructions);
 				return instructions ? { ...r, instructions } : null;
+			},
+			"swap the lower ends of two ranges with different units": (r) => {
+				const swapLows = (text: string): string | null => {
+					const ranges = [...text.matchAll(/(\d+)-(\d+)\s+(cups?|tbsp|tsp|lb)\b/g)];
+					const [a, b] = ranges;
+					if (!a || !b || a[1] === b[1] || a[3] === b[3]) {
+						return null;
+					}
+					const ia = a.index ?? 0;
+					const ib = b.index ?? 0;
+					return text.slice(0, ia) + b[1] + text.slice(ia + a[1].length, ib) + a[1] + text.slice(ib + b[1].length);
+				};
+				const index = r.ingredients.findIndex((item) => swapLows(item.text) !== null);
+				return index < 0
+					? null
+					: {
+							...r,
+							ingredients: r.ingredients.map((item, i) =>
+								i === index ? { ...item, text: swapLows(item.text) as string } : item,
+							),
+						};
 			},
 			"drop an id": (r) => ({
 				...r,
@@ -545,6 +566,50 @@ describe("edits after translating", () => {
 		expect(reverted.instructions).toEqual(["Stir.", "Add the garlic and cook for 1 minute.", "Stir."]);
 		expect(reverted.frontmatter.ingredients).toEqual(recipe.frontmatter.ingredients);
 		expect(reverted.frontmatter.title).toBe(recipe.frontmatter.title);
+	});
+
+	it("the edit fingerprint covers structured ingredient fields but not notes, rating or images", () => {
+		const translated = french();
+		const withQuantity: RecipeDocument = {
+			...translated,
+			frontmatter: {
+				...translated.frontmatter,
+				ingredients: translated.frontmatter.ingredients.map((item, i) =>
+					i === 2 ? { ...item, quantity: 6 } : item,
+				),
+			},
+		};
+		expect(withQuantity.frontmatter.ingredients[2].id).toBe(translated.frontmatter.ingredients[2].id);
+		expect(withQuantity.frontmatter.ingredients[2].raw).toBe(translated.frontmatter.ingredients[2].raw);
+		expect(hasEditsSinceTranslation(withQuantity)).toBe(true);
+		for (const field of ["name", "unit", "preparation", "canonicalId"] as const) {
+			const changed: RecipeDocument = {
+				...translated,
+				frontmatter: {
+					...translated.frontmatter,
+					ingredients: translated.frontmatter.ingredients.map((item, i) =>
+						i === 2 ? { ...item, [field]: "changed" } : item,
+					),
+				},
+			};
+			expect(hasEditsSinceTranslation(changed), field).toBe(true);
+		}
+
+		const cosmetic: RecipeDocument = {
+			...translated,
+			notes: "New notes.",
+			frontmatter: {
+				...translated.frontmatter,
+				rating: 1,
+				images: [],
+			},
+		};
+		expect(hasEditsSinceTranslation(cosmetic)).toBe(false);
+		// Revert keeps notes, rating and images while restoring the original text.
+		const reverted = revertTranslation(cosmetic);
+		expect(reverted.notes).toBe("New notes.");
+		expect(reverted.frontmatter.rating).toBe(1);
+		expect(reverted.frontmatter.images).toEqual([]);
 	});
 
 	it("an edited title or added step counts as an edit and is discarded by revert", () => {

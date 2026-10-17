@@ -40,6 +40,25 @@
         }
       ]
     },
+    "dough": {
+      "title": "Oil Dough",
+      "ingredients": [
+        {
+          "id": "ing_0000000000000000000000DO01",
+          "text": "1-3 tbsp oil and 2-4 cups flour"
+        },
+        {
+          "id": "ing_0000000000000000000000DO02",
+          "text": "1 tsp salt"
+        }
+      ],
+      "instructions": [
+        {
+          "step": 1,
+          "text": "Mix everything."
+        }
+      ]
+    },
     "batter": {
       "title": "Simple Batter",
       "ingredients": [
@@ -424,6 +443,59 @@
           {
             "step": 2,
             "text": "Incorporer 2 cups de farine et le sel."
+          }
+        ]
+      }
+    },
+    {
+      "id": "valid-dough-french-ranges",
+      "category": "valid",
+      "source": "dough",
+      "language": "French",
+      "expect": "ready",
+      "output": {
+        "title": "Pâte à l'huile",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000DO01",
+            "text": "1-3 tbsp huile et 2-4 cups farine"
+          },
+          {
+            "id": "ing_0000000000000000000000DO02",
+            "text": "1 tsp sel"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Tout mélanger."
+          }
+        ]
+      }
+    },
+    {
+      "id": "pair-swap-range-low-ends",
+      "category": "pair-swap",
+      "source": "dough",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Ingredient 1 changed which amount goes with which unit (1-3 tbsp 2-4 cups → 2-3 tbsp 1-4 cups).",
+      "output": {
+        "title": "Pâte à l'huile",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000DO01",
+            "text": "2-3 tbsp huile et 1-4 cups farine"
+          },
+          {
+            "id": "ing_0000000000000000000000DO02",
+            "text": "1 tsp sel"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Tout mélanger."
           }
         ]
       }
