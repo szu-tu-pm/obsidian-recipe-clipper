@@ -95,6 +95,8 @@ Before another round, triage with the user instead of looping when:
 
 After round 2 still fails → step 7. Only the user can authorize an extra round for a specific task; record that on the PR.
 
+Reviews of user-authorized extra rounds are **verify-only**: the reviewer confirms each listed finding is fixed, with a test and a mutation, and checks the code the fix touched for regressions. It does not hunt for new edge cases elsewhere. A full review of a guard-style feature finds a smaller edge case every round (P2-8: word amounts, then pairs, then range endpoints). The extra rounds exist to close known findings, not to restart the search. Further edge cases go in the PR comment as minors or follow-ups.
+
 The cross-review is Lin's audit (Lin does not use Antigravity). On pass: `gh pr ready <n>`, `gh pr edit <n> --add-reviewer szu-tu-pm`, tick the "**Lin**'s audit: the Claude/Codex cross-review passes…" box in the task page's acceptance checklist with a link to the passing PR comment, and add a Notion comment "AI cross-review passed (Lin's audit); awaiting Greg Szu-Tu sign-off." When a task goes Blocked, Lin takes over the audit by hand.
 
 ## 7. Blocked
