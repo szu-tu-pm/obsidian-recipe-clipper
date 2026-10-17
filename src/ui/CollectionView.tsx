@@ -63,6 +63,10 @@ export function CollectionView({
 	const [progress, setProgress] = useState<ImportSessionSnapshot | null>(null);
 	const sessionRef = useRef<ImportSession | null>(null);
 	const stopSession = useRef<(() => void) | null>(null);
+	const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const saveRevision = useRef(0);
+	const saveQueue = useRef(Promise.resolve());
+	const pendingSave = useRef<{ list: ShoppingListDocument; revision: number } | null>(null);
 	const importing = progress?.phase === "fetching" || progress?.phase === "extracting";
 
 	const visible = useMemo(
@@ -118,6 +122,12 @@ export function CollectionView({
 
 	useEffect(() => {
 		return () => {
+			if (saveTimer.current && pendingSave.current) {
+				clearTimeout(saveTimer.current);
+				const pending = pendingSave.current;
+				pendingSave.current = null;
+				void services.saveShoppingList(pending.list);
+			}
 			sessionRef.current?.cancel();
 			stopSession.current?.();
 			stopSession.current = null;
@@ -210,18 +220,60 @@ export function CollectionView({
 		return createShoppingListFromRecipes(loaded);
 	}
 
-	async function persistShoppingList(next: ShoppingListDocument): Promise<void> {
-		setShoppingList(next);
+	async function writeShoppingList(next: ShoppingListDocument, revision: number): Promise<void> {
 		const saved = await services.saveShoppingList(next);
 		if (!saved) {
-			setStatus("Could not save the shopping list.");
+			if (saveRevision.current === revision) {
+				setStatus("Could not save the shopping list.");
+			}
 			return;
 		}
-		setShoppingList((current) =>
-			current?.frontmatter.id === saved.frontmatter.id ? saved : current,
-		);
+		if (saveRevision.current === revision) {
+			setShoppingList((current) =>
+				current?.frontmatter.id === saved.frontmatter.id ? saved : current,
+			);
+			setStatus(null);
+		}
 		setSavedLists(await services.listShoppingLists());
-		setStatus(null);
+	}
+
+	function scheduleShoppingListWrite(next: ShoppingListDocument, revision: number): void {
+		saveQueue.current = saveQueue.current
+			.then(() => writeShoppingList(next, revision))
+			.catch(() => undefined);
+	}
+
+	function persistShoppingList(next: ShoppingListDocument, immediate = false): void {
+		const revision = saveRevision.current + 1;
+		saveRevision.current = revision;
+		pendingSave.current = { list: next, revision };
+		setShoppingList(next);
+		if (saveTimer.current) {
+			clearTimeout(saveTimer.current);
+			saveTimer.current = null;
+		}
+		const start = (): void => {
+			if (pendingSave.current?.revision === revision) {
+				pendingSave.current = null;
+			}
+			scheduleShoppingListWrite(next, revision);
+		};
+		if (immediate) {
+			start();
+			return;
+		}
+		saveTimer.current = setTimeout(start, 300);
+	}
+
+	function flushShoppingList(): void {
+		if (!saveTimer.current || !pendingSave.current) {
+			return;
+		}
+		clearTimeout(saveTimer.current);
+		saveTimer.current = null;
+		const pending = pendingSave.current;
+		pendingSave.current = null;
+		scheduleShoppingListWrite(pending.list, pending.revision);
 	}
 
 	async function createShoppingList(): Promise<void> {
@@ -231,7 +283,7 @@ export function CollectionView({
 			if (!draft) {
 				return;
 			}
-			await persistShoppingList(draft);
+			await persistShoppingList(draft, true);
 			setRegenerateOpen(false);
 		} finally {
 			setGenerating(false);
@@ -248,7 +300,7 @@ export function CollectionView({
 			if (!draft) {
 				return;
 			}
-			await persistShoppingList(replaceShoppingListContents(shoppingList, draft));
+			await persistShoppingList(replaceShoppingListContents(shoppingList, draft), true);
 			setRegenerateOpen(false);
 		} finally {
 			setGenerating(false);
@@ -259,6 +311,7 @@ export function CollectionView({
 		if (selected.size === 0 || generating) {
 			return;
 		}
+		flushShoppingList();
 		if (shoppingList) {
 			setRegenerateOpen(true);
 			return;
@@ -496,10 +549,15 @@ export function CollectionView({
 			{shoppingList ? (
 				<ShoppingListView
 					list={shoppingList}
-					onChange={(next) => {
-						void persistShoppingList(next);
+					refreshDisabled={selected.size === 0 || generating}
+					onEdit={(next) => persistShoppingList(next)}
+					onCommit={(next) => persistShoppingList(next, true)}
+					onFlush={flushShoppingList}
+					onRefresh={requestGenerate}
+					onClose={() => {
+						flushShoppingList();
+						setShoppingList(null);
 					}}
-					onClose={() => setShoppingList(null)}
 				/>
 			) : null}
 

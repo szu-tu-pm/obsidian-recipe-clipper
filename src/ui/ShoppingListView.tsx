@@ -13,11 +13,19 @@ import { useEscapeToClose } from "./useEscapeToClose";
 
 export function ShoppingListView({
 	list,
-	onChange,
+	refreshDisabled = false,
+	onEdit,
+	onCommit,
+	onFlush,
+	onRefresh,
 	onClose,
 }: {
 	list: ShoppingListDocument;
-	onChange: (list: ShoppingListDocument) => void;
+	refreshDisabled?: boolean;
+	onEdit: (list: ShoppingListDocument) => void;
+	onCommit: (list: ShoppingListDocument) => void;
+	onFlush: () => void;
+	onRefresh: () => void;
 	onClose: () => void;
 }): JSX.Element {
 	const titleId = useId();
@@ -31,21 +39,31 @@ export function ShoppingListView({
 		(item) => !neededOnly || item.status === "need" || item.status === "partial",
 	);
 
-	function commit(items: ShoppingListItem[]): void {
-		onChange({
+	function commit(items: ShoppingListItem[], immediate: boolean): void {
+		const next = {
 			...list,
 			frontmatter: {
 				...list.frontmatter,
 				items,
 			},
-		});
+		};
+		if (immediate) {
+			onCommit(next);
+			return;
+		}
+		onEdit(next);
 	}
 
-	function updateItem(item: ShoppingListItem, patch: Parameters<typeof applyPantryEdit>[1]): void {
+	function updateItem(
+		item: ShoppingListItem,
+		patch: Parameters<typeof applyPantryEdit>[1],
+		immediate = false,
+	): void {
 		commit(
 			list.frontmatter.items.map((candidate) =>
 				candidate.id === item.id ? applyPantryEdit(candidate, patch) : candidate,
 			),
+			immediate,
 		);
 	}
 
@@ -59,10 +77,13 @@ export function ShoppingListView({
 		if (quantityText !== "" && (quantity == null || !Number.isFinite(quantity) || quantity < 0)) {
 			return;
 		}
-		commit([
-			...list.frontmatter.items,
-			createManualShoppingItem(name, quantity, draftUnit.trim() || null),
-		]);
+		commit(
+			[
+				...list.frontmatter.items,
+				createManualShoppingItem(name, quantity, draftUnit.trim() || null),
+			],
+			true,
+		);
 		setDraftName("");
 		setDraftQuantity("");
 		setDraftUnit("");
@@ -78,9 +99,24 @@ export function ShoppingListView({
 			>
 				<header className="recipe-clipper-collection-header">
 					<h3 id={titleId}>{list.frontmatter.title}</h3>
-					<button type="button" onClick={onClose}>
-						Close
-					</button>
+					<div className="recipe-clipper-row-actions">
+						<button
+							type="button"
+							aria-label="Refresh shopping list"
+							disabled={refreshDisabled}
+							title={
+								refreshDisabled
+									? "Select recipes to refresh this list"
+									: "Refresh this list from the selected recipes"
+							}
+							onClick={onRefresh}
+						>
+							Refresh
+						</button>
+						<button type="button" onClick={onClose}>
+							Close
+						</button>
+					</div>
 				</header>
 				<p className="recipe-clipper-hint">
 					Availability is saved on this list. Editing or deleting a recipe does not change it.
@@ -101,9 +137,14 @@ export function ShoppingListView({
 							<ShoppingListRow
 								key={item.id}
 								item={item}
-								onChange={(patch) => updateItem(item, patch)}
+								onEdit={(patch) => updateItem(item, patch)}
+								onCommit={(patch) => updateItem(item, patch, true)}
+								onFlush={onFlush}
 								onDelete={() =>
-									commit(list.frontmatter.items.filter((candidate) => candidate.id !== item.id))
+									commit(
+										list.frontmatter.items.filter((candidate) => candidate.id !== item.id),
+										true,
+									)
 								}
 							/>
 						))}
@@ -151,13 +192,18 @@ export function ShoppingListView({
 
 function ShoppingListRow({
 	item,
-	onChange,
+	onEdit,
+	onCommit,
+	onFlush,
 	onDelete,
 }: {
 	item: ShoppingListItem;
-	onChange: (patch: Parameters<typeof applyPantryEdit>[1]) => void;
+	onEdit: (patch: Parameters<typeof applyPantryEdit>[1]) => void;
+	onCommit: (patch: Parameters<typeof applyPantryEdit>[1]) => void;
+	onFlush: () => void;
 	onDelete: () => void;
 }): JSX.Element {
+	const [nameDraft, setNameDraft] = useState(item.name);
 	const label = itemAccessibleName(item);
 	const availability = pantryDisplay(item);
 	const statusLabel = AVAILABILITY_LABELS[item.status];
@@ -168,11 +214,19 @@ function ShoppingListRow({
 					Name
 					<input
 						aria-label={`Name for ${label}`}
-						value={item.name}
+						value={nameDraft}
 						onChange={(event) => {
-							if (event.target.value.trim()) {
-								onChange({ name: event.target.value });
+							const value = event.target.value;
+							setNameDraft(value);
+							if (value.trim()) {
+								onEdit({ name: value });
 							}
+						}}
+						onBlur={(event) => {
+							if (!event.currentTarget.value.trim()) {
+								setNameDraft(item.name);
+							}
+							onFlush();
 						}}
 					/>
 				</label>
@@ -185,8 +239,9 @@ function ShoppingListRow({
 						step="any"
 						value={item.requiredQuantity ?? ""}
 						onChange={(event) =>
-							onChange({ requiredQuantity: numberOrNull(event.target.value) })
+							onEdit({ requiredQuantity: numberOrNull(event.target.value) })
 						}
+						onBlur={onFlush}
 					/>
 				</label>
 				<label>
@@ -194,7 +249,8 @@ function ShoppingListRow({
 					<input
 						aria-label={`Required unit for ${label}`}
 						value={item.requiredUnit ?? ""}
-						onChange={(event) => onChange({ requiredUnit: event.target.value || null })}
+						onChange={(event) => onEdit({ requiredUnit: event.target.value || null })}
+						onBlur={onFlush}
 					/>
 				</label>
 			</div>
@@ -202,7 +258,7 @@ function ShoppingListRow({
 				<button
 					type="button"
 					aria-label={`${label}: ${statusLabel}`}
-					onClick={() => onChange({ status: nextAvailabilityStatus(item.status) })}
+					onClick={() => onCommit({ status: nextAvailabilityStatus(item.status) })}
 				>
 					{statusLabel}
 				</button>
@@ -214,7 +270,8 @@ function ShoppingListRow({
 						min="0"
 						step="any"
 						value={item.ownedQuantity ?? ""}
-						onChange={(event) => onChange({ ownedQuantity: numberOrNull(event.target.value) })}
+						onChange={(event) => onEdit({ ownedQuantity: numberOrNull(event.target.value) })}
+						onBlur={onFlush}
 					/>
 				</label>
 				<label>
@@ -222,7 +279,8 @@ function ShoppingListRow({
 					<input
 						aria-label={`On hand unit for ${label}`}
 						value={item.ownedUnit ?? ""}
-						onChange={(event) => onChange({ ownedUnit: event.target.value || null })}
+						onChange={(event) => onEdit({ ownedUnit: event.target.value || null })}
+						onBlur={onFlush}
 					/>
 				</label>
 				<button type="button" onClick={onDelete}>

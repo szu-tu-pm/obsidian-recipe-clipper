@@ -181,7 +181,7 @@ describe("shopping list editor", () => {
 
 		const savedId = services.shoppingLists[0]?.frontmatter.id;
 		expect(savedId).toBeTruthy();
-		fireEvent.click(screen.getByRole("button", { name: "Generate shopping list" }));
+		fireEvent.click(screen.getByRole("button", { name: "Refresh shopping list" }));
 		const confirm = await screen.findByRole("dialog", { name: "Replace this shopping list?" });
 		fireEvent.click(within(confirm).getByRole("button", { name: "Create new list" }));
 		await waitFor(() => {
@@ -198,7 +198,7 @@ describe("shopping list editor", () => {
 		expect(original.list.frontmatter.items.find((item) => item.name === "paper towels")).toBeTruthy();
 
 		const openId = services.shoppingLists[1]?.frontmatter.id;
-		fireEvent.click(screen.getByRole("button", { name: "Generate shopping list" }));
+		fireEvent.click(screen.getByRole("button", { name: "Refresh shopping list" }));
 		const replace = await screen.findByRole("dialog", { name: "Replace this shopping list?" });
 		fireEvent.click(within(replace).getByRole("button", { name: "Replace this list" }));
 		await waitFor(() => {
@@ -238,5 +238,11 @@ describe("shopping list editor", () => {
 		const reopened = await screen.findByRole("dialog", { name: "Paprika Night, Flour Soup" });
 		expect(within(reopened).getByRole("button", { name: "paprika tsp: Have all" })).toBeTruthy();
 		expect(within(reopened).getByText("Remaining: 2 tsp")).toBeTruthy();
+
+		const name = within(reopened).getByLabelText("Name for paprika tsp");
+		fireEvent.change(name, { target: { value: "" } });
+		expect((name as HTMLInputElement).value).toBe("");
+		fireEvent.blur(name);
+		expect((name as HTMLInputElement).value).toBe("paprika");
 	});
 });
