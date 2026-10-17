@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { AggregatedIngredient } from "../aggregation/aggregator";
 import { aggregateIngredients, type AggregateSource } from "../aggregation/aggregator";
+import { ingredientsForAggregation } from "../translation/recipeTranslator";
 import { canonicalizeMeasure, lookupUnit } from "../aggregation/unitNormalizer";
 import { slugifyTitle, type RecipeDocument } from "./recipeSchema";
 
@@ -236,7 +237,7 @@ export function createShoppingListFromRecipes(
 		recipes.map((recipe) => [recipe.frontmatter.id, recipe.frontmatter.title]),
 	);
 	const sources: AggregateSource[] = recipes.flatMap((recipe) =>
-		recipe.frontmatter.ingredients.map((ingredient) => ({
+		ingredientsForAggregation(recipe).map((ingredient) => ({
 			recipeId: recipe.frontmatter.id,
 			ingredient,
 		})),

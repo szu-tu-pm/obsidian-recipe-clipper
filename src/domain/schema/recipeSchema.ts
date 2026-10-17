@@ -92,6 +92,21 @@ export const ratingSchema = z.union([
 	z.null(),
 ]);
 
+/**
+ * Present only on a translated recipe. Holds the text the translation replaced
+ * so it can be reverted. Optional, so existing files stay valid at schemaVersion 2.
+ */
+export const recipeTranslationSchema = z.object({
+	language: z.string().min(1),
+	translatedAt: z.string().min(1),
+	promptVersion: z.string().min(1),
+	original: z.object({
+		title: z.string().min(1),
+		ingredients: z.array(z.object({ id: ingredientIdSchema, raw: z.string() })),
+		instructions: z.array(z.string()),
+	}),
+});
+
 export const recipeFrontmatterSchema = z.object({
 	schemaVersion: z.literal(RECIPE_SCHEMA_VERSION),
 	type: z.literal(RECIPE_TYPE),
@@ -112,6 +127,8 @@ export const recipeFrontmatterSchema = z.object({
 	images: z.array(recipeImageSchema).max(5).default([]),
 	ingredients: z.array(recipeIngredientSchema).default([]),
 	bodyHash: z.string().optional(),
+	// Keep last: bodyHash is computed over key order, and new keys are appended.
+	translation: recipeTranslationSchema.optional(),
 });
 
 export type ExtractionMethod = z.infer<typeof extractionMethodSchema>;
@@ -121,6 +138,7 @@ export type RecipeImage = z.infer<typeof recipeImageSchema>;
 export type RecipeIngredient = z.infer<typeof recipeIngredientSchema>;
 export type RecipeFrontmatter = z.infer<typeof recipeFrontmatterSchema>;
 export type RecipeRating = z.infer<typeof ratingSchema>;
+export type RecipeTranslation = z.infer<typeof recipeTranslationSchema>;
 
 export interface RecipeDocument {
 	frontmatter: RecipeFrontmatter;

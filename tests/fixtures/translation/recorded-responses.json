@@ -1,0 +1,359 @@
+{
+  "_about": "Hand-written Ollama /api/chat message.content values for translating the source recipe below. Expectations were worked out by hand from the source, not by running the validator. 'output' is serialized to JSON as the model content; 'content' is used verbatim.",
+  "source": {
+    "title": "Garlic Butter Shrimp",
+    "ingredients": [
+      "1 lb shrimp, peeled",
+      "3 tbsp butter (unsalted)",
+      "4 cloves garlic, minced",
+      "½ tsp salt",
+      "1-2 tbsp fresh parsley, chopped"
+    ],
+    "instructions": [
+      "Melt the butter in a large pan over medium heat.",
+      "Add the garlic and cook for 1 minute.",
+      "Add the shrimp and cook 2-3 minutes per side."
+    ]
+  },
+  "responses": [
+    {
+      "id": "valid-french",
+      "category": "valid",
+      "language": "French",
+      "expect": "ready",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          "1 lb crevettes, décortiquées",
+          "3 tbsp beurre (doux)",
+          "4 cloves ail, haché",
+          "½ tsp sel",
+          "1-2 tbsp persil frais, haché"
+        ],
+        "instructions": [
+          "Faire fondre le beurre dans une grande poêle à feu moyen.",
+          "Ajouter l'ail et cuire 1 minute.",
+          "Ajouter les crevettes et cuire 2-3 minutes de chaque côté."
+        ]
+      }
+    },
+    {
+      "id": "valid-spanish-reordered-words",
+      "category": "valid",
+      "language": "Spanish",
+      "expect": "ready",
+      "output": {
+        "title": "Camarones con mantequilla de ajo",
+        "ingredients": [
+          "Camarones pelados: 1 lb",
+          "3 tbsp mantequilla (sin sal)",
+          "4 cloves de ajo, picados",
+          "½ tsp de sal",
+          "Perejil fresco picado, 1-2 tbsp"
+        ],
+        "instructions": [
+          "Derrite la mantequilla en una sartén grande a fuego medio.",
+          "Agrega el ajo y cocina durante 1 minuto.",
+          "Agrega los camarones y cocina de 2-3 minutos por lado."
+        ]
+      }
+    },
+    {
+      "id": "valid-japanese-code-fenced",
+      "category": "valid",
+      "language": "Japanese",
+      "expect": "ready",
+      "content": "```json\n{\"title\":\"ガーリックバターシュリンプ\",\"ingredients\":[\"1 lb エビ（殻をむく）\",\"3 tbsp バター (無塩)\",\"4 cloves にんにく、みじん切り\",\"½ tsp 塩\",\"1-2 tbsp 生パセリ、刻む\"],\"instructions\":[\"大きなフライパンで中火でバターを溶かす。\",\"にんにくを加えて1分加熱する。\",\"エビを加えて片面2-3分焼く。\"]}\n```"
+    },
+    {
+      "id": "add-step-serving-tip",
+      "category": "add-step",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Expected 3 steps, got 4.",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          "1 lb crevettes, décortiquées",
+          "3 tbsp beurre (doux)",
+          "4 cloves ail, haché",
+          "½ tsp sel",
+          "1-2 tbsp persil frais, haché"
+        ],
+        "instructions": [
+          "Faire fondre le beurre dans une grande poêle à feu moyen.",
+          "Ajouter l'ail et cuire 1 minute.",
+          "Ajouter les crevettes et cuire 2-3 minutes de chaque côté.",
+          "Servir avec des quartiers de citron."
+        ]
+      }
+    },
+    {
+      "id": "add-step-split-step",
+      "category": "add-step",
+      "language": "Spanish",
+      "expect": "failed",
+      "problem": "Expected 3 steps, got 4.",
+      "output": {
+        "title": "Camarones con mantequilla de ajo",
+        "ingredients": [
+          "1 lb camarones, pelados",
+          "3 tbsp mantequilla (sin sal)",
+          "4 cloves de ajo, picados",
+          "½ tsp de sal",
+          "1-2 tbsp perejil fresco, picado"
+        ],
+        "instructions": [
+          "Derrite la mantequilla.",
+          "Usa una sartén grande a fuego medio.",
+          "Agrega el ajo y cocina durante 1 minuto.",
+          "Agrega los camarones y cocina de 2-3 minutos por lado."
+        ]
+      }
+    },
+    {
+      "id": "change-amount-butter",
+      "category": "change-amount",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Ingredient 2 changed its numbers (3 → 2).",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          "1 lb crevettes, décortiquées",
+          "2 tbsp beurre (doux)",
+          "4 cloves ail, haché",
+          "½ tsp sel",
+          "1-2 tbsp persil frais, haché"
+        ],
+        "instructions": [
+          "Faire fondre le beurre dans une grande poêle à feu moyen.",
+          "Ajouter l'ail et cuire 1 minute.",
+          "Ajouter les crevettes et cuire 2-3 minutes de chaque côté."
+        ]
+      }
+    },
+    {
+      "id": "change-amount-respelled-fraction",
+      "category": "change-amount",
+      "language": "German",
+      "expect": "failed",
+      "problem": "Ingredient 4 changed its numbers (½ → 0,5).",
+      "output": {
+        "title": "Knoblauchbutter-Garnelen",
+        "ingredients": [
+          "1 lb Garnelen, geschält",
+          "3 tbsp Butter (ungesalzen)",
+          "4 cloves Knoblauch, gehackt",
+          "0,5 tsp Salz",
+          "1-2 tbsp frische Petersilie, gehackt"
+        ],
+        "instructions": [
+          "Die Butter in einer großen Pfanne bei mittlerer Hitze schmelzen.",
+          "Den Knoblauch zugeben und 1 Minute braten.",
+          "Die Garnelen zugeben und pro Seite 2-3 Minuten braten."
+        ]
+      }
+    },
+    {
+      "id": "change-amount-collapsed-range-in-step",
+      "category": "change-amount",
+      "language": "Italian",
+      "expect": "failed",
+      "problem": "Step 3 changed its numbers (2 3 → 3).",
+      "output": {
+        "title": "Gamberi al burro e aglio",
+        "ingredients": [
+          "1 lb gamberi, sgusciati",
+          "3 tbsp burro (non salato)",
+          "4 cloves aglio, tritato",
+          "½ tsp sale",
+          "1-2 tbsp prezzemolo fresco, tritato"
+        ],
+        "instructions": [
+          "Sciogliere il burro in una padella grande a fuoco medio.",
+          "Aggiungere l'aglio e cuocere per 1 minuto.",
+          "Aggiungere i gamberi e cuocere 3 minuti per lato."
+        ]
+      }
+    },
+    {
+      "id": "change-unit-translated-tbsp",
+      "category": "change-unit",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Ingredient 2 changed its units (tbsp → none).",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          "1 lb crevettes, décortiquées",
+          "3 cuillères à soupe de beurre (doux)",
+          "4 cloves ail, haché",
+          "½ tsp sel",
+          "1-2 tbsp persil frais, haché"
+        ],
+        "instructions": [
+          "Faire fondre le beurre dans une grande poêle à feu moyen.",
+          "Ajouter l'ail et cuire 1 minute.",
+          "Ajouter les crevettes et cuire 2-3 minutes de chaque côté."
+        ]
+      }
+    },
+    {
+      "id": "change-unit-converted-to-grams",
+      "category": "change-unit",
+      "language": "German",
+      "expect": "failed",
+      "problem": "Ingredient 1 changed its units (lb → g).",
+      "output": {
+        "title": "Knoblauchbutter-Garnelen",
+        "ingredients": [
+          "450 g Garnelen, geschält",
+          "3 tbsp Butter (ungesalzen)",
+          "4 cloves Knoblauch, gehackt",
+          "½ tsp Salz",
+          "1-2 tbsp frische Petersilie, gehackt"
+        ],
+        "instructions": [
+          "Die Butter in einer großen Pfanne bei mittlerer Hitze schmelzen.",
+          "Den Knoblauch zugeben und 1 Minute braten.",
+          "Die Garnelen zugeben und pro Seite 2-3 Minuten braten."
+        ]
+      }
+    },
+    {
+      "id": "drop-line-salt",
+      "category": "drop-line",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Expected 5 ingredient lines, got 4.",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          "1 lb crevettes, décortiquées",
+          "3 tbsp beurre (doux)",
+          "4 cloves ail, haché",
+          "1-2 tbsp persil frais, haché"
+        ],
+        "instructions": [
+          "Faire fondre le beurre dans une grande poêle à feu moyen.",
+          "Ajouter l'ail et cuire 1 minute.",
+          "Ajouter les crevettes et cuire 2-3 minutes de chaque côté."
+        ]
+      }
+    },
+    {
+      "id": "drop-line-merged-steps",
+      "category": "drop-line",
+      "language": "Spanish",
+      "expect": "failed",
+      "problem": "Expected 3 steps, got 2.",
+      "output": {
+        "title": "Camarones con mantequilla de ajo",
+        "ingredients": [
+          "1 lb camarones, pelados",
+          "3 tbsp mantequilla (sin sal)",
+          "4 cloves de ajo, picados",
+          "½ tsp de sal",
+          "1-2 tbsp perejil fresco, picado"
+        ],
+        "instructions": [
+          "Derrite la mantequilla en una sartén grande a fuego medio y agrega el ajo durante 1 minuto.",
+          "Agrega los camarones y cocina de 2-3 minutos por lado."
+        ]
+      }
+    },
+    {
+      "id": "drop-line-blank-step",
+      "category": "drop-line",
+      "language": "Italian",
+      "expect": "failed",
+      "problem": "Step 2 is empty.",
+      "output": {
+        "title": "Gamberi al burro e aglio",
+        "ingredients": [
+          "1 lb gamberi, sgusciati",
+          "3 tbsp burro (non salato)",
+          "4 cloves aglio, tritato",
+          "½ tsp sale",
+          "1-2 tbsp prezzemolo fresco, tritato"
+        ],
+        "instructions": [
+          "Sciogliere il burro in una padella grande a fuoco medio.",
+          "   ",
+          "Aggiungere i gamberi e cuocere 2-3 minuti per lato."
+        ]
+      }
+    },
+    {
+      "id": "add-ingredient-lemon",
+      "category": "add-ingredient",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Expected 5 ingredient lines, got 6.",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          "1 lb crevettes, décortiquées",
+          "3 tbsp beurre (doux)",
+          "4 cloves ail, haché",
+          "½ tsp sel",
+          "1-2 tbsp persil frais, haché",
+          "1 citron"
+        ],
+        "instructions": [
+          "Faire fondre le beurre dans une grande poêle à feu moyen.",
+          "Ajouter l'ail et cuire 1 minute.",
+          "Ajouter les crevettes et cuire 2-3 minutes de chaque côté."
+        ]
+      }
+    },
+    {
+      "id": "add-ingredient-inside-step",
+      "category": "add-ingredient",
+      "language": "German",
+      "expect": "failed",
+      "problem": "Step 3 changed its numbers (2 3 → 2 3 1).",
+      "output": {
+        "title": "Knoblauchbutter-Garnelen",
+        "ingredients": [
+          "1 lb Garnelen, geschält",
+          "3 tbsp Butter (ungesalzen)",
+          "4 cloves Knoblauch, gehackt",
+          "½ tsp Salz",
+          "1-2 tbsp frische Petersilie, gehackt"
+        ],
+        "instructions": [
+          "Die Butter in einer großen Pfanne bei mittlerer Hitze schmelzen.",
+          "Den Knoblauch zugeben und 1 Minute braten.",
+          "Die Garnelen zugeben, pro Seite 2-3 Minuten braten und 1 tsp Zitronensaft zugeben."
+        ]
+      }
+    },
+    {
+      "id": "malformed-not-json",
+      "category": "malformed",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Local Ollama returned JSON that failed schema validation.",
+      "content": "Voici la recette traduite : Crevettes au beurre à l'ail..."
+    },
+    {
+      "id": "malformed-missing-instructions",
+      "category": "malformed",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Local Ollama returned JSON that failed schema validation.",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          "1 lb crevettes, décortiquées",
+          "3 tbsp beurre (doux)",
+          "4 cloves ail, haché",
+          "½ tsp sel",
+          "1-2 tbsp persil frais, haché"
+        ]
+      }
+    }
+  ]
+}

@@ -164,11 +164,18 @@ export function RecipeEditorModal({
 			setError("Servings amount must be a positive number.");
 			return;
 		}
+		// Keep an unchanged line's parsed ingredient (id and identity) instead of
+		// re-parsing its text. A translated line would otherwise lose the identity
+		// it kept from the original language.
+		const unchanged = [...recipe.frontmatter.ingredients];
 		const ingredients = ingredientsText
 			.split(/\n/)
 			.map((line) => line.replace(/^\s*[-*+]\s+/, "").trim())
 			.filter(Boolean)
-			.map(parseIngredientLine);
+			.map((line) => {
+				const index = unchanged.findIndex((item) => item.raw === line);
+				return index === -1 ? parseIngredientLine(line) : unchanged.splice(index, 1)[0];
+			});
 		const instructions = instructionsText
 			.split(/\n/)
 			.map((line) => line.replace(/^\s*\d+[.)]\s+/, "").trim())
