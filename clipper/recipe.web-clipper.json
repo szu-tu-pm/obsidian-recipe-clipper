@@ -1,0 +1,29 @@
+{
+	"schemaVersion": "0.1.0",
+	"name": "Recipe Manager recipe",
+	"behavior": "create",
+	"noteNameFormat": "{{schema:@Recipe:name|safe_name}} {{date|date:\"YYYY-MM-DD HHmmss\"}}",
+	"path": "Recipes",
+	"triggers": ["schema:@Recipe"],
+	"properties": [
+		{ "name": "schemaVersion", "value": "2", "type": "number" },
+		{ "name": "type", "value": "recipe-clip", "type": "text" },
+		{ "name": "clippedAt", "value": "{{date}}", "type": "text" },
+		{ "name": "title", "value": "{{schema:@Recipe:name}}", "type": "text" },
+		{ "name": "pageTitle", "value": "{{title}}", "type": "text" },
+		{ "name": "sourceUrl", "value": "{{url}}", "type": "text" },
+		{ "name": "author", "value": "{{schema:@Recipe:author}}", "type": "text" },
+		{ "name": "pageAuthor", "value": "{{author}}", "type": "text" },
+		{ "name": "publisher", "value": "{{schema:@Recipe:publisher}}", "type": "text" },
+		{ "name": "siteName", "value": "{{site}}", "type": "text" },
+		{ "name": "recipeYield", "value": "{{schema:@Recipe:recipeYield}}", "type": "text" },
+		{ "name": "prepTime", "value": "{{schema:@Recipe:prepTime}}", "type": "text" },
+		{ "name": "cookTime", "value": "{{schema:@Recipe:cookTime}}", "type": "text" },
+		{ "name": "totalTime", "value": "{{schema:@Recipe:totalTime}}", "type": "text" },
+		{ "name": "cookingMethod", "value": "{{schema:@Recipe:cookingMethod}}", "type": "text" },
+		{ "name": "image", "value": "{{schema:@Recipe:image}}", "type": "text" },
+		{ "name": "recipeIngredient", "value": "{{schema:@Recipe:recipeIngredient}}", "type": "text" },
+		{ "name": "recipeInstructions", "value": "{{schema:@Recipe:recipeInstructions}}", "type": "text" }
+	],
+	"noteContentFormat": "# {{schema:@Recipe:name}}\n\n> [!note] Web clip waiting for review\n> Open Recipe Manager to review this clip. It is not a finished recipe, and it is not offered for shopping lists, until you save the review.\n\nClipped from {{url}}\n"
+}

@@ -1,4 +1,5 @@
 import { createContext, useContext, useSyncExternalStore, type PropsWithChildren } from "react";
+import type { PendingWebClip } from "../domain/extraction/webClipperIntake";
 import type { RecipeIndexEntry } from "../domain/vault/recipeIndexer";
 import type { RecipePluginSettings } from "../pluginSettings";
 import type { PluginServices } from "./PluginServiceAdapter";
@@ -35,5 +36,13 @@ export function useRecipeIndex(): RecipeIndexEntry[] {
 	return useSyncExternalStore(
 		(onStoreChange) => services.subscribeRecipes(onStoreChange),
 		() => services.listRecipes(),
+	);
+}
+
+export function usePendingWebClips(): PendingWebClip[] {
+	const services = usePluginServices();
+	return useSyncExternalStore(
+		(onStoreChange) => services.subscribeRecipes(onStoreChange),
+		() => services.listPendingClips(),
 	);
 }

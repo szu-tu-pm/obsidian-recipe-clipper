@@ -1,0 +1,28 @@
+{
+	"category": "sections",
+	"page": {
+		"url": "https://example.org/r/lentil-soup?id=7",
+		"title": "Lentil soup",
+		"site": "",
+		"author": "",
+		"date": "2026-10-17T09:30:00-07:00"
+	},
+	"recipe": {
+		"@type": "Recipe",
+		"name": "Red Lentil Soup",
+		"author": "Lin",
+		"recipeYield": 6,
+		"image": ["/img/lentil.jpg"],
+		"recipeIngredient": ["1 tsp salt", "1 cup red lentils", "1 tsp salt"],
+		"recipeInstructions": [
+			{
+				"@type": "HowToSection",
+				"name": "Soup",
+				"itemListElement": [
+					{ "@type": "HowToStep", "text": "Rinse the lentils." },
+					{ "@type": "HowToStep", "text": "Simmer until soft." }
+				]
+			}
+		]
+	}
+}

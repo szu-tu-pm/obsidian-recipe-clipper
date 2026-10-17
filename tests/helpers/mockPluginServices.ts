@@ -3,6 +3,10 @@ import {
 	type RecipeDocument,
 	type RecipeImage,
 } from "../../src/domain/schema/recipeSchema";
+import type {
+	PendingWebClip,
+	WebClipReviewResult,
+} from "../../src/domain/extraction/webClipperIntake";
 import type { ShoppingListDocument } from "../../src/domain/schema/shoppingListSchema";
 import type { RecipeIndexEntry } from "../../src/domain/vault/recipeIndexer";
 import { DEFAULT_SETTINGS, type RecipePluginSettings } from "../../src/pluginSettings";
@@ -15,6 +19,8 @@ export interface MockRecipeStore {
 	recipes: RecipeDocument[];
 	settings: RecipePluginSettings;
 	shoppingLists?: ShoppingListDocument[];
+	/** Pending web clips. Saving a recipe at a clip's path marks that clip reviewed. */
+	clips?: Array<{ path: string; title: string; review: () => WebClipReviewResult }>;
 }
 
 function indexEntry(recipe: RecipeDocument): RecipeIndexEntry {
@@ -49,9 +55,13 @@ export function createMockPluginServices(
 	const shoppingLists = store.shoppingLists ?? [];
 	store.shoppingLists = shoppingLists;
 	let recipeSnapshot: RecipeIndexEntry[] = store.recipes.map(indexEntry);
+	const clipEntries = (): PendingWebClip[] =>
+		(store.clips ?? []).map((clip) => ({ path: clip.path, title: clip.title }));
+	let clipSnapshot = clipEntries();
 
 	function emitRecipes(): void {
 		recipeSnapshot = store.recipes.map(indexEntry);
+		clipSnapshot = clipEntries();
 		for (const listener of recipeListeners) {
 			listener();
 		}
@@ -72,6 +82,9 @@ export function createMockPluginServices(
 			return () => recipeListeners.delete(listener);
 		},
 		listRecipes: () => recipeSnapshot,
+		listPendingClips: () => clipSnapshot,
+		loadClipReview: async (path) =>
+			store.clips?.find((clip) => clip.path === path)?.review() ?? null,
 		loadRecipe: async (id) => {
 			const recipe = store.recipes.find((item) => item.frontmatter.id === id);
 			if (!recipe) {
@@ -91,6 +104,9 @@ export function createMockPluginServices(
 				store.recipes.push(saved);
 			} else {
 				store.recipes[index] = saved;
+			}
+			if (store.clips) {
+				store.clips = store.clips.filter((clip) => clip.path !== saved.path);
 			}
 			emitRecipes();
 			return saved;
