@@ -40,6 +40,33 @@
         }
       ]
     },
+    "batter": {
+      "title": "Simple Batter",
+      "ingredients": [
+        {
+          "id": "ing_0000000000000000000000BA01",
+          "text": "2 cups flour and 3 tbsp oil"
+        },
+        {
+          "id": "ing_0000000000000000000000BA02",
+          "text": "1 cup milk"
+        },
+        {
+          "id": "ing_0000000000000000000000BA03",
+          "text": "a pinch of salt"
+        }
+      ],
+      "instructions": [
+        {
+          "step": 1,
+          "text": "Whisk 1 cup milk with 3 tbsp oil."
+        },
+        {
+          "step": 2,
+          "text": "Stir in 2 cups flour and the salt."
+        }
+      ]
+    },
     "flatbread": {
       "title": "Skillet Flatbread",
       "ingredients": [
@@ -293,6 +320,110 @@
           {
             "step": 5,
             "text": "Sprinkle with flaky salt."
+          }
+        ]
+      }
+    },
+    {
+      "id": "valid-batter-french",
+      "category": "valid",
+      "source": "batter",
+      "language": "French",
+      "expect": "ready",
+      "output": {
+        "title": "Pâte simple",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BA01",
+            "text": "2 cups farine et 3 tbsp huile"
+          },
+          {
+            "id": "ing_0000000000000000000000BA02",
+            "text": "1 cup lait"
+          },
+          {
+            "id": "ing_0000000000000000000000BA03",
+            "text": "1 pinch de sel"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Fouetter 1 cup de lait avec 3 tbsp d'huile."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer 2 cups de farine et le sel."
+          }
+        ]
+      }
+    },
+    {
+      "id": "pair-swap-ingredient",
+      "category": "pair-swap",
+      "source": "batter",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Ingredient 1 changed which amount goes with which unit (2 cups 3 tbsp → 3 cups 2 tbsp).",
+      "output": {
+        "title": "Pâte simple",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BA01",
+            "text": "3 cups farine et 2 tbsp huile"
+          },
+          {
+            "id": "ing_0000000000000000000000BA02",
+            "text": "1 cup lait"
+          },
+          {
+            "id": "ing_0000000000000000000000BA03",
+            "text": "1 pinch de sel"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Fouetter 1 cup de lait avec 3 tbsp d'huile."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer 2 cups de farine et le sel."
+          }
+        ]
+      }
+    },
+    {
+      "id": "pair-swap-step",
+      "category": "pair-swap",
+      "source": "batter",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Step 1 changed which amount goes with which unit (1 cup 3 tbsp → 3 cup 1 tbsp).",
+      "output": {
+        "title": "Pâte simple",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BA01",
+            "text": "2 cups farine et 3 tbsp huile"
+          },
+          {
+            "id": "ing_0000000000000000000000BA02",
+            "text": "1 cup lait"
+          },
+          {
+            "id": "ing_0000000000000000000000BA03",
+            "text": "1 pinch de sel"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Fouetter 3 cup de lait avec 1 tbsp d'huile."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer 2 cups de farine et le sel."
           }
         ]
       }

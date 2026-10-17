@@ -93,11 +93,10 @@ export const ratingSchema = z.union([
 ]);
 
 /**
- * Present only on a translated recipe. `original` holds the text the translation
- * replaced, so it can be reverted. Ingredients are linked by id; the title and steps
- * are linked through `translated`, the text as accepted, so a later user edit can be
- * told apart from the translation. Optional, so existing files stay valid at
- * schemaVersion 2.
+ * Present only on a translated recipe. `original` is the whole recipe text the
+ * translation replaced, with each ingredient's id and structured identity, so revert
+ * restores it exactly. `acceptedHash` fingerprints the text as accepted, so later edits
+ * can be detected. Optional, so existing files stay valid at schemaVersion 2.
  */
 export const recipeTranslationSchema = z.object({
 	language: z.string().min(1),
@@ -105,13 +104,10 @@ export const recipeTranslationSchema = z.object({
 	promptVersion: z.string().min(1),
 	original: z.object({
 		title: z.string().min(1),
-		ingredients: z.array(z.object({ id: ingredientIdSchema, raw: z.string() })),
+		ingredients: z.array(recipeIngredientSchema),
 		instructions: z.array(z.string()),
 	}),
-	translated: z.object({
-		title: z.string().min(1),
-		instructions: z.array(z.string()),
-	}),
+	acceptedHash: z.string().min(1),
 });
 
 export const recipeFrontmatterSchema = z.object({

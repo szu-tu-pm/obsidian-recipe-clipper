@@ -193,6 +193,74 @@ describe("TranslateRecipeModal", () => {
 		expect(after.instructions).toEqual(texts(SHRIMP.instructions));
 		expect(after.frontmatter.translation).toBeUndefined();
 		expect(fetchImpl).not.toHaveBeenCalled();
+		expect(screen.queryByRole("dialog", { name: "Discard edits?" })).toBeNull();
+	});
+
+	function editedTranslation(): RecipeDocument {
+		const translated = applyTranslation(shrimpRecipe(), FRENCH, "French");
+		return {
+			...translated,
+			frontmatter: {
+				...translated.frontmatter,
+				ingredients: translated.frontmatter.ingredients.map((item, index) =>
+					index === 3 ? { ...item, id: "ing_0000000000000000000000ED01", raw: "1 tsp sel fin" } : item,
+				),
+			},
+		};
+	}
+
+	it("asks before a revert discards edits made after translating, and cancel changes nothing", async () => {
+		const edited = editedTranslation();
+		const { save, snapshot, stored } = setup(vi.fn() as unknown as typeof fetch, edited);
+		const dialog = await openTranslate("Spanish");
+		fireEvent.click(within(dialog).getByRole("button", { name: "Restore original" }));
+		const confirm = await screen.findByRole("dialog", { name: "Discard edits?" });
+		expect(confirm.textContent).toMatch(/will be discarded/);
+		fireEvent.click(within(confirm).getByRole("button", { name: "Cancel" }));
+		expect(screen.queryByRole("dialog", { name: "Discard edits?" })).toBeNull();
+		expect(save).not.toHaveBeenCalled();
+		expect(await stored()).toEqual(snapshot);
+	});
+
+	it("after confirming, a revert writes back exactly the stored original", async () => {
+		const original = shrimpRecipe();
+		const { stored } = setup(vi.fn() as unknown as typeof fetch, editedTranslation());
+		const dialog = await openTranslate("Spanish");
+		fireEvent.click(within(dialog).getByRole("button", { name: "Restore original" }));
+		const confirm = await screen.findByRole("dialog", { name: "Discard edits?" });
+		fireEvent.click(within(confirm).getByRole("button", { name: "Discard edits and restore" }));
+		await screen.findByText("Original recipe text restored.");
+		const after = await stored();
+		expect(after.frontmatter.title).toBe(original.frontmatter.title);
+		expect(after.frontmatter.ingredients).toEqual(original.frontmatter.ingredients);
+		expect(after.instructions).toEqual(original.instructions);
+		expect(after.frontmatter.translation).toBeUndefined();
+		expect(after.notes).toBe(original.notes);
+		expect(after.frontmatter.rating).toBe(original.frontmatter.rating);
+		expect(after.frontmatter.images).toEqual(original.frontmatter.images);
+	});
+
+	it("re-translating an edited recipe sends the stored original and asks before accepting", async () => {
+		const spanish = recordedReply("valid-spanish-reordered-words");
+		const fetchImpl = ollamaReturning(spanish);
+		const { save, stored } = setup(fetchImpl, editedTranslation());
+		const dialog = await openTranslate("Spanish");
+		fireEvent.click(within(dialog).getByRole("button", { name: "Translate" }));
+		await within(dialog).findByRole("table");
+		const body = JSON.parse(String((vi.mocked(fetchImpl).mock.calls[1][1] as RequestInit).body));
+		expect(body.messages[1].content).toContain(JSON.stringify(SHRIMP));
+		fireEvent.click(within(dialog).getByRole("button", { name: "Accept translation" }));
+		const confirm = await screen.findByRole("dialog", { name: "Discard edits?" });
+		expect(save).not.toHaveBeenCalled();
+		fireEvent.click(within(confirm).getByRole("button", { name: "Discard edits and accept" }));
+		await screen.findByText(/Recipe translated to Spanish/);
+		const after = await stored();
+		expect(after.frontmatter.ingredients.map((item) => item.id)).toEqual(
+			shrimpRecipe().frontmatter.ingredients.map((item) => item.id),
+		);
+		expect(after.frontmatter.translation?.original.ingredients).toEqual(
+			shrimpRecipe().frontmatter.ingredients,
+		);
 	});
 });
 
@@ -215,20 +283,21 @@ describe("RecipeEditorModal with a translated recipe", () => {
 	const ids = (recipe: RecipeDocument) => recipe.frontmatter.ingredients.map((item) => item.id);
 
 	it.each([
-		["no", FR, [0, 1, 2, 3, 4], SRC],
-		["a casing-only", [FR[0], "3 TBSP Beurre (Doux)", ...FR.slice(2)], [0, 1, 2, 3, 4], SRC],
-		["a whitespace-only", [FR[0], "3   tbsp beurre  (doux)", ...FR.slice(2)], [0, 1, 2, 3, 4], SRC],
-		["a reorder", [FR[0], FR[1], FR[2], FR[4], FR[3]], [0, 1, 2, 4, 3], [SRC[0], SRC[1], SRC[2], SRC[4], SRC[3]]],
+		["no", FR, [0, 1, 2, 3, 4]],
+		["a casing-only", [FR[0], "3 TBSP Beurre (Doux)", ...FR.slice(2)], [0, 1, 2, 3, 4]],
+		["a whitespace-only", [FR[0], "3   tbsp beurre  (doux)", ...FR.slice(2)], [0, 1, 2, 3, 4]],
+		["a reorder", [FR[0], FR[1], FR[2], FR[4], FR[3]], [0, 1, 2, 4, 3]],
 	])(
-		"saving with %s edit keeps every id, aggregation and the revert text",
-		async (_name, lines, order, reverted) => {
+		"saving with %s edit keeps every id and aggregation; revert gives the whole original",
+		async (_name, lines, order) => {
 			const { translated, after } = await saveIngredients(lines);
 			expect(ids(after)).toEqual(order.map((i) => ids(translated)[i]));
 			expect(after.frontmatter.translation).toEqual(translated.frontmatter.translation);
 			expect(shoppingRows([after, scampiRecipe()])).toEqual(
 				shoppingRows([shrimpRecipe(), scampiRecipe()]),
 			);
-			expect(revertTranslation(after).frontmatter.ingredients.map((item) => item.raw)).toEqual(reverted);
+			expect(revertTranslation(after).frontmatter.ingredients).toEqual(shrimpRecipe().frontmatter.ingredients);
+			expect(revertTranslation(after).frontmatter.ingredients.map((item) => item.raw)).toEqual(SRC);
 		},
 	);
 

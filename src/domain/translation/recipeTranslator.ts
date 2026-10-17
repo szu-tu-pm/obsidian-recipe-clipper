@@ -6,11 +6,11 @@ import {
 	parseModelContent,
 	requestWithTimeout,
 } from "../extraction/ollamaExtractor";
-import { normalizeDisplayedLine } from "../schema/recipeMarkdown";
-import type {
-	RecipeDocument,
-	RecipeIngredient,
-	RecipeTranslation,
+import {
+	fnv1aHex,
+	type RecipeDocument,
+	type RecipeIngredient,
+	type RecipeTranslation,
 } from "../schema/recipeSchema";
 
 /** Bump when the prompt or schema changes meaning. Stored on each translated recipe. */
@@ -108,76 +108,42 @@ export interface TranslationBase {
 }
 
 /**
- * Pair each current step with a step of the accepted translation, by longest common
- * subsequence of case/whitespace-normalized text. Unpaired steps are the user's edits.
- */
-function alignSteps(current: string[], translated: string[]): number[] {
-	const a = current.map(normalizeDisplayedLine);
-	const b = translated.map(normalizeDisplayedLine);
-	const table: number[][] = Array.from({ length: a.length + 1 }, () =>
-		new Array<number>(b.length + 1).fill(0),
-	);
-	for (let i = a.length - 1; i >= 0; i--) {
-		for (let j = b.length - 1; j >= 0; j--) {
-			table[i][j] =
-				a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
-		}
-	}
-	const pairs = new Array<number>(a.length).fill(-1);
-	let i = 0;
-	let j = 0;
-	while (i < a.length && j < b.length) {
-		if (a[i] === b[j]) {
-			pairs[i] = j;
-			i++;
-			j++;
-		} else if (table[i + 1][j] >= table[i][j + 1]) {
-			i++;
-		} else {
-			j++;
-		}
-	}
-	return pairs;
-}
-
-/**
- * The text a translation starts from. For a part that is still the accepted translation
- * this is the stored original, so re-translating never adopts translated text as the
- * original. A part the user edited after translating (an ingredient with a new id, a
- * changed step or title) is the user's own text and is its own original.
+ * The text a translation starts from: always the stored original when the recipe is
+ * already translated (never current, possibly translated or edited, text), otherwise
+ * the current text.
  */
 export function translationBase(recipe: RecipeDocument): TranslationBase {
 	const { frontmatter } = recipe;
-	const stored = frontmatter.translation;
-	const originalRaw = new Map(
-		(stored?.original.ingredients ?? []).map((item) => [item.id, item.raw]),
-	);
-	const ingredients = frontmatter.ingredients.map((item) => ({
-		id: item.id,
-		raw: originalRaw.get(item.id) ?? item.raw,
-	}));
-	const pairs = stored
-		? alignSteps(recipe.instructions, stored.translated.instructions)
-		: recipe.instructions.map(() => -1);
-	const instructions = recipe.instructions.map((step, index) => {
-		const paired = pairs[index];
-		return paired >= 0 && stored?.original.instructions[paired] !== undefined
-			? stored.original.instructions[paired]
-			: step;
-	});
-	const title =
-		stored &&
-		normalizeDisplayedLine(frontmatter.title) === normalizeDisplayedLine(stored.translated.title)
-			? stored.original.title
-			: frontmatter.title;
+	const original: RecipeTranslation["original"] = frontmatter.translation?.original ?? {
+		title: frontmatter.title,
+		ingredients: frontmatter.ingredients,
+		instructions: [...recipe.instructions],
+	};
 	return {
 		source: {
-			title,
-			ingredients: ingredients.map((item) => ({ id: item.id, text: item.raw })),
-			instructions: instructions.map((text, index) => ({ step: index + 1, text })),
+			title: original.title,
+			ingredients: original.ingredients.map((item) => ({ id: item.id, text: item.raw })),
+			instructions: original.instructions.map((text, index) => ({ step: index + 1, text })),
 		},
-		original: { title, ingredients, instructions },
+		original,
 	};
+}
+
+/** Fingerprint of the displayed title, ingredient lines (with ids) and steps. */
+function displayedHash(title: string, ingredients: RecipeIngredient[], instructions: string[]): string {
+	return fnv1aHex(
+		JSON.stringify([title, ingredients.map((item) => [item.id, item.raw]), instructions]),
+	);
+}
+
+/** True when the title, ingredients or steps changed after the translation was accepted. */
+export function hasEditsSinceTranslation(recipe: RecipeDocument): boolean {
+	const stored = recipe.frontmatter.translation;
+	return (
+		stored !== undefined &&
+		stored.acceptedHash !==
+			displayedHash(recipe.frontmatter.title, recipe.frontmatter.ingredients, recipe.instructions)
+	);
 }
 
 // --- Guards against invented content -------------------------------------------------
@@ -384,7 +350,8 @@ function checkLine(label: string, original: string, translated: string, problems
 	}
 	const before = quantityTokens(original);
 	const after = quantityTokens(translated);
-	if (!sameMultiset(before, after)) {
+	const numbersKept = sameMultiset(before, after);
+	if (!numbersKept) {
 		problems.push(`${label} changed its numbers (${describe(before)} → ${describe(after)}).`);
 	}
 	const unitsBefore = unitTokens(original);
@@ -393,7 +360,24 @@ function checkLine(label: string, original: string, translated: string, problems
 		problems.push(
 			`${label} changed its units (${describe(unitsBefore)} → ${describe(unitsAfter)}).`,
 		);
+		return;
 	}
+	if (!numbersKept) {
+		return;
+	}
+	// Same amounts and same units can still be re-paired ("2 cups … 3 tbsp" →
+	// "3 cups … 2 tbsp"), so compare each amount with its unit (or none).
+	const pairsBefore = amountUnitPairs(original);
+	const pairsAfter = amountUnitPairs(translated);
+	if (!sameMultiset(pairsBefore, pairsAfter)) {
+		problems.push(
+			`${label} changed which amount goes with which unit (${describe(pairsBefore)} → ${describe(pairsAfter)}).`,
+		);
+	}
+}
+
+function amountUnitPairs(text: string): string[] {
+	return readQuantities(text).map((item) => (item.unit ? `${item.value} ${item.unit}` : item.value));
 }
 
 /**
@@ -640,44 +624,46 @@ export function applyTranslation(
 		translatedAt: now.toISOString(),
 		promptVersion: OLLAMA_RECIPE_TRANSLATION_PROMPT_VERSION,
 		original: base.original,
-		translated: { title: accepted.title, instructions },
+		acceptedHash: "",
 	};
+	// Applied onto the stored original list, so any edits made since an earlier
+	// translation are replaced (the dialog asks first).
+	const ingredients = base.original.ingredients.map((ingredient, index) => ({
+		...ingredient,
+		raw: accepted.ingredients[index].text,
+	}));
+	translationBlock.acceptedHash = displayedHash(accepted.title, ingredients, instructions);
 	return {
 		...recipe,
 		instructions,
 		frontmatter: {
 			...recipe.frontmatter,
 			title: accepted.title,
-			ingredients: recipe.frontmatter.ingredients.map((ingredient, index) => ({
-				...ingredient,
-				raw: accepted.ingredients[index].text,
-			})),
+			ingredients,
 			translation: translationBlock,
 		},
 	};
 }
 
 /**
- * Undo the translation and drop its block. Parts that are still the accepted
- * translation get their original text back; parts the user edited afterwards keep the
- * user's text, because that is no longer translated content.
+ * Undo the translation: write back the whole stored original title, ingredient list
+ * (ids and structured identity included) and steps, and drop the block. Edits made
+ * since accepting are discarded (the dialog asks first). Notes, rating and images are
+ * never touched.
  */
 export function revertTranslation(recipe: RecipeDocument): RecipeDocument {
-	if (!recipe.frontmatter.translation) {
+	const stored = recipe.frontmatter.translation;
+	if (!stored) {
 		return recipe;
 	}
-	const { original } = translationBase(recipe);
 	const { translation: _dropped, ...frontmatter } = recipe.frontmatter;
 	return {
 		...recipe,
-		instructions: original.instructions,
+		instructions: [...stored.original.instructions],
 		frontmatter: {
 			...frontmatter,
-			title: original.title,
-			ingredients: recipe.frontmatter.ingredients.map((ingredient, index) => {
-				const raw = original.ingredients[index].raw;
-				return raw === ingredient.raw ? ingredient : { ...ingredient, raw };
-			}),
+			title: stored.original.title,
+			ingredients: stored.original.ingredients,
 		},
 	};
 }

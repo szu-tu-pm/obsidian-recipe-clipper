@@ -27,7 +27,8 @@ The prompt asks the model not to invent anything, but the plugin does not rely o
 - any ingredient comes back without its `id`, with an id twice, with an id that is not in the recipe, or out of order; or the same for step numbers. Line order is checked by these keys, not by comparing amounts, so swapping two lines with equal or no amounts is caught;
 - the title, a line or a step is empty;
 - the amounts in any line are not the same multiset as in the original line. Amounts are digits as written (integers, decimals, `1/2`, unicode fractions, both ends of `1-2`) and English number words, normalized to digits: one to twelve, tens with hyphenated or spaced compounds (`twenty-five`, `twenty five` → `25`), `dozen` → `12`, `half` → `1/2`, `quarter` → `1/4`, and `a`/`an` directly before a unit word → `1`. So "two minutes" may become "2 minutes", but not "3 minutes";
-- the unit words that directly follow an amount (from `rules/v1/unit-rules.json` plus a few parser abbreviations such as `T`, `t`, `c`, `pinch`, `stick`) are not the same multiset, case kept, as in the original line.
+- the unit words that directly follow an amount (from `rules/v1/unit-rules.json` plus a few parser abbreviations such as `T`, `t`, `c`, `pinch`, `stick`) are not the same multiset, case kept, as in the original line;
+- the amount–unit pairs are not the same multiset as in the original line. Each amount is paired with the unit that follows it, or with none. So "2 cups flour and 3 tbsp oil" cannot become "3 cups … 2 tbsp …" even though the amounts and units alone are unchanged.
 
 A failed check is never repaired. The dialog reports the problems and the recipe stays as it was. The check is strict on purpose: a model that writes a number as a word in the target language ("deux"), or translates a unit word, is rejected; the prompt tells it to use digits and keep units.
 
@@ -42,26 +43,32 @@ translation:
   promptVersion: translation-v2
   original:
     title: Garlic Butter Shrimp
-    ingredients:
+    ingredients:            # the whole original list, each with id and structured identity
       - id: ing_...
         raw: 3 tbsp butter (unsalted)
+        name: butter
+        quantity: 3
+        unit: tbsp
+        # ...every other ingredient field
     instructions:
       - Melt the butter.
-  translated:
-    title: Crevettes au beurre à l'ail
-    instructions:
-      - Faire fondre le beurre.
+  acceptedHash: 1a2b3c4d    # fingerprint of the title, ingredient lines (with ids) and steps as accepted
 ```
 
-The block is optional, so existing recipe files stay valid at `schemaVersion: 2`. Ingredients are linked to their original by id. Steps and the title are linked through `translated`, the text as accepted, matched ignoring case and whitespace (steps by longest common subsequence, so inserted or deleted steps do not shift the others).
+The block is optional, so existing recipe files stay valid at `schemaVersion: 2`.
 
 Shopping-list aggregation reads each ingredient's original `raw` text from this block (matched by id), so a translated line cannot change which names or blocking qualifiers the merge rules see.
 
+### Revert and re-translation
+
+- Revert writes back the whole stored original: title, the entire ingredient list (ids and structured identity included) and the entire step list, then removes the block. Notes, rating and images are never touched.
+- Re-translating always starts from the stored original, never from the current text, and the result is applied to the original ingredient list.
+- If the title, ingredients or steps changed since the translation was accepted (the current text no longer matches `acceptedHash`), the dialog says those edits will be discarded and asks to confirm before reverting or accepting a new translation. Cancelling changes nothing.
+
 ### Edits after translating
 
-- The recipe editor and the external-edit reader (`parseRecipeFile`) both keep the existing ingredient, id and identity included, for every displayed line that is unchanged up to case and whitespace. Only lines that really changed are parsed again. A Notes-only edit therefore never changes merging.
-- A line the user changes substantively gets a fresh id and identity parsed from the new text. It drops out of the translation: the block is not rewritten, the new id simply has no entry, so it aggregates from its own text, re-translation starts from it as typed, and revert keeps it. The same applies to an edited or added step and to an edited title.
-- The stored original of every other line is never overwritten, and re-translation always starts from those originals, never from translated text.
+- The recipe editor and the external-edit reader (`parseRecipeFile`) both keep the existing ingredient, id and identity included, for every displayed line that is unchanged up to case and whitespace. Lines unchanged in place (longest common subsequence) are reserved first, so an edited line can never take an unchanged line's id. Remaining lines then match unreserved ingredients with the same text in their existing order, so duplicate lines keep their ids where they were. Only lines that are really new are parsed again, with a fresh id. A Notes-only edit therefore never changes merging.
+- A line the user changes substantively aggregates from its own text until the translation is reverted or replaced.
 
 ## System prompt
 

@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { RecipeDocument } from "../domain/schema/recipeSchema";
 import {
 	applyTranslation,
+	hasEditsSinceTranslation,
 	revertTranslation,
 	TRANSLATION_LANGUAGES,
 	translateWithOllama,
@@ -11,6 +12,7 @@ import {
 	type TranslationReply,
 } from "../domain/translation/recipeTranslator";
 import type { PluginServices } from "../wrapper/PluginServiceAdapter";
+import { ConfirmDialog } from "./components/ConfirmDialog";
 import { useEscapeToClose } from "./useEscapeToClose";
 
 type Phase = "choose" | "translating" | "review" | "saving";
@@ -154,10 +156,18 @@ export function TranslateRecipeModal({
 		}
 	}
 
+	const [confirming, setConfirming] = useState<"accept" | "revert" | null>(null);
+	const edited = hasEditsSinceTranslation(recipe);
+
 	function accept(): void {
 		if (!translation) {
 			return;
 		}
+		if (edited && confirming !== "accept") {
+			setConfirming("accept");
+			return;
+		}
+		setConfirming(null);
 		void save(
 			(current) => applyTranslation(current, translation.reply, language),
 			`Recipe translated to ${language}. The original text is kept and can be restored.`,
@@ -171,6 +181,11 @@ export function TranslateRecipeModal({
 	}
 
 	function revert(): void {
+		if (edited && confirming !== "revert") {
+			setConfirming("revert");
+			return;
+		}
+		setConfirming(null);
 		void save((current) => revertTranslation(current), "Original recipe text restored.");
 	}
 
@@ -293,6 +308,15 @@ export function TranslateRecipeModal({
 					)}
 				</div>
 			</div>
+			{confirming ? (
+				<ConfirmDialog
+					title="Discard edits?"
+					message="The title, ingredients or steps were edited after translating. Those edits will be discarded and the stored original is used. Notes, rating and images are kept."
+					confirmLabel={confirming === "revert" ? "Discard edits and restore" : "Discard edits and accept"}
+					onConfirm={confirming === "revert" ? revert : accept}
+					onCancel={() => setConfirming(null)}
+				/>
+			) : null}
 		</div>
 	);
 }
