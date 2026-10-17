@@ -62,6 +62,8 @@ export function CollectionView({
 	const [urlValue, setUrlValue] = useState("");
 	const [review, setReview] = useState<UrlExtractionResult | null>(null);
 	const [reviewSource, setReviewSource] = useState<"url" | "web-clip">("url");
+	const [clipReview, setClipReview] = useState<{ path: string; revision: string } | null>(null);
+	const [reviewKey, setReviewKey] = useState(0);
 	const offeredClips = useRef<Set<string>>(new Set());
 	const loadingClip = useRef(false);
 	const reviewRef = useRef<UrlExtractionResult | null>(null);
@@ -168,29 +170,36 @@ export function CollectionView({
 			return;
 		}
 		setReadyImport(null);
+		setClipReview(null);
 		setReviewSource("url");
 		setReview(finished.result);
 	}, [editor, progress]);
 
-	async function openClipReview(path: string): Promise<void> {
+	async function openClipReview(path: string, reload = false): Promise<void> {
 		if (loadingClip.current) {
 			return;
 		}
 		loadingClip.current = true;
 		offeredClips.current.add(path);
 		try {
-			const result = await services.loadClipReview(path);
-			if (!result) {
+			const loaded = await services.loadClipReview(path);
+			if (!loaded) {
+				if (reload) {
+					setReview(null);
+					setClipReview(null);
+				}
 				setStatus(`The web clip ${path} could not be read. It still needs review.`);
 				return;
 			}
-			if (reviewRef.current) {
+			if (reviewRef.current && !reload) {
 				// Another review opened while the clip was loading. Offer the clip again later.
 				offeredClips.current.delete(path);
 				return;
 			}
 			setReviewSource("web-clip");
-			setReview(result);
+			setClipReview({ path: loaded.path, revision: loaded.revision });
+			setReviewKey((key) => key + 1);
+			setReview(loaded.review);
 		} finally {
 			loadingClip.current = false;
 		}
@@ -243,6 +252,7 @@ export function CollectionView({
 		if (!readyImport || editor !== null) {
 			return;
 		}
+		setClipReview(null);
 		setReviewSource("url");
 		setReview(readyImport.result);
 		setReadyImport(null);
@@ -606,12 +616,25 @@ export function CollectionView({
 
 			{review && review.status !== "needs-selection" ? (
 				<ImportReviewModal
+					key={reviewKey}
 					result={review}
 					services={services}
 					downloadImage={downloadImage}
 					source={reviewSource}
+					saveDraft={
+						reviewSource === "web-clip" && clipReview
+							? (draft) =>
+									services.saveClipReview(clipReview.path, clipReview.revision, draft)
+							: undefined
+					}
+					onReload={
+						reviewSource === "web-clip" && clipReview
+							? () => void openClipReview(clipReview.path, true)
+							: undefined
+					}
 					onClose={(notice) => {
 						setReview(null);
+						setClipReview(null);
 						if (notice) {
 							setStatus(notice);
 							notify(notice);

@@ -3,10 +3,13 @@ import {
 	type RecipeDocument,
 	type RecipeImage,
 } from "../../src/domain/schema/recipeSchema";
-import type {
-	PendingWebClip,
-	WebClipReviewResult,
+import {
+	loadWebClipForReview,
+	saveReviewedWebClip,
+	type PendingWebClip,
 } from "../../src/domain/extraction/webClipperIntake";
+import type { VaultPort } from "../../src/domain/vault/vaultPort";
+import { clipYamlCodec } from "./webClipperFixtures";
 import type { ShoppingListDocument } from "../../src/domain/schema/shoppingListSchema";
 import type { RecipeIndexEntry } from "../../src/domain/vault/recipeIndexer";
 import { DEFAULT_SETTINGS, type RecipePluginSettings } from "../../src/pluginSettings";
@@ -19,8 +22,10 @@ export interface MockRecipeStore {
 	recipes: RecipeDocument[];
 	settings: RecipePluginSettings;
 	shoppingLists?: ShoppingListDocument[];
-	/** Pending web clips. Saving a recipe at a clip's path marks that clip reviewed. */
-	clips?: Array<{ path: string; title: string; review: () => WebClipReviewResult }>;
+	/** Pending web clip notes, read and saved through the real intake functions. */
+	clips?: Array<{ path: string; title: string; markdown: string }>;
+	/** The next N clip writes store only half the text and then throw. */
+	failClipWrites?: number;
 }
 
 function indexEntry(recipe: RecipeDocument): RecipeIndexEntry {
@@ -58,6 +63,33 @@ export function createMockPluginServices(
 	const clipEntries = (): PendingWebClip[] =>
 		(store.clips ?? []).map((clip) => ({ path: clip.path, title: clip.title }));
 	let clipSnapshot = clipEntries();
+	const clipVault: VaultPort = {
+		read: async (path) => {
+			const clip = store.clips?.find((item) => item.path === path);
+			if (!clip) {
+				throw new Error(`Missing clip ${path}`);
+			}
+			return clip.markdown;
+		},
+		write: async (path, content) => {
+			const clip = store.clips?.find((item) => item.path === path);
+			if (!clip) {
+				throw new Error(`Missing clip ${path}`);
+			}
+			if (store.failClipWrites) {
+				store.failClipWrites -= 1;
+				clip.markdown = content.slice(0, Math.floor(content.length / 2));
+				throw new Error("disk full");
+			}
+			clip.markdown = content;
+		},
+		exists: async (path) => Boolean(store.clips?.some((item) => item.path === path)),
+		remove: async () => {},
+		mkdir: async () => {},
+		list: async () => [],
+		readBinary: async () => new ArrayBuffer(0),
+		writeBinary: async () => {},
+	};
 
 	function emitRecipes(): void {
 		recipeSnapshot = store.recipes.map(indexEntry);
@@ -83,8 +115,26 @@ export function createMockPluginServices(
 		},
 		listRecipes: () => recipeSnapshot,
 		listPendingClips: () => clipSnapshot,
-		loadClipReview: async (path) =>
-			store.clips?.find((clip) => clip.path === path)?.review() ?? null,
+		loadClipReview: (path) =>
+			loadWebClipForReview(
+				clipVault,
+				clipYamlCodec,
+				path,
+				recipeSnapshot.map((recipe) => ({
+					id: recipe.id,
+					sourceUrl: recipe.sourceUrl,
+					path: recipe.path,
+				})),
+			),
+		saveClipReview: async (path, revision, recipe) => {
+			const outcome = await saveReviewedWebClip(clipVault, clipYamlCodec, path, revision, recipe);
+			if (outcome.status === "saved") {
+				store.clips = (store.clips ?? []).filter((clip) => clip.path !== path);
+				store.recipes.push(outcome.recipe);
+				emitRecipes();
+			}
+			return outcome;
+		},
 		loadRecipe: async (id) => {
 			const recipe = store.recipes.find((item) => item.frontmatter.id === id);
 			if (!recipe) {
@@ -104,9 +154,6 @@ export function createMockPluginServices(
 				store.recipes.push(saved);
 			} else {
 				store.recipes[index] = saved;
-			}
-			if (store.clips) {
-				store.clips = store.clips.filter((clip) => clip.path !== saved.path);
 			}
 			emitRecipes();
 			return saved;

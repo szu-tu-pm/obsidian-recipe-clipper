@@ -6,6 +6,8 @@ title: "Black Bean Chili"
 pageTitle: "Black Bean Chili | Example Kitchen"
 sourceUrl: "https://www.example-kitchen.test/recipes/black-bean-chili/?utm_source=newsletter"
 author:
+authorName:
+authorNames:
 pageAuthor:
 publisher:
 siteName: "Example Kitchen"
@@ -15,8 +17,9 @@ cookTime:
 totalTime:
 cookingMethod:
 image:
-recipeIngredient: "[\"2 Tbsp. olive oil\",\"1 ½ cups dried black beans\"]"
-recipeInstructions: "[{\"@type\":\"HowToStep\",\"text\":\"Simmer the beans.\"}]"
+imageUrl:
+imageFirstUrl:
+instructionTypes: "HowToStep"
 ---
 # Black Bean Chili
 
@@ -24,3 +27,28 @@ recipeInstructions: "[{\"@type\":\"HowToStep\",\"text\":\"Simmer the beans.\"}]"
 > Open Recipe Manager to review this clip. It is not a finished recipe, and it is not offered for shopping lists, until you save the review.
 
 Clipped from https://www.example-kitchen.test/recipes/black-bean-chili/?utm_source=newsletter
+
+## Ingredients
+
+- 2 Tbsp. olive oil
+- 1 ½ cups dried black beans
+
+## Instructions
+
+1. Simmer the beans.
+
+%%
+Recipe Manager reads the sections below only when a list above came out empty or incomplete.
+
+### Ingredient text
+
+2 Tbsp. olive oil
+
+### Instruction items
+
+1.
+
+### Instruction text
+
+
+%%

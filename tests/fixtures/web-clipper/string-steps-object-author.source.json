@@ -1,0 +1,24 @@
+{
+	"category": "string-steps",
+	"page": {
+		"url": "https://pancakes.example.net/classic",
+		"title": "Classic pancakes",
+		"site": "Pancake Place",
+		"author": "",
+		"date": "2026-10-17T09:30:00-07:00"
+	},
+	"recipe": {
+		"@type": "Recipe",
+		"name": "Classic Pancakes",
+		"author": { "@type": "Person", "name": "Julia Child" },
+		"recipeYield": "8 pancakes",
+		"image": "https://pancakes.example.net/stack.jpg",
+		"cookingMethod": ["Frying", "Griddling"],
+		"recipeIngredient": ["1 cup all-purpose flour", "2 tbsp sugar", "1 cup milk", "1 egg"],
+		"recipeInstructions": [
+			"Whisk the dry ingredients.",
+			"Beat in the milk and egg.",
+			"Fry ladlefuls on a hot griddle."
+		]
+	}
+}

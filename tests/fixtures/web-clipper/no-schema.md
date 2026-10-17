@@ -6,6 +6,8 @@ title:
 pageTitle: "Saturday market report"
 sourceUrl: "https://news.example.test/food/market-report"
 author:
+authorName:
+authorNames:
 pageAuthor:
 publisher:
 siteName: "Example News"
@@ -15,8 +17,9 @@ cookTime:
 totalTime:
 cookingMethod:
 image:
-recipeIngredient:
-recipeInstructions:
+imageUrl:
+imageFirstUrl:
+instructionTypes:
 ---
 # 
 
@@ -24,3 +27,27 @@ recipeInstructions:
 > Open Recipe Manager to review this clip. It is not a finished recipe, and it is not offered for shopping lists, until you save the review.
 
 Clipped from https://news.example.test/food/market-report
+
+## Ingredients
+
+
+
+## Instructions
+
+
+
+%%
+Recipe Manager reads the sections below only when a list above came out empty or incomplete.
+
+### Ingredient text
+
+
+
+### Instruction items
+
+
+
+### Instruction text
+
+
+%%

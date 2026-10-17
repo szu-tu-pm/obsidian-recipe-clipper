@@ -1,6 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { webClipToReviewResult } from "../../src/domain/extraction/webClipperIntake";
 import { DEFAULT_SETTINGS } from "../../src/pluginSettings";
 import { CollectionView } from "../../src/ui/CollectionView";
 import { WrapperProvider } from "../../src/wrapper/WrapperContext";
@@ -9,28 +8,14 @@ import {
 	seedRecipe,
 	type MockRecipeStore,
 } from "../helpers/mockPluginServices";
-import { clipYamlCodec, loadClip, type FixtureName } from "../helpers/webClipperFixtures";
+import { loadClip, type FixtureName } from "../helpers/webClipperFixtures";
 
 afterEach(() => {
 	cleanup();
 });
 
-function clipEntry(store: MockRecipeStore, name: FixtureName, path: string, title: string) {
-	return {
-		path,
-		title,
-		review: () =>
-			webClipToReviewResult({
-				markdown: loadClip(name),
-				path,
-				yaml: clipYamlCodec,
-				existingRecipes: store.recipes.map((recipe) => ({
-					id: recipe.frontmatter.id,
-					sourceUrl: recipe.frontmatter.sourceUrl,
-					path: recipe.path,
-				})),
-			}),
-	};
+function clipEntry(name: FixtureName, path: string, title: string) {
+	return { path, title, markdown: loadClip(name) };
 }
 
 function renderWith(store: MockRecipeStore) {
@@ -52,7 +37,7 @@ describe("web clip review flow", () => {
 	it("opens the review for a new clip and keeps it out of shopping lists until saved", async () => {
 		const store: MockRecipeStore = { recipes: [], settings: { ...DEFAULT_SETTINGS } };
 		const path = "Recipes/Black Bean Chili 2026-10-17 093000.md";
-		store.clips = [clipEntry(store, "complete-howtostep", path, "Black Bean Chili")];
+		store.clips = [clipEntry("complete-howtostep", path, "Black Bean Chili")];
 		renderWith(store);
 
 		expect(await screen.findByRole("heading", { name: "Review web clip" })).toBeTruthy();
@@ -112,7 +97,7 @@ describe("web clip review flow", () => {
 		const snapshot = structuredClone(existing);
 		const store: MockRecipeStore = { recipes: [existing], settings: { ...DEFAULT_SETTINGS } };
 		const clipPath = "Recipes/Black Bean Chili 2026-10-17 100000.md";
-		store.clips = [clipEntry(store, "repeat-url", clipPath, "Black Bean Chili")];
+		store.clips = [clipEntry("repeat-url", clipPath, "Black Bean Chili")];
 		renderWith(store);
 
 		await screen.findByRole("heading", { name: "Review web clip" });
@@ -130,7 +115,7 @@ describe("web clip review flow", () => {
 
 	it("reviews a clip without schema.org data as a manual entry and fills nothing in", async () => {
 		const store: MockRecipeStore = { recipes: [], settings: { ...DEFAULT_SETTINGS } };
-		store.clips = [clipEntry(store, "no-schema", "Recipes/market.md", "Saturday market report")];
+		store.clips = [clipEntry("no-schema", "Recipes/market.md", "Saturday market report")];
 		renderWith(store);
 
 		await screen.findByRole("heading", { name: "Review web clip" });
@@ -150,7 +135,7 @@ describe("web clip review flow", () => {
 		expect(screen.getByRole("heading", { name: "New recipe" })).toBeTruthy();
 
 		// The clipper writes a note while the editor is open; the vault change notifies the view.
-		store.clips = [clipEntry(store, "partial-string-steps", "Recipes/flatbread.md", "Quick Flatbread")];
+		store.clips = [clipEntry("partial-string-steps", "Recipes/flatbread.md", "Quick Flatbread")];
 		await act(async () => {
 			await services.deleteRecipe("rec_none");
 		});
@@ -164,14 +149,60 @@ describe("web clip review flow", () => {
 
 	it("says so when a pending clip can no longer be read", async () => {
 		const store: MockRecipeStore = { recipes: [], settings: { ...DEFAULT_SETTINGS } };
-		store.clips = [
-			{
-				path: "Recipes/gone.md",
-				title: "Gone",
-				review: () => null as never,
-			},
-		];
+		store.clips = [{ path: "Recipes/gone.md", title: "Gone", markdown: "not a clip any more" }];
 		renderWith(store);
 		expect(await screen.findByText(/could not be read\. It still needs review/)).toBeTruthy();
+	});
+
+	it("keeps a clip that changed after the review opened, and offers to reload it", async () => {
+		const store: MockRecipeStore = { recipes: [], settings: { ...DEFAULT_SETTINGS } };
+		const path = "Recipes/flatbread.md";
+		store.clips = [clipEntry("partial-string-steps", path, "Quick Flatbread")];
+		renderWith(store);
+		await screen.findByRole("heading", { name: "Review web clip" });
+
+		const newer = loadClip("partial-string-steps").replace("- 2 T olive oil", "- 2 T olive oil\n- 1 tsp za'atar");
+		const clip = store.clips[0];
+		if (clip) {
+			clip.markdown = newer;
+		}
+		fireEvent.click(screen.getByRole("button", { name: "Save recipe" }));
+
+		expect(await screen.findByText(/changed after the review opened, so nothing was saved/)).toBeTruthy();
+		expect(store.clips[0]?.markdown).toBe(newer);
+		expect(store.recipes).toHaveLength(0);
+
+		fireEvent.click(screen.getByRole("button", { name: "Reload clip" }));
+		await waitFor(() =>
+			expect((screen.getByLabelText("Ingredients (one per line)") as HTMLTextAreaElement).value).toContain(
+				"1 tsp za'atar",
+			),
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Save recipe" }));
+		await waitFor(() => expect(store.recipes).toHaveLength(1));
+		expect(store.recipes[0]?.frontmatter.ingredients.map((item) => item.raw)).toContain("1 tsp za'atar");
+		expect(store.clips).toHaveLength(0);
+	});
+
+	it("leaves the clip intact and pending when the save fails", async () => {
+		const store: MockRecipeStore = {
+			recipes: [],
+			settings: { ...DEFAULT_SETTINGS },
+			failClipWrites: 1,
+		};
+		const path = "Recipes/flatbread.md";
+		const original = loadClip("partial-string-steps");
+		store.clips = [clipEntry("partial-string-steps", path, "Quick Flatbread")];
+		renderWith(store);
+		await screen.findByRole("heading", { name: "Review web clip" });
+
+		fireEvent.click(screen.getByRole("button", { name: "Save recipe" }));
+		expect(await screen.findByText(/could not be saved \(disk full\)\. The web clip is unchanged/)).toBeTruthy();
+		expect(store.clips[0]?.markdown).toBe(original);
+		expect(store.recipes).toHaveLength(0);
+		expect(screen.queryByRole("button", { name: "Reload clip" })).toBeNull();
+
+		fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+		expect(screen.getByText("1 web clip needs review before it is used as a recipe.")).toBeTruthy();
 	});
 });

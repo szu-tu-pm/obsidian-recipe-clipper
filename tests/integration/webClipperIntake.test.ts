@@ -5,7 +5,9 @@ import {
 	isPendingWebClip,
 	listPendingWebClips,
 	loadWebClipForReview,
+	saveReviewedWebClip,
 	WEB_CLIP_FIELDS,
+	WEB_CLIP_SECTIONS,
 	WEB_CLIP_TYPE,
 	webClipToReviewResult,
 	type WebClipReviewResult,
@@ -25,16 +27,25 @@ import {
 	FIXTURE_NAMES,
 	loadClip,
 	loadSource,
+	LEGACY_TEMPLATE_PATH,
 	loadTemplate,
+	OBJECT_TEXT_MODES,
 	renderTemplate,
+	UndocumentedSyntaxError,
 	type FixtureName,
+	type UndocumentedObjectText,
 } from "../helpers/webClipperFixtures";
 
 const NOW = "2026-10-17T18:00:00.000Z";
 
-function intake(name: FixtureName, path = `Recipes/${name}.md`, existing = []) {
+function intake(
+	name: FixtureName,
+	path = `Recipes/${name}.md`,
+	existing = [],
+	markdown = loadClip(name),
+) {
 	return webClipToReviewResult({
-		markdown: loadClip(name),
+		markdown,
 		path,
 		yaml: clipYamlCodec,
 		existingRecipes: existing,
@@ -80,9 +91,11 @@ const EXPECTED: Record<
 		total: number | null;
 		cookingMethods: string[];
 		ingredientsRaw: string[];
-		instructions: string[];
+		/** Per undocumented object-text mode when the result depends on it. */
+		instructions: string[] | Record<UndocumentedObjectText, string[]>;
 		images: string[];
 		importedAt: string;
+		warnings: RegExp[];
 	}
 > = {
 	"complete-howtostep": {
@@ -112,6 +125,7 @@ const EXPECTED: Record<
 		],
 		images: ["https://cdn.example-kitchen.test/chili.jpg"],
 		importedAt: "2026-10-17T16:30:00.000Z",
+		warnings: [],
 	},
 	"partial-string-steps": {
 		status: "extracted",
@@ -129,6 +143,7 @@ const EXPECTED: Record<
 		instructions: ["Mix the dry ingredients.", "Add the water and oil.", "Cook in a hot pan."],
 		images: [],
 		importedAt: "2026-10-17T16:30:00.000Z",
+		warnings: [],
 	},
 	"no-schema": {
 		status: "manual-fallback",
@@ -146,6 +161,7 @@ const EXPECTED: Record<
 		instructions: [],
 		images: [],
 		importedAt: "2026-10-17T16:30:00.000Z",
+		warnings: [/no schema\.org recipe data/],
 	},
 	"sections-relative-image": {
 		status: "extracted",
@@ -160,9 +176,16 @@ const EXPECTED: Record<
 		total: null,
 		cookingMethods: [],
 		ingredientsRaw: ["1 tsp salt", "1 cup red lentils", "1 tsp salt"],
-		instructions: ["Rinse the lentils.", "Simmer until soft."],
+		// HowToSection steps are nested two arrays deep, which no documented
+		// expression reaches. Only an object printed as JSON carries them.
+		instructions: {
+			empty: [],
+			"object-string": [],
+			json: ["Rinse the lentils.", "Simmer until soft."],
+		},
 		images: ["https://example.org/img/lentil.jpg"],
 		importedAt: "2026-10-17T16:30:00.000Z",
+		warnings: [/groups its steps into sections/],
 	},
 	"repeat-url": {
 		status: "extracted",
@@ -180,8 +203,60 @@ const EXPECTED: Record<
 		instructions: ["Simmer the beans."],
 		images: [],
 		importedAt: "2026-10-17T17:00:00.000Z",
+		warnings: [],
+	},
+	"string-steps-object-author": {
+		status: "extracted",
+		extractionMethod: "json-ld",
+		title: "Classic Pancakes",
+		sourceUrl: "https://pancakes.example.net/classic",
+		author: "Julia Child",
+		siteName: "Pancake Place",
+		servings: { raw: "8 pancakes", amount: 8 },
+		prep: null,
+		cook: null,
+		total: null,
+		// A bare array key gives only the first cooking method.
+		cookingMethods: ["Frying"],
+		ingredientsRaw: ["1 cup all-purpose flour", "2 tbsp sugar", "1 cup milk", "1 egg"],
+		instructions: [
+			"Whisk the dry ingredients.",
+			"Beat in the milk and egg.",
+			"Fry ladlefuls on a hot griddle.",
+		],
+		images: ["https://pancakes.example.net/stack.jpg"],
+		importedAt: "2026-10-17T16:30:00.000Z",
+		warnings: [],
+	},
+	"mixed-steps-image-objects": {
+		status: "extracted",
+		extractionMethod: "json-ld",
+		title: "Focaccia",
+		sourceUrl: "https://bake.example.com/focaccia",
+		// A bare array key gives only the first of two plain-string authors.
+		author: "Ken Forkish",
+		siteName: "Bake",
+		servings: { raw: "1 tray", amount: 1 },
+		prep: null,
+		cook: null,
+		total: null,
+		cookingMethods: [],
+		ingredientsRaw: ["500 g bread flour", "400 ml water", "10 g salt", "1 tsp instant yeast"],
+		instructions: [
+			"Mix everything into a shaggy dough.",
+			"Rest overnight in the fridge.",
+			"Bake at 230 °C for 25 minutes.",
+		],
+		images: ["https://bake.example.com/a.jpg"],
+		importedAt: "2026-10-17T16:30:00.000Z",
+		warnings: [],
 	},
 };
+
+function expectedInstructions(name: FixtureName, mode: UndocumentedObjectText): string[] {
+	const value = EXPECTED[name].instructions;
+	return Array.isArray(value) ? value : value[mode];
+}
 
 describe("web clipper template", () => {
 	const template = loadTemplate();
@@ -208,30 +283,125 @@ describe("web clipper template", () => {
 		}
 	});
 
-	it("only fills recipe fields from schema.org variables and never from fixed text", () => {
-		const schemaKeys: Record<string, string> = {
-			title: "name",
-			author: "author",
-			publisher: "publisher",
-			recipeYield: "recipeYield",
-			prepTime: "prepTime",
-			cookTime: "cookTime",
-			totalTime: "totalTime",
-			cookingMethod: "cookingMethod",
-			image: "image",
-			recipeIngredient: "recipeIngredient",
-			recipeInstructions: "recipeInstructions",
-		};
-		for (const [property, schemaKey] of Object.entries(schemaKeys)) {
-			expect(template.properties.find((p) => p.name === property)?.value).toBe(
-				`{{schema:@Recipe:${schemaKey}}}`,
-			);
+	it("fills recipe fields only from schema.org or page variables, never from fixed text", () => {
+		for (const property of template.properties) {
+			if (property.name === "type" || property.name === "schemaVersion") {
+				continue;
+			}
+			expect(property.value).toMatch(/^\{\{(schema:@Recipe:[^}]+|url|title|site|author|date)\}\}$/);
 		}
 		expect(template.properties.find((p) => p.name === "sourceUrl")?.value).toBe("{{url}}");
 	});
 
-	it.each(FIXTURE_NAMES)("renders %s exactly as the fixture note", (name) => {
+	it("lists every ingredient and step in the note body, one item per line", () => {
+		const body = template.noteContentFormat;
+		for (const heading of Object.values(WEB_CLIP_SECTIONS)) {
+			expect(body.split("\n")).toContain(heading);
+		}
+		expect(body).toContain("{{schema:@Recipe:recipeIngredient[*]|list}}");
+		expect(body).toContain("{{schema:@Recipe:recipeInstructions[*].text|list:numbered}}");
+		expect(body).toContain("{{schema:@Recipe:recipeInstructions[*]|list:numbered}}");
+	});
+
+	it.each(FIXTURE_NAMES)("renders %s exactly as the hand-written fixture note", (name) => {
 		expect(renderTemplate(template, loadSource(name))).toBe(loadClip(name));
+	});
+});
+
+/** How many of the page's ingredients and steps appear, as written, in the rendered clip. */
+function captured(templatePath: string | undefined, name: FixtureName) {
+	const rendered = renderTemplate(loadTemplate(templatePath), loadSource(name));
+	const recipe = loadSource(name).recipe as {
+		recipeIngredient: string[];
+		recipeInstructions: Array<{ text: string }>;
+	};
+	return {
+		ingredients: recipe.recipeIngredient.filter((line) => rendered.includes(line)).length,
+		steps: recipe.recipeInstructions.filter((step) => rendered.includes(step.text)).length,
+		ofIngredients: recipe.recipeIngredient.length,
+		ofSteps: recipe.recipeInstructions.length,
+	};
+}
+
+describe("template captures every item (documented renderer)", () => {
+	it("the first-shipped bare-key template keeps only the first ingredient and the first step", () => {
+		// complete-howtostep has 6 ingredients and 3 HowToStep steps.
+		expect(captured(LEGACY_TEMPLATE_PATH, "complete-howtostep")).toEqual({
+			ingredients: 1,
+			steps: 0,
+			ofIngredients: 6,
+			ofSteps: 3,
+		});
+	});
+
+	it("the current template keeps all of them", () => {
+		expect(captured(undefined, "complete-howtostep")).toEqual({
+			ingredients: 6,
+			steps: 3,
+			ofIngredients: 6,
+			ofSteps: 3,
+		});
+	});
+
+	it("the legacy clip, read by the intake, has at most one ingredient", () => {
+		const markdown = renderTemplate(loadTemplate(LEGACY_TEMPLATE_PATH), loadSource("complete-howtostep"));
+		const result = webClipToReviewResult({ markdown, path: "Recipes/x.md", yaml: clipYamlCodec });
+		expect(draftOf(result).frontmatter.ingredients.length).toBeLessThanOrEqual(1);
+	});
+});
+
+describe("renderer emulation follows the documentation", () => {
+	const page = { url: "https://e.test/", title: "", site: "", author: "", date: "" };
+	const render = (value: string, recipe: Record<string, unknown>, mode?: UndocumentedObjectText) =>
+		renderTemplate(
+			{
+				schemaVersion: "0.1.0",
+				name: "t",
+				behavior: "create",
+				noteNameFormat: "",
+				path: "",
+				triggers: [],
+				properties: [],
+				noteContentFormat: value,
+			},
+			{ category: "unit", page, recipe: { "@type": "Recipe", ...recipe } },
+			mode,
+		).replace(/^---\n\n---\n/, "");
+
+	it("gives the first item of a bare array key", () => {
+		expect(render("{{schema:@Recipe:recipeIngredient}}", { recipeIngredient: ["a", "b"] })).toBe("a");
+	});
+
+	it("gives an indexed item and a property from all items", () => {
+		const recipe = { author: [{ name: "A" }, { name: "B" }] };
+		expect(render("{{schema:@Recipe:author[1].name}}", recipe)).toBe("B");
+		expect(render('{{schema:@Recipe:author[*].name|join:", "}}', recipe)).toBe("A, B");
+		expect(render('{{schema:@Recipe:author[*].name|join:"\\n"}}', recipe)).toBe("A\nB");
+	});
+
+	it("renders list, list:numbered and first as documented", () => {
+		const recipe = { recipeIngredient: ["a", "b"] };
+		expect(render("{{schema:@Recipe:recipeIngredient[*]|list}}", recipe)).toBe("- a\n- b");
+		expect(render("{{schema:@Recipe:recipeIngredient[*]|list:numbered}}", recipe)).toBe("1. a\n2. b");
+		expect(render("{{schema:@Recipe:recipeIngredient[*]|first}}", recipe)).toBe("a");
+		expect(render("{{schema:@Recipe:name|first}}", { name: "x" })).toBe("x");
+	});
+
+	it("prints an object reaching plain text per the chosen mode", () => {
+		const recipe = { author: { name: "A" } };
+		expect(render("{{schema:@Recipe:author}}", recipe, "empty")).toBe("");
+		expect(render("{{schema:@Recipe:author}}", recipe, "json")).toBe('{"name":"A"}');
+		expect(render("{{schema:@Recipe:author}}", recipe, "object-string")).toBe("[object Object]");
+	});
+
+	it("throws on syntax the documentation does not describe", () => {
+		const recipe = { recipeInstructions: [{ itemListElement: [{ text: "x" }] }] };
+		expect(() => render("{{schema:@Recipe:recipeInstructions[*].itemListElement[*].text}}", recipe)).toThrow(
+			UndocumentedSyntaxError,
+		);
+		expect(() => render("{{schema:@Recipe:name|map:x => x}}", { name: "n" })).toThrow(UndocumentedSyntaxError);
+		expect(() => render("{{schema:@Recipe:name|list}}", { name: "n" })).toThrow(UndocumentedSyntaxError);
+		expect(() => render("{{selector:h1}}", {})).toThrow(UndocumentedSyntaxError);
 	});
 });
 
@@ -255,13 +425,42 @@ describe("web clip intake", () => {
 		expect(fm.totalTimeMinutes).toBe(expected.total);
 		expect(fm.cookingMethods).toEqual(expected.cookingMethods);
 		expect(fm.ingredients.map((item) => item.raw)).toEqual(expected.ingredientsRaw);
-		expect(draft.instructions).toEqual(expected.instructions);
+		expect(draft.instructions).toEqual(expectedInstructions(name, "empty"));
 		expect(fm.importedAt).toBe(expected.importedAt);
 		expect(fm.rating).toBeNull();
 		expect(fm.images).toEqual([]);
 		expect(draft.notes).toBe("");
 		const images = result.status === "extracted" ? result.candidate.candidateImages : [];
 		expect(images.map((image) => image.sourceUrl)).toEqual(expected.images);
+		expect(result.warnings).toHaveLength(expected.warnings.length);
+		expected.warnings.forEach((pattern, index) => expect(result.warnings[index]).toMatch(pattern));
+	});
+
+	const modeCases = FIXTURE_NAMES.flatMap((name) => OBJECT_TEXT_MODES.map((mode) => [name, mode] as const));
+	it.each(modeCases)(
+		"%s rendered with objects printed as %s: same recipe, nothing invented",
+		(name, mode) => {
+			const expected = EXPECTED[name];
+			const markdown = renderTemplate(loadTemplate(), loadSource(name), mode);
+			const result = intake(name, `Recipes/${name}.md`, [], markdown);
+			const draft = draftOf(result);
+			expect(result.status).toBe(expected.status);
+			expect(draft.frontmatter.title).toBe(expected.title);
+			expect(draft.frontmatter.author).toBe(expected.author);
+			expect(draft.frontmatter.siteName).toBe(expected.siteName);
+			expect(draft.frontmatter.sourceUrl).toBe(expected.sourceUrl);
+			expect(draft.frontmatter.servings).toEqual(expected.servings);
+			expect(draft.frontmatter.ingredients.map((item) => item.raw)).toEqual(expected.ingredientsRaw);
+			expect(draft.instructions).toEqual(expectedInstructions(name, mode));
+			const images = result.status === "extracted" ? result.candidate.candidateImages : [];
+			expect(images.map((image) => image.sourceUrl)).toEqual(expected.images);
+		},
+	);
+
+	it("reports steps printed as [object Object] instead of guessing them", () => {
+		const markdown = renderTemplate(loadTemplate(), loadSource("sections-relative-image"), "object-string");
+		const result = intake("sections-relative-image", "Recipes/s.md", [], markdown);
+		expect(result.warnings.join(" ")).toMatch(/could not be read/);
 	});
 
 	it.each(FIXTURE_NAMES)(
@@ -269,6 +468,7 @@ describe("web clip intake", () => {
 		(name) => {
 			const expected = EXPECTED[name];
 			const { reparsed, validation, markdown } = roundTrip(draftOf(intake(name)));
+			expect(markdown).not.toContain(WEB_CLIP_SECTIONS.instructionItems);
 			expect(validation.success).toBe(true);
 			expect(markdown).not.toContain(WEB_CLIP_TYPE);
 			expect(reparsed.editedExternally).toBe(false);
@@ -308,6 +508,19 @@ describe("web clip intake", () => {
 		const result = intake("no-schema");
 		expect(result.status).toBe("manual-fallback");
 		expect(result.warnings.join(" ")).toMatch(/no schema\.org recipe data/);
+	});
+
+	it("uses ingredient and step edits the user made in the clip note before review", () => {
+		const markdown = loadClip("repeat-url")
+			.replace("- 1 ½ cups dried black beans", "- 1 ½ cups dried black beans\n- 1 tsp cumin")
+			.replace("1. Simmer the beans.", "1. Simmer the beans.\n2. Season.");
+		const draft = draftOf(intake("repeat-url", "Recipes/r.md", [], markdown));
+		expect(draft.frontmatter.ingredients.map((item) => item.raw)).toEqual([
+			"2 Tbsp. olive oil",
+			"1 ½ cups dried black beans",
+			"1 tsp cumin",
+		]);
+		expect(draft.instructions).toEqual(["Simmer the beans.", "Season."]);
 	});
 
 	it("rejects notes that are not clips", () => {
@@ -350,18 +563,27 @@ describe("clip review gate", () => {
 		await vault.write(path, loadClip("complete-howtostep"));
 		indexer.rebuildFromCache(vault);
 
-		const review = await loadWebClipForReview(vault, clipYamlCodec, path, [], () => NOW);
-		expect(review).not.toBeNull();
-		const saved = await repository.save(draftOf(review as WebClipReviewResult));
+		const loaded = await loadWebClipForReview(vault, clipYamlCodec, path, [], () => NOW);
+		expect(loaded).not.toBeNull();
+		if (!loaded) {
+			return;
+		}
+		const outcome = await saveReviewedWebClip(
+			vault,
+			clipYamlCodec,
+			path,
+			loaded.revision,
+			draftOf(loaded.review),
+		);
 		indexer.rebuildFromCache(vault);
 
-		expect(saved.path).toBe(path);
+		expect(outcome.status).toBe("saved");
 		expect(listPendingWebClips(vault, "Recipes", "Recipes/_attachments")).toEqual([]);
 		expect(indexer.list().map((entry) => [entry.path, entry.title])).toEqual([
 			[path, "Black Bean Chili"],
 		]);
-		const loaded = await repository.loadByPath(path);
-		expect(loaded.ok).toBe(true);
+		const reloaded = await repository.loadByPath(path);
+		expect(reloaded.ok).toBe(true);
 		// A reviewed note is no longer a clip, so loading it again for review is refused.
 		expect(await loadWebClipForReview(vault, clipYamlCodec, path, [])).toBeNull();
 	});
@@ -416,14 +638,17 @@ describe("repeated source URL", () => {
 		indexer.rebuildFromCache(vault);
 
 		const known = indexer.list().map((entry) => ({ id: entry.id, sourceUrl: entry.sourceUrl, path: entry.path }));
-		const review = (await loadWebClipForReview(vault, clipYamlCodec, clipPath, known)) as WebClipReviewResult;
+		const loaded = await loadWebClipForReview(vault, clipYamlCodec, clipPath, known);
+		const review = loaded?.review as WebClipReviewResult;
 		expect(review.duplicates).toEqual([
 			{ id: existing.frontmatter.id, sourceUrl: existing.frontmatter.sourceUrl, path: existingPath },
 		]);
 
 		const draft = draftOf(review);
 		expect(draft.frontmatter.id).not.toBe(existing.frontmatter.id);
-		await repository.save(draft);
+		expect(
+			(await saveReviewedWebClip(vault, clipYamlCodec, clipPath, loaded?.revision ?? "", draft)).status,
+		).toBe("saved");
 		indexer.rebuildFromCache(vault);
 
 		expect(await vault.read(existingPath)).toBe(before);
@@ -473,7 +698,7 @@ describe("review corrections", () => {
 });
 
 describe("mutation probes", () => {
-	it("dropping the author property from the template loses the author the check relies on", () => {
+	it("dropping the author properties from the template loses the author the check relies on", () => {
 		const template = loadTemplate();
 		const source = loadSource("complete-howtostep");
 		const author = (t: typeof template) =>
@@ -488,7 +713,7 @@ describe("mutation probes", () => {
 		const mutated = {
 			...template,
 			properties: template.properties.map((property) =>
-				property.name === "author" ? { ...property, value: "" } : property,
+				property.name.startsWith("author") ? { ...property, value: "" } : property,
 			),
 		};
 		expect(author(mutated)).toBeNull();
@@ -512,5 +737,93 @@ describe("mutation probes", () => {
 		];
 		expect(intake("repeat-url", "Recipes/r.md", existing as never).duplicates).toHaveLength(1);
 		expect(intake("repeat-url", "Recipes/r.md", []).duplicates).toHaveLength(0);
+	});
+});
+
+describe("guarded review save", () => {
+	const path = "Recipes/Black Bean Chili 2026-10-17 093000.md";
+
+	async function openClip() {
+		const { vault, indexer } = setupVault();
+		await vault.write(path, loadClip("complete-howtostep"));
+		const loaded = await loadWebClipForReview(vault, clipYamlCodec, path, []);
+		if (!loaded) {
+			throw new Error("clip did not load");
+		}
+		return { vault, indexer, loaded };
+	}
+
+	it("does not write when the clip changed after the review opened", async () => {
+		const { vault, indexer, loaded } = await openClip();
+		const newer = loadClip("complete-howtostep").replace("- salt to taste", "- salt to taste\n- 1 lime");
+		await vault.write(path, newer);
+
+		const outcome = await saveReviewedWebClip(vault, clipYamlCodec, path, loaded.revision, draftOf(loaded.review));
+		expect(outcome.status).toBe("changed");
+		expect(await vault.read(path)).toBe(newer);
+		indexer.rebuildFromCache(vault);
+		expect(indexer.list()).toEqual([]);
+		expect(listPendingWebClips(vault, "Recipes", "Recipes/_attachments")).toHaveLength(1);
+	});
+
+	it("does not write when the clip was deleted after the review opened", async () => {
+		const { vault, loaded } = await openClip();
+		await vault.remove(path);
+		const outcome = await saveReviewedWebClip(vault, clipYamlCodec, path, loaded.revision, draftOf(loaded.review));
+		expect(outcome.status).toBe("changed");
+		expect(await vault.exists(path)).toBe(false);
+	});
+
+	it("restores the original clip when the write throws after writing part of the note", async () => {
+		const { vault, indexer, loaded } = await openClip();
+		const original = await vault.read(path);
+		const failing = Object.create(vault) as ClipVault;
+		let calls = 0;
+		failing.write = async (target: string, content: string) => {
+			calls += 1;
+			if (calls === 1) {
+				await vault.write(target, content.slice(0, 40));
+				throw new Error("disk full");
+			}
+			await vault.write(target, content);
+		};
+		failing.read = (target: string) => vault.read(target);
+
+		const outcome = await saveReviewedWebClip(failing, clipYamlCodec, path, loaded.revision, draftOf(loaded.review));
+		expect(outcome).toEqual({
+			status: "failed",
+			message: "The recipe could not be saved (disk full). The web clip is unchanged and still needs review.",
+		});
+		expect(await vault.read(path)).toBe(original);
+		indexer.rebuildFromCache(vault);
+		expect(indexer.list()).toEqual([]);
+		expect(listPendingWebClips(vault, "Recipes", "Recipes/_attachments")).toHaveLength(1);
+	});
+
+	it("restores the original clip when the note does not read back as written", async () => {
+		const { vault, loaded } = await openClip();
+		const original = await vault.read(path);
+		const lossy = Object.create(vault) as ClipVault;
+		let calls = 0;
+		lossy.write = async (target: string, content: string) => {
+			calls += 1;
+			await vault.write(target, calls === 1 ? content.slice(0, -10) : content);
+		};
+		lossy.read = (target: string) => vault.read(target);
+		const outcome = await saveReviewedWebClip(lossy, clipYamlCodec, path, loaded.revision, draftOf(loaded.review));
+		expect(outcome.status).toBe("failed");
+		expect(await vault.read(path)).toBe(original);
+	});
+
+	it("says so when even the restore fails", async () => {
+		const { vault, loaded } = await openClip();
+		const broken = Object.create(vault) as ClipVault;
+		broken.write = async () => {
+			throw new Error("read-only");
+		};
+		broken.read = (target: string) => vault.read(target);
+		const outcome = await saveReviewedWebClip(broken, clipYamlCodec, path, loaded.revision, draftOf(loaded.review));
+		expect(outcome.status).toBe("failed");
+		expect(outcome.status === "failed" && outcome.message).toMatch(/could not be restored/);
 	});
 });

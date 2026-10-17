@@ -6,6 +6,8 @@ title: "Red Lentil Soup"
 pageTitle: "Lentil soup"
 sourceUrl: "https://example.org/r/lentil-soup?id=7"
 author: "Lin"
+authorName:
+authorNames:
 pageAuthor:
 publisher:
 siteName:
@@ -14,9 +16,10 @@ prepTime:
 cookTime:
 totalTime:
 cookingMethod:
-image: "[\"/img/lentil.jpg\"]"
-recipeIngredient: "[\"1 tsp salt\",\"1 cup red lentils\",\"1 tsp salt\"]"
-recipeInstructions: "[{\"@type\":\"HowToSection\",\"name\":\"Soup\",\"itemListElement\":[{\"@type\":\"HowToStep\",\"text\":\"Rinse the lentils.\"},{\"@type\":\"HowToStep\",\"text\":\"Simmer until soft.\"}]}]"
+image: "/img/lentil.jpg"
+imageUrl:
+imageFirstUrl:
+instructionTypes: "HowToSection"
 ---
 # Red Lentil Soup
 
@@ -24,3 +27,29 @@ recipeInstructions: "[{\"@type\":\"HowToSection\",\"name\":\"Soup\",\"itemListEl
 > Open Recipe Manager to review this clip. It is not a finished recipe, and it is not offered for shopping lists, until you save the review.
 
 Clipped from https://example.org/r/lentil-soup?id=7
+
+## Ingredients
+
+- 1 tsp salt
+- 1 cup red lentils
+- 1 tsp salt
+
+## Instructions
+
+1.
+
+%%
+Recipe Manager reads the sections below only when a list above came out empty or incomplete.
+
+### Ingredient text
+
+1 tsp salt
+
+### Instruction items
+
+1.
+
+### Instruction text
+
+
+%%

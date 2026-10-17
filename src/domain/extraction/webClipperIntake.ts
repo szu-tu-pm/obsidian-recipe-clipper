@@ -1,7 +1,12 @@
 import { parseIngredientLine } from "../aggregation/stage1LexicalParser";
-import { splitFrontmatter, type YamlCodec } from "../schema/recipeMarkdown";
+import {
+	serializeRecipeFile,
+	splitFrontmatter,
+	type YamlCodec,
+} from "../schema/recipeMarkdown";
 import {
 	createManualRecipe,
+	fnv1aHex,
 	generateRecipeId,
 	joinVaultPath,
 	RECIPE_SCHEMA_VERSION,
@@ -34,7 +39,7 @@ import { findDuplicateSourceUrls } from "./urlClipper";
  */
 export const WEB_CLIP_TYPE = "recipe-clip" as const;
 
-/** Frontmatter keys the template writes and this module reads. */
+/** Frontmatter keys the template writes and this module reads. All are single values. */
 export const WEB_CLIP_FIELDS = [
 	"schemaVersion",
 	"type",
@@ -43,6 +48,8 @@ export const WEB_CLIP_FIELDS = [
 	"pageTitle",
 	"sourceUrl",
 	"author",
+	"authorName",
+	"authorNames",
 	"pageAuthor",
 	"publisher",
 	"siteName",
@@ -52,9 +59,27 @@ export const WEB_CLIP_FIELDS = [
 	"totalTime",
 	"cookingMethod",
 	"image",
-	"recipeIngredient",
-	"recipeInstructions",
+	"imageUrl",
+	"imageFirstUrl",
+	"instructionTypes",
 ] as const;
+
+/**
+ * Body sections the template writes. Multi-item fields live in the body, one
+ * item per line, because a bare array key only renders its first item.
+ */
+export const WEB_CLIP_SECTIONS = {
+	/** `recipeIngredient[*]|list`: every ingredient string. */
+	ingredients: "## Ingredients",
+	/** `recipeInstructions[*].text|list:numbered`: HowToStep text, one line per item. */
+	instructions: "## Instructions",
+	/** Bare `recipeIngredient`: a single ingredient string when the page has no array. */
+	ingredientText: "### Ingredient text",
+	/** `recipeInstructions[*]|list:numbered`: plain-string steps, one line per item. */
+	instructionItems: "### Instruction items",
+	/** Bare `recipeInstructions`: a single instructions string. */
+	instructionText: "### Instruction text",
+} as const;
 
 export type WebClipReviewResult = UrlExtractionSuccess | UrlExtractionFallback;
 
@@ -167,31 +192,228 @@ function httpUrl(value: unknown): string | null {
 	}
 }
 
-/** Ingredient lines exactly as clipped: split into lines and trimmed, never merged or deduplicated. */
-function clippedIngredientLines(value: unknown): string[] {
-	const lines: string[] = [];
-	const visit = (item: unknown): void => {
-		if (typeof item === "string") {
-			for (const line of item.split(/\r?\n/)) {
-				const trimmed = line.trim();
-				if (trimmed) {
-					lines.push(trimmed);
-				}
+type SectionKey = keyof typeof WEB_CLIP_SECTIONS;
+
+/** Lines under each known heading, up to the next heading or `%%` comment fence. */
+function readSections(body: string): Partial<Record<SectionKey, string[]>> {
+	const byHeading = new Map<string, SectionKey>(
+		Object.entries(WEB_CLIP_SECTIONS).map(([key, heading]) => [heading, key as SectionKey]),
+	);
+	const sections: Partial<Record<SectionKey, string[]>> = {};
+	let current: SectionKey | null = null;
+	for (const rawLine of body.replace(/\r\n/g, "\n").split("\n")) {
+		const trimmed = rawLine.trim();
+		if (/^#{1,6}\s/.test(trimmed) || trimmed === "%%") {
+			current = byHeading.get(trimmed) ?? null;
+			if (current) {
+				sections[current] = [];
 			}
-			return;
+			continue;
 		}
-		if (typeof item === "number" && Number.isFinite(item)) {
-			lines.push(String(item));
-			return;
+		if (current) {
+			sections[current]?.push(rawLine);
 		}
-		if (Array.isArray(item)) {
-			for (const entry of item) {
-				visit(entry);
+	}
+	return sections;
+}
+
+const LIST_MARKER = /^(?:[-*+]|\d+[.)])(?:\s+|$)/;
+
+/** List items in order. Empty items are kept so two lists over the same array line up. */
+function listItems(lines: string[] | undefined): string[] {
+	const items: string[] = [];
+	for (const line of lines ?? []) {
+		const trimmed = line.trim();
+		if (!trimmed) {
+			continue;
+		}
+		items.push(trimmed.replace(LIST_MARKER, "").trim());
+	}
+	return items;
+}
+
+function textLines(lines: string[] | undefined): string[] {
+	return (lines ?? []).map((line) => line.trim()).filter(Boolean);
+}
+
+const OBJECT_PLACEHOLDER = /^\[object [A-Za-z]+\]$/;
+
+/** Step text inside a decoded HowToStep, HowToSection or plain string. */
+function stepTexts(value: unknown): string[] {
+	if (typeof value === "string") {
+		return value.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+	}
+	if (Array.isArray(value)) {
+		return value.flatMap(stepTexts);
+	}
+	if (!value || typeof value !== "object") {
+		return [];
+	}
+	const record = value as Record<string, unknown>;
+	if (typeof record.text === "string") {
+		return stepTexts(record.text);
+	}
+	if (record.itemListElement != null) {
+		return stepTexts(record.itemListElement);
+	}
+	return [];
+}
+
+/**
+ * Read one rendered item. An object the clipper printed as JSON is decoded; one
+ * printed as `[object Object]` cannot be read and is reported, never guessed.
+ */
+function readItem(item: string, steps: boolean): { texts: string[]; unreadable: boolean } {
+	if (!item) {
+		return { texts: [], unreadable: false };
+	}
+	if (OBJECT_PLACEHOLDER.test(item)) {
+		return { texts: [], unreadable: true };
+	}
+	if (item.startsWith("{") || item.startsWith("[")) {
+		try {
+			const decoded: unknown = JSON.parse(item);
+			if (decoded && typeof decoded === "object") {
+				const texts = steps ? stepTexts(decoded) : clippedLines(decoded);
+				return { texts, unreadable: texts.length === 0 };
 			}
+		} catch {
+			// Plain text that happens to start with a bracket.
 		}
-	};
-	visit(value);
+	}
+	return { texts: [item], unreadable: false };
+}
+
+/** Strings from a decoded value: split into lines and trimmed, never merged or deduplicated. */
+function clippedLines(value: unknown): string[] {
+	if (typeof value === "string") {
+		return value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+	}
+	if (typeof value === "number" && Number.isFinite(value)) {
+		return [String(value)];
+	}
+	return Array.isArray(value) ? value.flatMap(clippedLines) : [];
+}
+
+function readIngredients(
+	sections: Partial<Record<SectionKey, string[]>>,
+	warnings: string[],
+): string[] {
+	let unreadable = 0;
+	const fromList = listItems(sections.ingredients).flatMap((item) => {
+		const read = readItem(item, false);
+		unreadable += read.unreadable ? 1 : 0;
+		return read.texts;
+	});
+	let lines = fromList;
+	if (lines.length === 0) {
+		lines = textLines(sections.ingredientText).flatMap((item) => {
+			const read = readItem(item, false);
+			unreadable += read.unreadable ? 1 : 0;
+			return read.texts;
+		});
+	}
+	if (unreadable > 0) {
+		warnings.push(
+			`${unreadable} clipped ingredient ${unreadable === 1 ? "entry" : "entries"} could not be read. Add ${unreadable === 1 ? "it" : "them"} in review.`,
+		);
+	}
 	return lines;
+}
+
+function readInstructions(
+	sections: Partial<Record<SectionKey, string[]>>,
+	instructionTypes: string | null,
+	warnings: string[],
+): string[] {
+	const byText = listItems(sections.instructions);
+	const byItem = listItems(sections.instructionItems);
+	let unreadable = 0;
+	const read = (item: string): string[] => {
+		const result = readItem(item, true);
+		unreadable += result.unreadable ? 1 : 0;
+		return result.texts;
+	};
+	let steps: string[];
+	if (byText.length > 0 && byText.length === byItem.length) {
+		// Both lists walk the same array, so item i is the same step in each:
+		// HowToStep text from the first list, a plain string from the second.
+		steps = byText.flatMap((text, index) => (text ? [text] : read(byItem[index] ?? "")));
+	} else if (byText.some(Boolean)) {
+		steps = byText.filter(Boolean);
+		if (byText.some((text) => !text)) {
+			warnings.push("Some clipped steps were not HowToStep text and may be missing. Check them in review.");
+		}
+	} else {
+		steps = byItem.flatMap(read);
+		if (steps.length === 0) {
+			steps = textLines(sections.instructionText).flatMap(read);
+		}
+	}
+	const types = (instructionTypes ?? "").split(",").map((type) => type.trim());
+	if (types.includes("HowToSection")) {
+		warnings.push(
+			steps.length === 0
+				? "The page groups its steps into sections, which the clipper template cannot read. Add the steps in review."
+				: "The page groups its steps into sections. Check that every step was clipped.",
+		);
+	}
+	if (unreadable > 0) {
+		warnings.push(
+			`${unreadable} clipped ${unreadable === 1 ? "step" : "steps"} could not be read. Add ${unreadable === 1 ? "it" : "them"} in review.`,
+		);
+	}
+	return steps;
+}
+
+/** A name from plain text, or from an object the clipper printed as JSON. */
+function nameValue(value: unknown): string | null {
+	const decoded = decodeClipValue(value);
+	if (typeof decoded === "string") {
+		if (OBJECT_PLACEHOLDER.test(decoded)) {
+			return null;
+		}
+		const names = decoded.split(",").map((name) => cleanText(name)).filter(Boolean);
+		return names.length > 0 ? names.join(", ") : null;
+	}
+	if (typeof decoded === "number") {
+		return String(decoded);
+	}
+	if (Array.isArray(decoded)) {
+		const names = decoded.map(nameValue).filter((name): name is string => Boolean(name));
+		return names.length > 0 ? names.join(", ") : null;
+	}
+	if (decoded && typeof decoded === "object") {
+		return nameValue((decoded as Record<string, unknown>).name);
+	}
+	return null;
+}
+
+/** An image URL from plain text, or from an ImageObject the clipper printed as JSON. */
+function imageValue(value: unknown): string | null {
+	const decoded = decodeClipValue(value);
+	if (typeof decoded === "string") {
+		return OBJECT_PLACEHOLDER.test(decoded) ? null : decoded;
+	}
+	if (Array.isArray(decoded)) {
+		return imageValue(decoded[0]);
+	}
+	if (decoded && typeof decoded === "object") {
+		const record = decoded as Record<string, unknown>;
+		return imageValue(record.url ?? record.contentUrl ?? null);
+	}
+	return null;
+}
+
+function scalarValue(value: unknown): string | null {
+	const decoded = decodeClipValue(value);
+	if (typeof decoded === "number" && Number.isFinite(decoded)) {
+		return String(decoded);
+	}
+	if (typeof decoded !== "string" || OBJECT_PLACEHOLDER.test(decoded)) {
+		return null;
+	}
+	return cleanText(decoded) || null;
 }
 
 function clippedAt(value: unknown, now: string): string {
@@ -237,27 +459,31 @@ export function webClipToReviewResult(options: WebClipIntakeOptions): WebClipRev
 	if (!sourceUrl && textValue(clip.sourceUrl)) {
 		warnings.push("The clipped source URL is not an http(s) address and was not kept.");
 	}
-	const ingredientsRaw = clippedIngredientLines(decodeClipValue(clip.recipeIngredient));
+	const sections = readSections(splitFrontmatter(options.markdown).body);
+	const ingredientsRaw = readIngredients(sections, warnings);
+	const instructions = readInstructions(sections, textValue(clip.instructionTypes), warnings);
+	const image = [clip.imageUrl, clip.imageFirstUrl, clip.image]
+		.map(imageValue)
+		.find((value): value is string => Boolean(value));
 	const node: Record<string, unknown> = {
 		"@type": "Recipe",
-		name: decodeClipValue(clip.title),
+		name: scalarValue(clip.title),
 		recipeIngredient: ingredientsRaw,
-		recipeInstructions: decodeClipValue(clip.recipeInstructions),
-		recipeYield: decodeClipValue(clip.recipeYield),
-		prepTime: decodeClipValue(clip.prepTime),
-		cookTime: decodeClipValue(clip.cookTime),
-		totalTime: decodeClipValue(clip.totalTime),
-		cookingMethod: decodeClipValue(clip.cookingMethod),
-		author: decodeClipValue(clip.author),
-		publisher: decodeClipValue(clip.publisher),
-		image: decodeClipValue(clip.image),
+		recipeInstructions: instructions,
+		recipeYield: scalarValue(clip.recipeYield),
+		prepTime: scalarValue(clip.prepTime),
+		cookTime: scalarValue(clip.cookTime),
+		totalTime: scalarValue(clip.totalTime),
+		cookingMethod: scalarValue(clip.cookingMethod),
+		author: nameValue(clip.authorNames) ?? nameValue(clip.authorName) ?? nameValue(clip.author),
+		publisher: nameValue(clip.publisher),
+		image: image ?? null,
 	};
-	// Relative image URLs resolve against the clipped page. Without one they are dropped.
 	const fields = extractJsonLdRecipes([JSON.stringify(node)], sourceUrl ?? "about:blank")[0];
 
 	const attribution: Attribution = {
 		sourceUrl,
-		author: fields?.author ?? textValue(clip.pageAuthor),
+		author: fields?.author ?? nameValue(clip.pageAuthor),
 		siteName: fields?.siteName ?? textValue(clip.siteName),
 	};
 	const duplicates = findDuplicateSourceUrls(sourceUrl, options.existingRecipes ?? []);
@@ -345,6 +571,17 @@ export function webClipToReviewResult(options: WebClipIntakeOptions): WebClipRev
 	};
 }
 
+/** A clip opened for review, with the revision of the note it was read from. */
+export interface LoadedWebClip {
+	path: string;
+	revision: string;
+	review: WebClipReviewResult;
+}
+
+export function webClipRevision(markdown: string): string {
+	return `${markdown.length}:${fnv1aHex(markdown)}`;
+}
+
 /** Read a clip from the vault. Returns null when the note is gone or is no longer a clip. */
 export async function loadWebClipForReview(
 	vault: VaultPort,
@@ -352,7 +589,7 @@ export async function loadWebClipForReview(
 	path: string,
 	existingRecipes: ExistingSourceRecipe[],
 	now?: () => string,
-): Promise<WebClipReviewResult | null> {
+): Promise<LoadedWebClip | null> {
 	let markdown: string;
 	try {
 		markdown = await vault.read(path);
@@ -360,9 +597,73 @@ export async function loadWebClipForReview(
 		return null;
 	}
 	try {
-		return webClipToReviewResult({ markdown, path, yaml, existingRecipes, now });
+		const review = webClipToReviewResult({ markdown, path, yaml, existingRecipes, now });
+		return { path, revision: webClipRevision(markdown), review };
 	} catch {
 		return null;
+	}
+}
+
+export type WebClipSaveOutcome =
+	| { status: "saved"; recipe: RecipeDocument }
+	| { status: "changed"; message: string }
+	| { status: "failed"; message: string };
+
+export const CLIP_CHANGED_MESSAGE =
+	"This web clip changed after the review opened, so nothing was saved. Reload the clip to review the newer version.";
+
+/**
+ * Save a reviewed clip in place, but only over the exact note the review was
+ * read from. The note is re-read immediately before writing; if it changed or
+ * is gone, nothing is written. If the write throws or does not read back
+ * exactly, the original clip text is written back, so a failed save never
+ * leaves a partial note.
+ */
+export async function saveReviewedWebClip(
+	vault: VaultPort,
+	yaml: YamlCodec,
+	path: string,
+	revision: string,
+	recipe: RecipeDocument,
+	now: () => string = () => new Date().toISOString(),
+): Promise<WebClipSaveOutcome> {
+	let original: string;
+	try {
+		original = await vault.read(path);
+	} catch {
+		return { status: "changed", message: CLIP_CHANGED_MESSAGE };
+	}
+	if (webClipRevision(original) !== revision) {
+		return { status: "changed", message: CLIP_CHANGED_MESSAGE };
+	}
+	const next: RecipeDocument = {
+		...recipe,
+		path,
+		editedExternally: false,
+		frontmatter: { ...recipe.frontmatter, updatedAt: now() },
+	};
+	const markdown = serializeRecipeFile(next, yaml);
+	try {
+		await vault.write(path, markdown);
+		if ((await vault.read(path)) !== markdown) {
+			throw new Error("The saved note did not read back as written.");
+		}
+		return { status: "saved", recipe: next };
+	} catch (error) {
+		const detail = error instanceof Error ? error.message : "The note could not be written.";
+		let restored = false;
+		try {
+			await vault.write(path, original);
+			restored = (await vault.read(path)) === original;
+		} catch {
+			restored = false;
+		}
+		return {
+			status: "failed",
+			message: restored
+				? `The recipe could not be saved (${detail}). The web clip is unchanged and still needs review.`
+				: `The recipe could not be saved (${detail}), and the web clip could not be restored. Check ${path}.`,
+		};
 	}
 }
 

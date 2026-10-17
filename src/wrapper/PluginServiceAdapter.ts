@@ -1,6 +1,7 @@
 import type {
+	LoadedWebClip,
 	PendingWebClip,
-	WebClipReviewResult,
+	WebClipSaveOutcome,
 } from "../domain/extraction/webClipperIntake";
 import type { ExistingSourceRecipe } from "../domain/extraction/types";
 import type { RecipeDocument, RecipeImage } from "../domain/schema/recipeSchema";
@@ -41,7 +42,8 @@ export interface RecipeWorkspace {
 	loadClipReview(
 		path: string,
 		existing: ExistingSourceRecipe[],
-	): Promise<WebClipReviewResult | null>;
+	): Promise<LoadedWebClip | null>;
+	saveClipReview(path: string, revision: string, recipe: RecipeDocument): Promise<WebClipSaveOutcome>;
 }
 
 export interface PluginServices {
@@ -52,7 +54,9 @@ export interface PluginServices {
 	listRecipes(): RecipeIndexEntry[];
 	/** Web clips in the recipes folder that still need review. Changes notify `subscribeRecipes`. */
 	listPendingClips(): PendingWebClip[];
-	loadClipReview(path: string): Promise<WebClipReviewResult | null>;
+	loadClipReview(path: string): Promise<LoadedWebClip | null>;
+	/** Save a reviewed clip only over the revision that was reviewed. */
+	saveClipReview(path: string, revision: string, recipe: RecipeDocument): Promise<WebClipSaveOutcome>;
 	loadRecipe(id: string): Promise<RecipeLoadResult>;
 	saveRecipe(recipe: RecipeDocument): Promise<RecipeDocument | null>;
 	deleteRecipe(id: string): Promise<void>;
@@ -134,7 +138,7 @@ export class PluginServiceAdapter implements PluginServices {
 		return this.clipSnapshot;
 	}
 
-	async loadClipReview(path: string): Promise<WebClipReviewResult | null> {
+	async loadClipReview(path: string): Promise<LoadedWebClip | null> {
 		if (this.disposed || !this.workspace) {
 			return null;
 		}
@@ -150,6 +154,31 @@ export class PluginServiceAdapter implements PluginServices {
 		} catch (error) {
 			this.host.logError("Failed to read web clip", error);
 			return null;
+		}
+	}
+
+	async saveClipReview(
+		path: string,
+		revision: string,
+		recipe: RecipeDocument,
+	): Promise<WebClipSaveOutcome> {
+		if (this.disposed || !this.workspace) {
+			return { status: "failed", message: "Recipe workspace is unavailable." };
+		}
+		try {
+			const outcome = await this.workspace.saveClipReview(path, revision, recipe);
+			if (outcome.status === "saved") {
+				this.workspace.rebuildIndex();
+				this.refreshRecipeSnapshot();
+				this.emitRecipeListeners();
+			}
+			return outcome;
+		} catch (error) {
+			this.host.logError("Failed to save web clip review", error);
+			return {
+				status: "failed",
+				message: error instanceof Error ? error.message : "Failed to save the web clip review.",
+			};
 		}
 	}
 
