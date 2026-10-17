@@ -1,26 +1,25 @@
-import { readFileSync } from "node:fs";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { parseIngredientLine } from "../../src/domain/aggregation/stage1LexicalParser";
 import type { RecipeDocument } from "../../src/domain/schema/recipeSchema";
 import {
 	applyTranslation,
-	type TranslationText,
+	revertTranslation,
 } from "../../src/domain/translation/recipeTranslator";
 import { DEFAULT_SETTINGS } from "../../src/pluginSettings";
 import { CollectionView } from "../../src/ui/CollectionView";
 import { WrapperProvider } from "../../src/wrapper/WrapperContext";
-import { createMockPluginServices, seedRecipe } from "../helpers/mockPluginServices";
+import { createMockPluginServices } from "../helpers/mockPluginServices";
+import {
+	FRENCH,
+	recipeFrom,
+	recordedReply,
+	scampiRecipe,
+	SHRIMP,
+	shoppingRows,
+	texts,
+} from "../helpers/translationFixtures";
 
-const recorded = JSON.parse(
-	readFileSync("tests/fixtures/translation/recorded-responses.json", "utf8"),
-) as {
-	source: TranslationText;
-	responses: Array<{ id: string; output?: TranslationText }>;
-};
-const SOURCE = recorded.source;
-const output = (id: string) => recorded.responses.find((item) => item.id === id)!.output!;
-const FRENCH = output("valid-french");
+const output = recordedReply;
 
 afterEach(() => {
 	cleanup();
@@ -56,13 +55,8 @@ function hangingOllama(): typeof fetch {
 }
 
 function shrimpRecipe(): RecipeDocument {
-	const recipe = seedRecipe(SOURCE.title);
-	recipe.frontmatter.ingredients = SOURCE.ingredients.map(parseIngredientLine);
+	const recipe = recipeFrom(SHRIMP);
 	recipe.frontmatter.rating = 5;
-	recipe.frontmatter.images = [
-		{ path: "Recipes/_attachments/shrimp.jpg", alt: "", sourceUrl: null, isPrimary: true },
-	];
-	recipe.instructions = [...SOURCE.instructions];
 	recipe.notes = "Family favourite.";
 	return recipe;
 }
@@ -118,14 +112,14 @@ describe("TranslateRecipeModal", () => {
 
 		const after = await stored();
 		expect(after.frontmatter.title).toBe(FRENCH.title);
-		expect(after.frontmatter.ingredients.map((item) => item.raw)).toEqual(FRENCH.ingredients);
-		expect(after.instructions).toEqual(FRENCH.instructions);
+		expect(after.frontmatter.ingredients.map((item) => item.raw)).toEqual(texts(FRENCH.ingredients));
+		expect(after.instructions).toEqual(texts(FRENCH.instructions));
 		expect(after.frontmatter.id).toBe(snapshot.frontmatter.id);
 		expect(after.frontmatter.rating).toBe(5);
 		expect(after.frontmatter.images).toEqual(snapshot.frontmatter.images);
 		expect(after.notes).toBe("Family favourite.");
 		expect(after.frontmatter.translation?.original.ingredients.map((item) => item.raw)).toEqual(
-			SOURCE.ingredients,
+			texts(SHRIMP.ingredients),
 		);
 	});
 
@@ -194,24 +188,55 @@ describe("TranslateRecipeModal", () => {
 		fireEvent.click(within(dialog).getByRole("button", { name: "Restore original" }));
 		await screen.findByText("Original recipe text restored.");
 		const after = await stored();
-		expect(after.frontmatter.title).toBe(SOURCE.title);
+		expect(after.frontmatter.title).toBe(SHRIMP.title);
 		expect(after.frontmatter.ingredients).toEqual(original.frontmatter.ingredients);
-		expect(after.instructions).toEqual(SOURCE.instructions);
+		expect(after.instructions).toEqual(texts(SHRIMP.instructions));
 		expect(after.frontmatter.translation).toBeUndefined();
 		expect(fetchImpl).not.toHaveBeenCalled();
 	});
 });
 
 describe("RecipeEditorModal with a translated recipe", () => {
-	it("keeps the structured identity of unchanged translated lines on save", async () => {
+	const FR = texts(FRENCH.ingredients);
+	const SRC = texts(SHRIMP.ingredients);
+
+	async function saveIngredients(lines: string[]) {
 		const translated = applyTranslation(shrimpRecipe(), FRENCH, "French");
 		const { stored } = setup(vi.fn() as unknown as typeof fetch, translated);
 		fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-		fireEvent.click(await screen.findByRole("button", { name: "4 stars" }));
+		fireEvent.change(await screen.findByLabelText("Ingredients (one per line)"), {
+			target: { value: lines.join("\n") },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "4 stars" }));
 		fireEvent.click(screen.getByRole("button", { name: "Save recipe" }));
 		await waitFor(async () => expect((await stored()).frontmatter.rating).toBe(4));
-		const after = await stored();
-		expect(after.frontmatter.ingredients).toEqual(translated.frontmatter.ingredients);
+		return { translated, after: await stored() };
+	}
+	const ids = (recipe: RecipeDocument) => recipe.frontmatter.ingredients.map((item) => item.id);
+
+	it.each([
+		["no", FR, [0, 1, 2, 3, 4], SRC],
+		["a casing-only", [FR[0], "3 TBSP Beurre (Doux)", ...FR.slice(2)], [0, 1, 2, 3, 4], SRC],
+		["a whitespace-only", [FR[0], "3   tbsp beurre  (doux)", ...FR.slice(2)], [0, 1, 2, 3, 4], SRC],
+		["a reorder", [FR[0], FR[1], FR[2], FR[4], FR[3]], [0, 1, 2, 4, 3], [SRC[0], SRC[1], SRC[2], SRC[4], SRC[3]]],
+	])(
+		"saving with %s edit keeps every id, aggregation and the revert text",
+		async (_name, lines, order, reverted) => {
+			const { translated, after } = await saveIngredients(lines);
+			expect(ids(after)).toEqual(order.map((i) => ids(translated)[i]));
+			expect(after.frontmatter.translation).toEqual(translated.frontmatter.translation);
+			expect(shoppingRows([after, scampiRecipe()])).toEqual(
+				shoppingRows([shrimpRecipe(), scampiRecipe()]),
+			);
+			expect(revertTranslation(after).frontmatter.ingredients.map((item) => item.raw)).toEqual(reverted);
+		},
+	);
+
+	it("saving a substantive edit re-parses only that line and keeps the stored originals", async () => {
+		const { translated, after } = await saveIngredients([FR[0], FR[1], FR[2], "1 tsp sel fin", FR[4]]);
+		const before = ids(translated);
+		expect(ids(after).filter((id, i) => id === before[i])).toHaveLength(4);
+		expect(after.frontmatter.ingredients[3].raw).toBe("1 tsp sel fin");
 		expect(after.frontmatter.translation).toEqual(translated.frontmatter.translation);
 	});
 });

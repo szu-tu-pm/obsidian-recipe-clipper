@@ -3,9 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import { aggregateIngredients } from "../../src/domain/aggregation/aggregator";
 import { parseIngredientLine } from "../../src/domain/aggregation/stage1LexicalParser";
 import { parseModelContent } from "../../src/domain/extraction/ollamaExtractor";
-import { parseRecipeFile, serializeRecipeFile } from "../../src/domain/schema/recipeMarkdown";
-import { createManualRecipe, type RecipeDocument } from "../../src/domain/schema/recipeSchema";
-import { createShoppingListFromRecipes } from "../../src/domain/schema/shoppingListSchema";
+import {
+	parseRecipeFile,
+	reconcileIngredientLines,
+	serializeRecipeFile,
+} from "../../src/domain/schema/recipeMarkdown";
+import type { RecipeDocument } from "../../src/domain/schema/recipeSchema";
 import {
 	applyTranslation,
 	ingredientsForAggregation,
@@ -20,31 +23,23 @@ import {
 	unitTokens,
 	validateTranslation,
 	type OllamaTranslateOptions,
-	type TranslationText,
+	type TranslationPayload,
+	type TranslationReply,
 } from "../../src/domain/translation/recipeTranslator";
 import { jsonYamlCodec } from "../../src/domain/vault/inMemoryVault";
-
-interface RecordedResponse {
-	id: string;
-	category: string;
-	language: string;
-	expect: "ready" | "failed";
-	problem?: string;
-	output?: unknown;
-	content?: string;
-}
-
-const recorded = JSON.parse(
-	readFileSync("tests/fixtures/translation/recorded-responses.json", "utf8"),
-) as { source: TranslationText; responses: RecordedResponse[] };
-
-const SOURCE = recorded.source;
-const FRENCH = recorded.responses.find((item) => item.id === "valid-french")!
-	.output as TranslationText;
-
-function contentOf(response: RecordedResponse): string {
-	return response.content ?? JSON.stringify(response.output);
-}
+import {
+	contentOf,
+	FLATBREAD,
+	FRENCH,
+	recipeFrom,
+	recorded,
+	recordedReply,
+	scampiRecipe,
+	SHRIMP,
+	shoppingRows,
+	texts,
+	type RecordedResponse,
+} from "../helpers/translationFixtures";
 
 /** The offline part of translateWithOllama: parse, schema-check, then guard. */
 function evaluate(response: RecordedResponse): { status: "ready" | "failed"; problems: string[] } {
@@ -62,7 +57,7 @@ function evaluate(response: RecordedResponse): { status: "ready" | "failed"; pro
 	if (!parsed.success) {
 		return schemaFailure;
 	}
-	const check = validateTranslation(SOURCE, parsed.data);
+	const check = validateTranslation(recorded.sources[response.source], parsed.data);
 	return check.ok ? { status: "ready", problems: [] } : { status: "failed", problems: check.problems };
 }
 
@@ -96,20 +91,28 @@ function options(
 	};
 }
 
-function sourceRecipe(): RecipeDocument {
-	const recipe = createManualRecipe(SOURCE.title);
-	recipe.frontmatter.ingredients = SOURCE.ingredients.map(parseIngredientLine);
-	recipe.frontmatter.rating = 4;
-	recipe.frontmatter.images = [
-		{ path: "Recipes/_attachments/shrimp.jpg", alt: "Shrimp", sourceUrl: null, isPrimary: true },
-	];
-	recipe.instructions = [...SOURCE.instructions];
-	recipe.notes = "Double the garlic next time.";
-	return recipe;
+/** What the recipe editor does with the ingredient textarea on save. */
+function editIngredients(recipe: RecipeDocument, lines: string[]): RecipeDocument {
+	return {
+		...recipe,
+		frontmatter: {
+			...recipe.frontmatter,
+			ingredients: reconcileIngredientLines(lines, recipe.frontmatter.ingredients),
+		},
+	};
+}
+
+/** A reply that "translates" a base by tagging each part, keeping amounts and keys. */
+function echoReply(source: TranslationPayload, tag: string): TranslationReply {
+	return {
+		title: `${source.title} (${tag})`,
+		ingredients: source.ingredients.map((item) => ({ id: item.id, text: `${item.text} ${tag}` })),
+		instructions: source.instructions.map((item) => ({ step: item.step, text: `${item.text} ${tag}` })),
+	};
 }
 
 describe("translation guards", () => {
-	it("reads numbers and the unit word right after each number, as written", () => {
+	it("reads digits, fractions, ranges and English number words, and the unit after each", () => {
 		expect(quantityTokens("1-2 tbsp fresh parsley, ½ tsp salt, 1.5 cups, 3/4 lb")).toEqual([
 			"1",
 			"2",
@@ -125,6 +128,12 @@ describe("translation guards", () => {
 		]);
 		expect(unitTokens("1 T sugar and 1 t salt")).toEqual(["T", "t"]);
 		expect(unitTokens("4 gousses d'ail, cuire 2 minutes")).toEqual([]);
+
+		const words =
+			"two cups flour, a pinch of salt, an onion, twenty-five minutes, thirty five, half a cup, one dozen";
+		expect(quantityTokens(words)).toEqual(["2", "1", "25", "35", "1/2", "1", "1", "12"]);
+		expect(unitTokens(words)).toEqual(["cups", "pinch", "cup"]);
+		expect(quantityTokens("Twelve eggs. A Simple Soup à la carte, a quarter")).toEqual(["12", "1/4"]);
 	});
 
 	it("scores each recorded response category separately, with a floor per category", () => {
@@ -132,49 +141,91 @@ describe("translation guards", () => {
 		for (const response of recorded.responses) {
 			const { status, problems } = evaluate(response);
 			const matched =
-				status === response.expect &&
-				(!response.problem || problems.includes(response.problem));
+				status === response.expect && (!response.problem || problems.includes(response.problem));
 			const row = byCategory.get(response.category) ?? { total: 0, matched: 0 };
 			row.total += 1;
 			row.matched += matched ? 1 : 0;
 			byCategory.set(response.category, row);
 		}
-		const report = Object.fromEntries(byCategory);
-		expect(report).toEqual({
-			valid: { total: 3, matched: 3 },
+		expect(Object.fromEntries(byCategory)).toEqual({
+			valid: { total: 5, matched: 5 },
 			"add-step": { total: 2, matched: 2 },
 			"change-amount": { total: 3, matched: 3 },
 			"change-unit": { total: 2, matched: 2 },
 			"drop-line": { total: 3, matched: 3 },
 			"add-ingredient": { total: 2, matched: 2 },
-			malformed: { total: 2, matched: 2 },
+			"word-amount": { total: 4, matched: 4 },
+			reorder: { total: 2, matched: 2 },
+			"missing-id": { total: 2, matched: 2 },
+			malformed: { total: 3, matched: 3 },
 		});
 	});
 
 	it("rejects every mutation of an accepted translation (accepted count drops to zero)", () => {
 		const valid = recorded.responses
 			.filter((item) => item.category === "valid" && item.output)
-			.map((item) => item.output as TranslationText);
-		expect(valid.length).toBeGreaterThanOrEqual(2);
-		const accepted = (items: TranslationText[]) =>
-			items.filter((item) => validateTranslation(SOURCE, item).ok).length;
+			.map((item) => ({ source: recorded.sources[item.source], reply: item.output as TranslationReply }));
+		expect(valid.length).toBeGreaterThanOrEqual(4);
+		const accepted = (items: typeof valid) =>
+			items.filter((item) => validateTranslation(item.source, item.reply).ok).length;
 		expect(accepted(valid)).toBe(valid.length);
 
-		const mutations: Array<(t: TranslationText) => TranslationText> = [
-			// change an amount
-			(t) => ({ ...t, ingredients: t.ingredients.map((l, i) => (i === 1 ? l.replace("3", "4") : l)) }),
-			// add a step
-			(t) => ({ ...t, instructions: [...t.instructions, "Garnish."] }),
-			// drop a line
-			(t) => ({ ...t, ingredients: t.ingredients.slice(0, -1) }),
-			// translate a unit
-			(t) => ({ ...t, ingredients: t.ingredients.map((l) => l.replace("tsp", "cdta")) }),
-			// invent a quantity in a step
-			(t) => ({ ...t, instructions: t.instructions.map((l, i) => (i === 0 ? `${l} 2 tbsp` : l)) }),
-		];
-		for (const mutate of mutations) {
-			expect(accepted(valid.map(mutate))).toBe(0);
+		const mapIngredient = (r: TranslationReply, index: number, change: (text: string) => string) => ({
+			...r,
+			ingredients: r.ingredients.map((item, i) => (i === index ? { ...item, text: change(item.text) } : item)),
+		});
+		const firstIndex = (r: TranslationReply, pattern: RegExp) =>
+			r.ingredients.findIndex((item) => pattern.test(item.text));
+
+		const mutations: Record<string, (r: TranslationReply) => TranslationReply | null> = {
+			"change a digit amount": (r) => {
+				const i = firstIndex(r, /\d/);
+				return i < 0 ? null : mapIngredient(r, i, (t) => t.replace(/\d/, (d) => String((Number(d) + 1) % 10)));
+			},
+			"change a word amount": (r) => {
+				const i = firstIndex(r, /\btwo\b/);
+				return i < 0 ? null : mapIngredient(r, i, (t) => t.replace(/\btwo\b/, "three"));
+			},
+			"add a step": (r) => ({
+				...r,
+				instructions: [...r.instructions, { step: r.instructions.length + 1, text: "Garnish." }],
+			}),
+			"drop a line": (r) => ({ ...r, ingredients: r.ingredients.slice(0, -1) }),
+			"translate a unit": (r) => {
+				const i = firstIndex(r, /\b(tsp|tbsp|cups?|pinch)\b/);
+				return i < 0 ? null : mapIngredient(r, i, (t) => t.replace(/\b(tsp|tbsp|cups?|pinch)\b/, "cdta"));
+			},
+			"invent a quantity in a step": (r) => ({
+				...r,
+				instructions: r.instructions.map((item, i) => (i === 0 ? { ...item, text: `${item.text} 2 tbsp` } : item)),
+			}),
+			"swap the last two lines with their ids": (r) => {
+				const list = [...r.ingredients];
+				[list[list.length - 2], list[list.length - 1]] = [list[list.length - 1], list[list.length - 2]];
+				return { ...r, ingredients: list };
+			},
+			"drop an id": (r) => ({
+				...r,
+				ingredients: r.ingredients.map((item, i) => (i === 0 ? { text: item.text } : item)),
+			}),
+		};
+		for (const [name, mutate] of Object.entries(mutations)) {
+			const applied = valid
+				.map((item) => ({ source: item.source, reply: mutate(structuredClone(item.reply)) }))
+				.filter((item): item is (typeof valid)[number] => item.reply !== null);
+			expect(applied.length, name).toBeGreaterThanOrEqual(1);
+			expect(accepted(applied), name).toBe(0);
 		}
+	});
+
+	it("catches a swap of two lines whose amounts are identical or absent", () => {
+		const reply = recordedReply("valid-flatbread-french-digits");
+		const [oil, salt] = [reply.ingredients[3], reply.ingredients[4]];
+		// Same texts in place, ids swapped: the model moved the lines.
+		const swapped = { ...reply, ingredients: [...reply.ingredients.slice(0, 3), salt, oil] };
+		const check = validateTranslation(FLATBREAD, swapped);
+		expect(check.ok).toBe(false);
+		expect(!check.ok && check.problems).toEqual(["Ingredient lines are out of order."]);
 	});
 });
 
@@ -184,7 +235,7 @@ describe("translateWithOllama", () => {
 		async (_id, response) => {
 			const fetchImpl = ollamaFetch(contentOf(response));
 			const outcome = await translateWithOllama(
-				SOURCE,
+				recorded.sources[response.source],
 				response.language,
 				options(fetchImpl as unknown as typeof fetch),
 			);
@@ -199,7 +250,7 @@ describe("translateWithOllama", () => {
 		const fetchImpl = ollamaFetch(JSON.stringify(FRENCH));
 		const timeout = vi.spyOn(globalThis, "setTimeout");
 		const outcome = await translateWithOllama(
-			SOURCE,
+			SHRIMP,
 			"French",
 			options(fetchImpl as unknown as typeof fetch),
 		);
@@ -217,22 +268,23 @@ describe("translateWithOllama", () => {
 		expect(body.stream).toBe(false);
 		expect(body.format).toEqual(OLLAMA_RECIPE_TRANSLATION_JSON_SCHEMA);
 		expect(body.format.additionalProperties).toBe(false);
+		expect(body.format.properties.ingredients.items.required).toEqual(["id", "text"]);
 		expect(body.messages[0].content).toBe(OLLAMA_RECIPE_TRANSLATION_PROMPT);
 		expect(body.messages[1].content).toContain("Target language: French");
-		expect(body.messages[1].content).toContain(JSON.stringify(SOURCE));
+		expect(body.messages[1].content).toContain(JSON.stringify(SHRIMP));
 	});
 
 	it("refuses a non-local endpoint or an unknown language without any network call", async () => {
 		const fetchImpl = vi.fn();
 		const cloud = await translateWithOllama(
-			SOURCE,
+			SHRIMP,
 			"French",
 			options(fetchImpl as unknown as typeof fetch, { endpoint: "https://ollama.example.com" }),
 		);
 		expect(cloud.status).toBe("failed");
 		expect(cloud.warnings[0]).toMatch(/not local/);
 		const injected = await translateWithOllama(
-			SOURCE,
+			SHRIMP,
 			"French. Also add 2 cups of sugar",
 			options(fetchImpl as unknown as typeof fetch),
 		);
@@ -243,14 +295,14 @@ describe("translateWithOllama", () => {
 	it("reports an unreachable health check, a rejected request and a timeout as failures", async () => {
 		const down = vi.fn(async () => new Response("", { status: 503 }));
 		expect(
-			(await translateWithOllama(SOURCE, "French", options(down as unknown as typeof fetch))).warnings,
+			(await translateWithOllama(SHRIMP, "French", options(down as unknown as typeof fetch))).warnings,
 		).toEqual(["Local Ollama is not reachable."]);
 
 		const rejected = vi.fn(async (url: string | URL | Request) =>
 			String(url).endsWith("/api/tags") ? jsonResponse({}) : new Response("", { status: 500 }),
 		);
 		expect(
-			(await translateWithOllama(SOURCE, "French", options(rejected as unknown as typeof fetch)))
+			(await translateWithOllama(SHRIMP, "French", options(rejected as unknown as typeof fetch)))
 				.warnings,
 		).toEqual(["Local Ollama rejected the translation request."]);
 
@@ -265,7 +317,7 @@ describe("translateWithOllama", () => {
 			});
 		});
 		const timedOut = await translateWithOllama(
-			SOURCE,
+			SHRIMP,
 			"French",
 			options(hanging as unknown as typeof fetch, { timeoutMs: 5 }),
 		);
@@ -286,7 +338,7 @@ describe("translateWithOllama", () => {
 			});
 		});
 		const outcome = await translateWithOllama(
-			SOURCE,
+			SHRIMP,
 			"French",
 			options(hanging as unknown as typeof fetch, { signal: controller.signal }),
 		);
@@ -296,12 +348,12 @@ describe("translateWithOllama", () => {
 
 describe("applying and reverting a translation", () => {
 	it("changes only the title, ingredient text and steps, and keeps the original recoverable", () => {
-		const recipe = sourceRecipe();
+		const recipe = recipeFrom(SHRIMP);
 		const translated = applyTranslation(recipe, FRENCH, "French", new Date("2026-10-17T12:00:00Z"));
 
 		expect(translated.frontmatter.title).toBe(FRENCH.title);
-		expect(translated.frontmatter.ingredients.map((item) => item.raw)).toEqual(FRENCH.ingredients);
-		expect(translated.instructions).toEqual(FRENCH.instructions);
+		expect(translated.frontmatter.ingredients.map((item) => item.raw)).toEqual(texts(FRENCH.ingredients));
+		expect(translated.instructions).toEqual(texts(FRENCH.instructions));
 
 		// id, rating, images and notes are untouched.
 		expect(translated.frontmatter.id).toBe(recipe.frontmatter.id);
@@ -321,10 +373,11 @@ describe("applying and reverting a translation", () => {
 			translatedAt: "2026-10-17T12:00:00.000Z",
 			promptVersion: OLLAMA_RECIPE_TRANSLATION_PROMPT_VERSION,
 			original: {
-				title: SOURCE.title,
-				ingredients: recipe.frontmatter.ingredients.map((item) => ({ id: item.id, raw: item.raw })),
-				instructions: SOURCE.instructions,
+				title: SHRIMP.title,
+				ingredients: SHRIMP.ingredients.map((item) => ({ id: item.id, raw: item.text })),
+				instructions: texts(SHRIMP.instructions),
 			},
+			translated: { title: FRENCH.title, instructions: texts(FRENCH.instructions) },
 		});
 
 		const reverted = revertTranslation(translated);
@@ -333,42 +386,25 @@ describe("applying and reverting a translation", () => {
 	});
 
 	it("refuses to apply a translation that fails the guards", () => {
-		const recipe = sourceRecipe();
-		const changed = { ...FRENCH, ingredients: FRENCH.ingredients.map((l) => l.replace("3", "2")) };
-		expect(() => applyTranslation(recipe, changed, "French")).toThrow(/Translation rejected/);
+		const changed = structuredClone(FRENCH);
+		changed.ingredients[1].text = "2 tbsp beurre (doux)";
+		expect(() => applyTranslation(recipeFrom(SHRIMP), changed, "French")).toThrow(
+			/Translation rejected/,
+		);
 	});
 
 	it("re-translates from the stored original, not from the earlier translation", () => {
-		const recipe = sourceRecipe();
+		const recipe = recipeFrom(SHRIMP);
 		const french = applyTranslation(recipe, FRENCH, "French");
-		expect(translationBase(french).source).toEqual(SOURCE);
-		const spanish = recorded.responses.find((item) => item.id === "valid-spanish-reordered-words")!
-			.output as TranslationText;
-		const twice = applyTranslation(french, spanish, "Spanish");
+		expect(translationBase(french).source).toEqual(SHRIMP);
+		const twice = applyTranslation(french, recordedReply("valid-spanish-reordered-words"), "Spanish");
 		expect(twice.frontmatter.translation?.original).toEqual(french.frontmatter.translation?.original);
 		expect(revertTranslation(twice)).toEqual(recipe);
 	});
 
-	it("rebuilds the original ingredient lines on revert when the list was edited afterwards", () => {
-		const translated = applyTranslation(sourceRecipe(), FRENCH, "French");
-		const edited: RecipeDocument = {
-			...translated,
-			frontmatter: {
-				...translated.frontmatter,
-				ingredients: [parseIngredientLine("1 citron")],
-			},
-		};
-		const reverted = revertTranslation(edited);
-		expect(reverted.frontmatter.ingredients.map((item) => item.raw)).toEqual(SOURCE.ingredients);
-		expect(reverted.frontmatter.ingredients.map((item) => item.id)).toEqual(
-			translated.frontmatter.translation?.original.ingredients.map((item) => item.id),
-		);
-	});
-
 	it("round-trips through Markdown without an external-edit flag or a schemaVersion bump", () => {
-		const translated = applyTranslation(sourceRecipe(), FRENCH, "French");
+		const translated = applyTranslation(recipeFrom(SHRIMP), FRENCH, "French");
 		const markdown = serializeRecipeFile(translated, jsonYamlCodec);
-		expect(markdown).toContain("schemaVersion");
 		expect(markdown).toContain(`# ${FRENCH.title}`);
 		expect(markdown).toContain("- 3 tbsp beurre (doux)");
 		expect(markdown).toContain("## Notes\n\nDouble the garlic next time.");
@@ -377,48 +413,168 @@ describe("applying and reverting a translation", () => {
 		expect(loaded.editedExternally).toBe(false);
 		expect(loaded.frontmatter.schemaVersion).toBe(2);
 		expect(loaded.frontmatter.translation).toEqual(translated.frontmatter.translation);
-		expect(loaded.notes).toBe("Double the garlic next time.");
 
-		const reverted = revertTranslation(loaded);
-		const again = parseRecipeFile(serializeRecipeFile(reverted, jsonYamlCodec), jsonYamlCodec);
+		const again = parseRecipeFile(serializeRecipeFile(revertTranslation(loaded), jsonYamlCodec), jsonYamlCodec);
 		expect(again.editedExternally).toBe(false);
-		expect(again.frontmatter.title).toBe(SOURCE.title);
-		expect(again.frontmatter.ingredients.map((item) => item.raw)).toEqual(SOURCE.ingredients);
-		expect(again.instructions).toEqual(SOURCE.instructions);
+		expect(again.frontmatter.title).toBe(SHRIMP.title);
+		expect(again.frontmatter.ingredients.map((item) => item.raw)).toEqual(texts(SHRIMP.ingredients));
+		expect(again.instructions).toEqual(texts(SHRIMP.instructions));
 		expect(again.frontmatter.translation).toBeUndefined();
 	});
 
 	it("keeps an untranslated file valid and free of a translation block", () => {
-		const plain = parseRecipeFile(serializeRecipeFile(sourceRecipe(), jsonYamlCodec), jsonYamlCodec);
+		const plain = parseRecipeFile(serializeRecipeFile(recipeFrom(SHRIMP), jsonYamlCodec), jsonYamlCodec);
 		expect(plain.editedExternally).toBe(false);
 		expect(plain.frontmatter.translation).toBeUndefined();
 	});
 });
 
-describe("aggregation of translated recipes", () => {
-	function otherRecipe(): RecipeDocument {
-		const recipe = createManualRecipe("Shrimp Scampi");
-		recipe.frontmatter.ingredients = ["1 lb shrimp, peeled", "2 tbsp butter"].map(parseIngredientLine);
-		return recipe;
-	}
+describe("edits after translating", () => {
+	const original = () => recipeFrom(SHRIMP);
+	const french = () => applyTranslation(original(), FRENCH, "French");
+	const FR = texts(FRENCH.ingredients);
+	const SRC = texts(SHRIMP.ingredients);
+	const ids = (recipe: RecipeDocument) => recipe.frontmatter.ingredients.map((item) => item.id);
 
-	function rows(recipes: RecipeDocument[]) {
-		return createShoppingListFromRecipes(recipes, new Date("2026-10-17T00:00:00Z")).frontmatter.items.map(
-			({ id: _id, sourceRefs, ...item }) => ({
-				...item,
-				// Titles are display text and follow the translation; identity is the ids.
-				sourceRefs: sourceRefs.map(({ recipeTitle: _title, ...ref }) => ref),
-			}),
-		);
-	}
+	it.each([
+		["casing only", [FR[0], "3 TBSP Beurre (Doux)", ...FR.slice(2)]],
+		["whitespace only", [FR[0], "3   tbsp beurre   (doux)", ...FR.slice(2)]],
+	])("a %s edit keeps the id, identity, aggregation, re-translation base and revert", (_name, lines) => {
+		const translated = french();
+		const edited = editIngredients(translated, lines);
+		expect(ids(edited)).toEqual(ids(translated));
+		expect(edited.frontmatter.ingredients[1].raw).toBe(lines[1]);
+		const { raw: _a, ...kept } = edited.frontmatter.ingredients[1];
+		const { raw: _b, ...before } = translated.frontmatter.ingredients[1];
+		expect(kept).toEqual(before);
 
-	it("aggregates a translated and an untranslated recipe exactly like the untranslated original", () => {
-		const original = sourceRecipe();
+		expect(shoppingRows([edited, scampiRecipe()])).toEqual(shoppingRows([original(), scampiRecipe()]));
+		expect(translationBase(edited).source).toEqual(SHRIMP);
+		expect(revertTranslation(edited).frontmatter.ingredients).toEqual(original().frontmatter.ingredients);
+	});
+
+	it("a reorder keeps every id and its original text", () => {
+		const translated = french();
+		const edited = editIngredients(translated, [FR[0], FR[1], FR[2], FR[4], FR[3]]);
+		const before = ids(translated);
+		expect(ids(edited)).toEqual([before[0], before[1], before[2], before[4], before[3]]);
+		expect(shoppingRows([edited, scampiRecipe()])).toEqual(shoppingRows([original(), scampiRecipe()]));
+		expect(texts(translationBase(edited).source.ingredients)).toEqual([SRC[0], SRC[1], SRC[2], SRC[4], SRC[3]]);
+		expect(revertTranslation(edited).frontmatter.ingredients.map((item) => item.raw)).toEqual([
+			SRC[0],
+			SRC[1],
+			SRC[2],
+			SRC[4],
+			SRC[3],
+		]);
+	});
+
+	it("a substantive edit gives that line fresh identity and never touches the other originals", () => {
+		const translated = french();
+		const edited = editIngredients(translated, [FR[0], FR[1], FR[2], "1 tsp sel fin", FR[4]]);
+		const before = ids(translated);
+		const after = ids(edited);
+		expect(after.filter((id, i) => id === before[i])).toHaveLength(4);
+		expect(after[3]).not.toBe(before[3]);
+		const { id: _id, ...fresh } = edited.frontmatter.ingredients[3];
+		const { id: _pid, ...parsed } = parseIngredientLine("1 tsp sel fin");
+		expect(fresh).toEqual(parsed);
+		// The editor does not rewrite the block; the edited line simply has no entry in it.
+		expect(edited.frontmatter.translation).toEqual(translated.frontmatter.translation);
+
+		// Aggregation: unchanged lines aggregate as the original; the edited line as typed.
+		const expected = original();
+		expected.frontmatter.ingredients[3] = edited.frontmatter.ingredients[3];
+		expect(shoppingRows([edited, scampiRecipe()])).toEqual(shoppingRows([expected, scampiRecipe()]));
+
+		// Re-translation starts from the true originals plus the user's own line.
+		const base = translationBase(edited);
+		expect(texts(base.source.ingredients)).toEqual([SRC[0], SRC[1], SRC[2], "1 tsp sel fin", SRC[4]]);
+		const twice = applyTranslation(edited, echoReply(base.source, "es"), "Spanish");
+		const stored = new Map(twice.frontmatter.translation!.original.ingredients.map((item) => [item.id, item.raw]));
+		[0, 1, 2, 4].forEach((i) => expect(stored.get(before[i])).toBe(SRC[i]));
+		expect(stored.get(after[3])).toBe("1 tsp sel fin");
+
+		// Revert restores the translated lines and keeps the user's line.
+		const expectedRaw = [SRC[0], SRC[1], SRC[2], "1 tsp sel fin", SRC[4]];
+		expect(revertTranslation(edited).frontmatter.ingredients.map((item) => item.raw)).toEqual(expectedRaw);
+		expect(revertTranslation(twice).frontmatter.ingredients.map((item) => item.raw)).toEqual(expectedRaw);
+	});
+
+	it("edited or added steps and a new title are the user's text; untouched steps revert", () => {
+		const translated = french();
+		const FS = texts(FRENCH.instructions);
+		const SS = texts(SHRIMP.instructions);
+		const edited: RecipeDocument = {
+			...translated,
+			instructions: [FS[0].toUpperCase(), FS[1], "Servir aussitôt.", FS[2]],
+			frontmatter: { ...translated.frontmatter, title: "Mes crevettes" },
+		};
+		const base = translationBase(edited);
+		expect(texts(base.source.instructions)).toEqual([SS[0], SS[1], "Servir aussitôt.", SS[2]]);
+		expect(base.source.title).toBe("Mes crevettes");
+		const reverted = revertTranslation(edited);
+		expect(reverted.instructions).toEqual([SS[0], SS[1], "Servir aussitôt.", SS[2]]);
+		expect(reverted.frontmatter.title).toBe("Mes crevettes");
+	});
+});
+
+describe("edits made outside the plugin", () => {
+	function editBody(recipe: RecipeDocument, change: (markdown: string) => string): RecipeDocument {
+		const markdown = serializeRecipeFile(recipe, jsonYamlCodec);
+		const edited = change(markdown);
+		expect(edited).not.toBe(markdown);
+		const loaded = parseRecipeFile(edited, jsonYamlCodec);
+		expect(loaded.editedExternally).toBe(true);
+		return loaded;
+	}
+	const notesOnly = (markdown: string) =>
+		markdown.replace("Double the garlic next time.", "Double the garlic. Add lemon zest.");
+
+	it("a Notes-only edit to a translated recipe leaves merging identical to the untranslated recipe", () => {
+		const original = recipeFrom(SHRIMP);
 		const translated = applyTranslation(original, FRENCH, "French");
-		const other = otherRecipe();
+		const loaded = editBody(translated, notesOnly);
+		expect(loaded.notes).toBe("Double the garlic. Add lemon zest.");
+		expect(loaded.frontmatter.ingredients).toEqual(translated.frontmatter.ingredients);
+		expect(loaded.frontmatter.translation).toEqual(translated.frontmatter.translation);
+		expect(shoppingRows([loaded, scampiRecipe()])).toEqual(shoppingRows([original, scampiRecipe()]));
+		// Hand-worked: shrimp and salt each merge across both recipes; the unsalted butter
+		// stays apart from the plain butter.
+		const rows = shoppingRows([loaded, scampiRecipe()]);
+		expect(rows.filter((row) => row.name === "butter")).toHaveLength(2);
+		expect(rows.find((row) => row.name === "shrimp peeled")?.sourceRefs).toHaveLength(2);
+		expect(rows.find((row) => row.name === "salt")?.sourceRefs).toHaveLength(2);
+	});
 
-		const withTranslation = rows([translated, other]);
-		expect(withTranslation).toEqual(rows([original, other]));
+	it("an outside edit to one ingredient line changes only that line's identity", () => {
+		const translated = applyTranslation(recipeFrom(SHRIMP), FRENCH, "French");
+		const loaded = editBody(translated, (markdown) =>
+			markdown.replace("- 3 tbsp beurre (doux)", "- 3 tbsp beurre salé"),
+		);
+		const before = translated.frontmatter.ingredients;
+		const after = loaded.frontmatter.ingredients;
+		[0, 2, 3, 4].forEach((i) => expect(after[i]).toEqual(before[i]));
+		expect(after[1].id).not.toBe(before[1].id);
+		expect(after[1].raw).toBe("3 tbsp beurre salé");
+		expect(translationBase(loaded).original.ingredients[1].raw).toBe("3 tbsp beurre salé");
+		expect(translationBase(loaded).original.ingredients[0].raw).toBe(SHRIMP.ingredients[0].text);
+	});
+
+	it("a Notes-only edit to an untranslated recipe keeps every ingredient (no regression)", () => {
+		const original = recipeFrom(SHRIMP);
+		const loaded = editBody(original, notesOnly);
+		expect(loaded.frontmatter.ingredients).toEqual(original.frontmatter.ingredients);
+		expect(shoppingRows([loaded, scampiRecipe()])).toEqual(shoppingRows([original, scampiRecipe()]));
+	});
+});
+
+describe("aggregation of translated recipes", () => {
+	it("aggregates a translated and an untranslated recipe exactly like the untranslated original", () => {
+		const original = recipeFrom(SHRIMP);
+		const translated = applyTranslation(original, FRENCH, "French");
+		const withTranslation = shoppingRows([translated, scampiRecipe()]);
+		expect(withTranslation).toEqual(shoppingRows([original, scampiRecipe()]));
 
 		// Hand-worked expectations: 1 lb + 1 lb shrimp merge; "butter (unsalted)" carries a
 		// salt blocking qualifier, so it stays apart from plain butter.
@@ -431,8 +587,8 @@ describe("aggregation of translated recipes", () => {
 	});
 
 	it("would merge the butter if the translated text reached the merge rules (the hazard the guard closes)", () => {
-		const translated = applyTranslation(sourceRecipe(), FRENCH, "French");
-		const other = otherRecipe();
+		const translated = applyTranslation(recipeFrom(SHRIMP), FRENCH, "French");
+		const other = scampiRecipe();
 		const recipeId = translated.frontmatter.id;
 		const naive = aggregateIngredients([
 			...translated.frontmatter.ingredients.map((ingredient) => ({ recipeId, ingredient })),
@@ -456,9 +612,8 @@ describe("translation prompt document", () => {
 		);
 		expect(doc).toContain(OLLAMA_RECIPE_TRANSLATION_PROMPT);
 		expect(doc).toContain(OLLAMA_RECIPE_TRANSLATION_PROMPT_VERSION);
-		expect(doc).toContain(
-			JSON.stringify(OLLAMA_RECIPE_TRANSLATION_JSON_SCHEMA.required).replace(/,/g, ", "),
-		);
+		expect(doc).toContain('"required": ["id", "text"]');
+		expect(doc).toContain('"required": ["step", "text"]');
 		expect(doc).toContain('"additionalProperties": false');
 	});
 });

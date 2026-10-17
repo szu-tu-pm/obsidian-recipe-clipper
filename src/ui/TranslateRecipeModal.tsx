@@ -7,7 +7,8 @@ import {
 	translateWithOllama,
 	translationBase,
 	type TranslationLanguage,
-	type TranslationText,
+	type TranslationPayload,
+	type TranslationReply,
 } from "../domain/translation/recipeTranslator";
 import type { PluginServices } from "../wrapper/PluginServiceAdapter";
 import { useEscapeToClose } from "./useEscapeToClose";
@@ -53,8 +54,11 @@ export function TranslateRecipeModal({
 			TRANSLATION_LANGUAGES[0],
 	);
 	const [phase, setPhase] = useState<Phase>("choose");
-	const [source, setSource] = useState<TranslationText>(() => translationBase(recipe).source);
-	const [translation, setTranslation] = useState<TranslationText | null>(null);
+	const [source, setSource] = useState<TranslationPayload>(() => translationBase(recipe).source);
+	const [translation, setTranslation] = useState<{
+		reply: TranslationReply;
+		text: TranslationPayload;
+	} | null>(null);
 	const [warnings, setWarnings] = useState<string[]>([]);
 	const [error, setError] = useState<string | null>(null);
 	const controller = useRef<AbortController | null>(null);
@@ -93,7 +97,7 @@ export function TranslateRecipeModal({
 		}
 		controller.current = null;
 		if (outcome.status === "ready") {
-			setTranslation(outcome.translation);
+			setTranslation({ reply: outcome.reply, text: outcome.translation });
 			setPhase("review");
 			return;
 		}
@@ -155,7 +159,7 @@ export function TranslateRecipeModal({
 			return;
 		}
 		void save(
-			(current) => applyTranslation(current, translation, language),
+			(current) => applyTranslation(current, translation.reply, language),
 			`Recipe translated to ${language}. The original text is kept and can be restored.`,
 		);
 	}
@@ -229,21 +233,25 @@ export function TranslateRecipeModal({
 							</tr>
 						</thead>
 						<tbody>
-							<SideBySide label="Title" original={source.title} translated={translation.title} />
+							<SideBySide
+								label="Title"
+								original={source.title}
+								translated={translation.text.title}
+							/>
 							{source.ingredients.map((line, index) => (
 								<SideBySide
-									key={`ingredient-${index}`}
+									key={line.id}
 									label={`Ingredient ${index + 1}`}
-									original={line}
-									translated={translation.ingredients[index]}
+									original={line.text}
+									translated={translation.text.ingredients[index].text}
 								/>
 							))}
 							{source.instructions.map((line, index) => (
 								<SideBySide
-									key={`step-${index}`}
-									label={`Step ${index + 1}`}
-									original={line}
-									translated={translation.instructions[index]}
+									key={`step-${line.step}`}
+									label={`Step ${line.step}`}
+									original={line.text}
+									translated={translation.text.instructions[index].text}
 								/>
 							))}
 						</tbody>

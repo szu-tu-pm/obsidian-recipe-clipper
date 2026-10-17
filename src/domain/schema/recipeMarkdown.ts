@@ -4,7 +4,35 @@ import {
 	parseRecipeFrontmatter,
 	type RecipeDocument,
 	type RecipeFrontmatter,
+	type RecipeIngredient,
 } from "./recipeSchema";
+
+/** Case- and whitespace-insensitive form of a displayed line, for matching edits. */
+export function normalizeDisplayedLine(line: string): string {
+	return line.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/**
+ * Turn displayed ingredient lines back into ingredients. A line that matches an
+ * existing ingredient up to case and whitespace keeps that ingredient (id, name,
+ * canonicalId, quantity, unit) and only takes the new display text. Only lines that
+ * really changed are parsed again, with a fresh id.
+ */
+export function reconcileIngredientLines(
+	lines: string[],
+	existing: RecipeIngredient[],
+): RecipeIngredient[] {
+	const unused = [...existing];
+	return lines.map((line) => {
+		const key = normalizeDisplayedLine(line);
+		const index = unused.findIndex((item) => normalizeDisplayedLine(item.raw) === key);
+		if (index === -1) {
+			return parseIngredientLine(line);
+		}
+		const [kept] = unused.splice(index, 1);
+		return kept.raw === line ? kept : { ...kept, raw: line };
+	});
+}
 
 export interface YamlCodec {
 	parse(yaml: string): unknown;
@@ -223,7 +251,7 @@ export function parseRecipeFile(
 		author: parsedBody.author ?? frontmatter.author,
 		ingredients:
 			parsedBody.ingredientLines.length > 0
-				? parsedBody.ingredientLines.map(parseIngredientLine)
+				? reconcileIngredientLines(parsedBody.ingredientLines, frontmatter.ingredients)
 				: frontmatter.ingredients,
 		updatedAt: new Date().toISOString(),
 	};

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { parseIngredientLine } from "../domain/aggregation/stage1LexicalParser";
+import { reconcileIngredientLines } from "../domain/schema/recipeMarkdown";
 import {
 	createManualRecipe,
 	type RecipeDocument,
@@ -164,18 +164,16 @@ export function RecipeEditorModal({
 			setError("Servings amount must be a positive number.");
 			return;
 		}
-		// Keep an unchanged line's parsed ingredient (id and identity) instead of
-		// re-parsing its text. A translated line would otherwise lose the identity
-		// it kept from the original language.
-		const unchanged = [...recipe.frontmatter.ingredients];
-		const ingredients = ingredientsText
-			.split(/\n/)
-			.map((line) => line.replace(/^\s*[-*+]\s+/, "").trim())
-			.filter(Boolean)
-			.map((line) => {
-				const index = unchanged.findIndex((item) => item.raw === line);
-				return index === -1 ? parseIngredientLine(line) : unchanged.splice(index, 1)[0];
-			});
+		// Keep an unchanged line's parsed ingredient (id and identity), ignoring case and
+		// whitespace, instead of re-parsing its text. A translated line would otherwise
+		// lose the identity it kept from the original language.
+		const ingredients = reconcileIngredientLines(
+			ingredientsText
+				.split(/\n/)
+				.map((line) => line.replace(/^\s*[-*+]\s+/, "").trim())
+				.filter(Boolean),
+			recipe.frontmatter.ingredients,
+		);
 		const instructions = instructionsText
 			.split(/\n/)
 			.map((line) => line.replace(/^\s*\d+[.)]\s+/, "").trim())
