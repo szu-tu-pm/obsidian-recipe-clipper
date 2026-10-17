@@ -14,6 +14,7 @@ import { OLLAMA_RECIPE_EXTRACTION_PROMPT } from "../../src/domain/extraction/oll
 import { extractRecipeFromPage } from "../../src/domain/extraction/urlClipper";
 import type { ExtractionCandidate } from "../../src/domain/extraction/types";
 import type { ExtractionMethod } from "../../src/domain/schema/recipeSchema";
+import type { RecipeIngredient } from "../../src/domain/schema/recipeSchema";
 
 const PROJECT_ROOT = process.cwd();
 const FIXTURE_ROOT = resolve(PROJECT_ROOT, "tests/evals/fixtures");
@@ -38,11 +39,27 @@ export const MINIMUM_DENOMINATORS = {
 	unsafeMergePairs: 50,
 } as const;
 
+export const INGREDIENT_CATEGORIES = [
+	"mixed-fraction",
+	"unicode-fraction",
+	"range",
+	"dual-unit",
+	"abbrev-period",
+	"fl-oz",
+	"unknown-unit",
+	"non-numeric",
+	"comma-prep",
+	"simple",
+] as const;
+
+export type IngredientCategory = (typeof INGREDIENT_CATEGORIES)[number];
+
 interface ExpectedIngredient {
 	raw: string;
 	quantity: number | null;
 	quantityMax?: number | null;
 	unit: string | null;
+	category: IngredientCategory;
 }
 
 interface ExpectedRecipe {
@@ -88,6 +105,7 @@ export interface SafeAggregationPair extends AggregationPair {
 }
 
 export interface UnsafeAggregationPair extends AggregationPair {
+	category: string;
 	expectedMergeRuleId: string;
 }
 
@@ -107,6 +125,7 @@ interface TierMetrics {
 	recipes: number;
 	ingredientRecall: CountMetric;
 	quantityUnitFidelity: CountMetric;
+	quantityUnitFidelityByCategory: Record<IngredientCategory, CountMetric>;
 	instructionFidelity: CountMetric;
 	extractionMethodFidelity: CountMetric;
 	expectedScalarFidelity: CountMetric;
@@ -170,6 +189,7 @@ interface MutableTier {
 	ingredientsTotal: number;
 	quantityUnitMatched: number;
 	quantityUnitTotal: number;
+	quantityUnitByCategory: Record<IngredientCategory, { matched: number; total: number }>;
 	instructionsMatched: number;
 	instructionsTotal: number;
 	methodsMatched: number;
@@ -182,6 +202,17 @@ export interface EvaluationOptions {
 	aggregationCorpus?: AggregationCorpus;
 	aggregatePair?: (pair: AggregationPair) => AggregatedIngredient[];
 	transformCandidates?: (fixtureId: string, candidates: ExtractionCandidate[]) => ExtractionCandidate[];
+	parseIngredient?: (raw: string) => RecipeIngredient;
+	git?: {
+		cwd?: string;
+		execFile?: (file: string, args: string[], options: { cwd: string; encoding: "utf8" }) => string;
+	};
+}
+
+function emptyCategoryCounts(): Record<IngredientCategory, { matched: number; total: number }> {
+	return Object.fromEntries(
+		INGREDIENT_CATEGORIES.map((category) => [category, { matched: 0, total: 0 }]),
+	) as Record<IngredientCategory, { matched: number; total: number }>;
 }
 
 function readJson<T>(path: string): T {
@@ -262,6 +293,9 @@ function evaluateRecipe(
 	tier.recipes++;
 	tier.ingredientsTotal += expected.ingredients.length;
 	tier.quantityUnitTotal += expected.ingredients.length;
+	for (const ingredient of expected.ingredients) {
+		tier.quantityUnitByCategory[ingredient.category].total++;
+	}
 	tier.instructionsTotal += expected.instructions.length;
 	tier.methodsTotal++;
 	if (!actual) {
@@ -295,6 +329,7 @@ function evaluateRecipe(
 				normalized(found.unit ?? "") === normalized(ingredient.unit ?? "")
 			) {
 				tier.quantityUnitMatched++;
+				tier.quantityUnitByCategory[ingredient.category].matched++;
 			} else {
 				quantityUnitMismatches.push(
 					`${fixtureId} recipe ${recipeIndex + 1}: '${ingredient.raw}' expected quantity=${ingredient.quantity}, quantityMax=${quantityMax}, unit=${ingredient.unit}; observed quantity=${found.quantity}, quantityMax=${found.quantityMax}, unit=${found.unit}`,
@@ -378,6 +413,12 @@ function finalizedTier(value: MutableTier): TierMetrics {
 		recipes: value.recipes,
 		ingredientRecall: metric(value.ingredientsMatched, value.ingredientsTotal),
 		quantityUnitFidelity: metric(value.quantityUnitMatched, value.quantityUnitTotal),
+		quantityUnitFidelityByCategory: Object.fromEntries(
+			INGREDIENT_CATEGORIES.map((category) => {
+				const counts = value.quantityUnitByCategory[category];
+				return [category, metric(counts.matched, counts.total)];
+			}),
+		) as Record<IngredientCategory, CountMetric>,
 		instructionFidelity: metric(value.instructionsMatched, value.instructionsTotal),
 		extractionMethodFidelity: metric(value.methodsMatched, value.methodsTotal),
 		expectedScalarFidelity: metric(value.expectedScalarsMatched, value.expectedScalarsTotal),
@@ -391,10 +432,11 @@ function evaluatePair(pair: AggregationPair) {
 	]);
 }
 
-function gitCommit(): string {
+function gitCommit(git: EvaluationOptions["git"]): string {
 	try {
-		return execFileSync("git", ["rev-parse", "HEAD"], {
-			cwd: PROJECT_ROOT,
+		const exec = git?.execFile ?? (execFileSync as unknown as NonNullable<EvaluationOptions["git"]>["execFile"]);
+		return exec("git", ["rev-parse", "HEAD"], {
+			cwd: git?.cwd ?? PROJECT_ROOT,
 			encoding: "utf8",
 		}).trim();
 	} catch {
@@ -402,15 +444,36 @@ function gitCommit(): string {
 	}
 }
 
-function workingTreeDirty(): boolean | null {
+function workingTreeDirty(git: EvaluationOptions["git"]): boolean | null {
 	try {
-		return execFileSync("git", ["status", "--porcelain"], {
-			cwd: PROJECT_ROOT,
+		const exec = git?.execFile ?? (execFileSync as unknown as NonNullable<EvaluationOptions["git"]>["execFile"]);
+		return exec("git", ["status", "--porcelain"], {
+			cwd: git?.cwd ?? PROJECT_ROOT,
 			encoding: "utf8",
 		}).trim().length > 0;
 	} catch {
 		return null;
 	}
+}
+
+function withInjectedParser(
+	candidates: ExtractionCandidate[],
+	parser: EvaluationOptions["parseIngredient"],
+): ExtractionCandidate[] {
+	if (!parser) {
+		return candidates;
+	}
+	return candidates.map((candidate) => {
+		const ingredients = candidate.ingredientsRaw.map(parser);
+		return {
+			...candidate,
+			ingredients,
+			draft: {
+				...candidate.draft,
+				frontmatter: { ...candidate.draft.frontmatter, ingredients },
+			},
+		};
+	});
 }
 
 function matchCandidates(
@@ -451,8 +514,8 @@ export async function runEvaluation(options: EvaluationOptions = {}): Promise<Ev
 	const aggregation = options.aggregationCorpus ?? readJson<AggregationCorpus>(resolve(FIXTURE_ROOT, "aggregation/pairs.json"));
 	const pairEvaluator = options.aggregatePair ?? evaluatePair;
 	const mutable: Record<1 | 2, MutableTier> = {
-		1: { fixtures: 0, recipes: 0, ingredientsMatched: 0, ingredientsTotal: 0, quantityUnitMatched: 0, quantityUnitTotal: 0, instructionsMatched: 0, instructionsTotal: 0, methodsMatched: 0, methodsTotal: 0, expectedScalarsMatched: 0, expectedScalarsTotal: 0 },
-		2: { fixtures: 0, recipes: 0, ingredientsMatched: 0, ingredientsTotal: 0, quantityUnitMatched: 0, quantityUnitTotal: 0, instructionsMatched: 0, instructionsTotal: 0, methodsMatched: 0, methodsTotal: 0, expectedScalarsMatched: 0, expectedScalarsTotal: 0 },
+		1: { fixtures: 0, recipes: 0, ingredientsMatched: 0, ingredientsTotal: 0, quantityUnitMatched: 0, quantityUnitTotal: 0, quantityUnitByCategory: emptyCategoryCounts(), instructionsMatched: 0, instructionsTotal: 0, methodsMatched: 0, methodsTotal: 0, expectedScalarsMatched: 0, expectedScalarsTotal: 0 },
+		2: { fixtures: 0, recipes: 0, ingredientsMatched: 0, ingredientsTotal: 0, quantityUnitMatched: 0, quantityUnitTotal: 0, quantityUnitByCategory: emptyCategoryCounts(), instructionsMatched: 0, instructionsTotal: 0, methodsMatched: 0, methodsTotal: 0, expectedScalarsMatched: 0, expectedScalarsTotal: 0 },
 	};
 	const hallucinations: string[] = [];
 	const quantityUnitMismatches: string[] = [];
@@ -486,7 +549,7 @@ export async function runEvaluation(options: EvaluationOptions = {}): Promise<Ev
 				}
 				: null,
 		});
-		const extractedCandidates = extractionCandidates(result);
+		const extractedCandidates = withInjectedParser(extractionCandidates(result), options.parseIngredient);
 		const candidates = options.transformCandidates
 			? options.transformCandidates(fixture.id, extractedCandidates)
 			: extractedCandidates;
@@ -605,8 +668,8 @@ export async function runEvaluation(options: EvaluationOptions = {}): Promise<Ev
 	) as EvaluationReport["gates"];
 	return {
 		reportVersion: 2,
-		gitCommit: gitCommit(),
-		workingTreeDirty: workingTreeDirty(),
+		gitCommit: gitCommit(options.git),
+		workingTreeDirty: workingTreeDirty(options.git),
 		fixtureVersion: manifest.version,
 		fixtureManifestSha256: createHash("sha256").update(manifestBytes).digest("hex"),
 		rulesVersion: RULES_VERSION,
@@ -627,7 +690,9 @@ export async function runEvaluation(options: EvaluationOptions = {}): Promise<Ev
 		gates,
 		passed: Object.values(gates).every((gate) => gate.passed) &&
 			Object.values(corpusMinimums).every((floor) => floor.passed) &&
-			unsafeMergeRuleMismatchDetails.length === 0,
+			unsafeMergeRuleMismatchDetails.length === 0 &&
+			wrongQuantityMergeDetails.length === 0 &&
+			incorrectSafeMergeDetails.length === 0,
 	};
 }
 
@@ -659,6 +724,11 @@ export function renderMarkdown(report: EvaluationReport): string {
 	const tierRows = ([1, 2] as const).map((tier) => {
 		const value = tier === 1 ? report.metrics.tier1 : report.metrics.tier2;
 		return `| Tier ${tier} | ${value.fixtures} | ${value.recipes} | ${percent(value.ingredientRecall.rate)} (${value.ingredientRecall.matched}/${value.ingredientRecall.total}) | ${percent(value.quantityUnitFidelity.rate)} (${value.quantityUnitFidelity.matched}/${value.quantityUnitFidelity.total}) | ${percent(value.instructionFidelity.rate)} (${value.instructionFidelity.matched}/${value.instructionFidelity.total}) |`;
+	}).join("\n");
+	const categoryRows = INGREDIENT_CATEGORIES.map((category) => {
+		const tier1 = report.metrics.tier1.quantityUnitFidelityByCategory[category];
+		const tier2 = report.metrics.tier2.quantityUnitFidelityByCategory[category];
+		return `| ${category} | ${percent(tier1.rate)} (${tier1.matched}/${tier1.total}) | ${percent(tier2.rate)} (${tier2.matched}/${tier2.total}) |`;
 	}).join("\n");
 	const floors = Object.entries(report.corpusMinimums)
 		.map(([name, floor]) => `| ${name} | ${floor.actual} | ${floor.minimum} | ${floor.passed ? "PASS" : "FAIL"} |`)
@@ -705,6 +775,12 @@ ${floors}
 | Corpus | Fixtures | Recipes | Ingredient recall | Quantity/unit fidelity | Instruction fidelity |
 | --- | ---: | ---: | ---: | ---: | ---: |
 ${tierRows}
+
+### Quantity/unit fidelity by ingredient category
+
+| Category | Tier 1 | Tier 2 |
+| --- | ---: | ---: |
+${categoryRows}
 
 Schema validity: ${percent(report.metrics.schemaValidity.rate)} (${report.metrics.schemaValidity.matched}/${report.metrics.schemaValidity.total}).
 

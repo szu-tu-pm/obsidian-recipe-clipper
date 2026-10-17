@@ -1,5 +1,5 @@
 {
-	"version": "phase2-v2",
+	"version": "phase2-v3",
 	"promptVersion": "ollama-recipe-extraction-v1",
 	"fixtures": [
 		{
@@ -12,16 +12,36 @@
 					"title": "Oat Porridge",
 					"extractionMethod": "json-ld",
 					"ingredients": [
-						{ "raw": "1 cup rolled oats", "quantity": 1, "unit": "cup" },
-						{ "raw": "2 cups water", "quantity": 2, "unit": "cups" },
-						{ "raw": "1/4 tsp salt", "quantity": 0.25, "unit": "tsp" }
+						{
+							"raw": "1 cup rolled oats",
+							"quantity": 1,
+							"unit": "cup",
+							"category": "simple"
+						},
+						{
+							"raw": "2 cups water",
+							"quantity": 2,
+							"unit": "cups",
+							"category": "simple"
+						},
+						{
+							"raw": "1/4 tsp salt",
+							"quantity": 0.25,
+							"unit": "tsp",
+							"category": "simple"
+						}
 					],
-					"instructions": ["Combine oats and water.", "Simmer for 8 minutes."],
+					"instructions": [
+						"Combine oats and water.",
+						"Simmer for 8 minutes."
+					],
 					"servingsRaw": "2 servings",
 					"prepTimeMinutes": 2,
 					"cookTimeMinutes": 8,
 					"totalTimeMinutes": 10,
-					"cookingMethods": ["Simmer"],
+					"cookingMethods": [
+						"Simmer"
+					],
 					"author": "Public Domain Test Kitchen",
 					"siteName": "Open Recipes"
 				}
@@ -37,10 +57,23 @@
 					"title": "Clear Herb Broth",
 					"extractionMethod": "json-ld",
 					"ingredients": [
-						{ "raw": "500 ml water", "quantity": 500, "unit": "ml" },
-						{ "raw": "2 sprigs thyme", "quantity": 2, "unit": "sprigs" }
+						{
+							"raw": "500 ml water",
+							"quantity": 500,
+							"unit": "ml",
+							"category": "simple"
+						},
+						{
+							"raw": "2 sprigs thyme",
+							"quantity": 2,
+							"unit": "sprigs",
+							"category": "unknown-unit"
+						}
 					],
-					"instructions": ["Bring the water to a boil.", "Steep thyme for 5 minutes."],
+					"instructions": [
+						"Bring the water to a boil.",
+						"Steep thyme for 5 minutes."
+					],
 					"servingsRaw": null,
 					"prepTimeMinutes": null,
 					"cookTimeMinutes": 5,
@@ -53,10 +86,23 @@
 					"title": "Simple Tomato Soup",
 					"extractionMethod": "json-ld",
 					"ingredients": [
-						{ "raw": "2 cups crushed tomatoes", "quantity": 2, "unit": "cups" },
-						{ "raw": "1 cup vegetable stock", "quantity": 1, "unit": "cup" }
+						{
+							"raw": "2 cups crushed tomatoes",
+							"quantity": 2,
+							"unit": "cups",
+							"category": "simple"
+						},
+						{
+							"raw": "1 cup vegetable stock",
+							"quantity": 1,
+							"unit": "cup",
+							"category": "simple"
+						}
 					],
-					"instructions": ["Stir tomatoes and stock together.", "Simmer for 12 minutes."],
+					"instructions": [
+						"Stir tomatoes and stock together.",
+						"Simmer for 12 minutes."
+					],
 					"servingsRaw": "3",
 					"prepTimeMinutes": null,
 					"cookTimeMinutes": 12,
@@ -77,10 +123,23 @@
 					"title": "Baked Apple",
 					"extractionMethod": "microdata",
 					"ingredients": [
-						{ "raw": "1 apple", "quantity": 1, "unit": null },
-						{ "raw": "1 1/2 tsp sugar", "quantity": 1.5, "unit": "tsp" }
+						{
+							"raw": "1 apple",
+							"quantity": 1,
+							"unit": null,
+							"category": "simple"
+						},
+						{
+							"raw": "1 1/2 tsp sugar",
+							"quantity": 1.5,
+							"unit": "tsp",
+							"category": "mixed-fraction"
+						}
 					],
-					"instructions": ["Core the apple.", "Bake until tender."],
+					"instructions": [
+						"Core the apple.",
+						"Bake until tender."
+					],
 					"servingsRaw": "1 serving",
 					"prepTimeMinutes": null,
 					"cookTimeMinutes": 20,
@@ -101,12 +160,36 @@
 					"title": "Pantry Stew",
 					"extractionMethod": "json-ld",
 					"ingredients": [
-						{ "raw": "2-3 carrots", "quantity": 2, "quantityMax": 3, "unit": null },
-						{ "raw": "salt to taste", "quantity": null, "unit": null },
-						{ "raw": "??? leftover greens", "quantity": null, "unit": null },
-						{ "raw": "2 pounds (900g) potatoes", "quantity": 2, "unit": "pounds" }
+						{
+							"raw": "2-3 carrots",
+							"quantity": 2,
+							"quantityMax": 3,
+							"unit": null,
+							"category": "range"
+						},
+						{
+							"raw": "salt to taste",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "??? leftover greens",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "2 pounds (900g) potatoes",
+							"quantity": 2,
+							"unit": "pounds",
+							"category": "dual-unit"
+						}
 					],
-					"instructions": ["Add everything to a pot.", "Cook until the potatoes are tender."],
+					"instructions": [
+						"Add everything to a pot.",
+						"Cook until the potatoes are tender."
+					],
 					"servingsRaw": null,
 					"prepTimeMinutes": null,
 					"cookTimeMinutes": null,
@@ -127,25 +210,141 @@
 					"title": "Garden Pot",
 					"extractionMethod": "json-ld",
 					"ingredients": [
-						{ "raw": "1 tbsp olive oil", "quantity": 1, "unit": "tbsp" },
-						{ "raw": "2 cloves garlic", "quantity": 2, "unit": "cloves" },
-						{ "raw": "3 cups vegetable stock", "quantity": 3, "unit": "cups" },
-						{ "raw": "400 g tomatoes", "quantity": 400, "unit": "g" },
-						{ "raw": "1/2 tsp pepper", "quantity": 0.5, "unit": "tsp" },
-						{ "raw": "2 onions", "quantity": 2, "unit": null },
-						{ "raw": "1 lb potatoes", "quantity": 1, "unit": "lb" },
-						{ "raw": "250 ml water", "quantity": 250, "unit": "ml" },
-						{ "raw": "1 tsp paprika", "quantity": 1, "unit": "tsp" },
-						{ "raw": "2 tbsp flour", "quantity": 2, "unit": "tbsp" },
-						{ "raw": "1 cup beans", "quantity": 1, "unit": "cup" },
-						{ "raw": "1/4 cup parsley", "quantity": 0.25, "unit": "cup" }
+						{
+							"raw": "1 1/2 cups bread flour",
+							"quantity": 1.5,
+							"unit": "cups",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "2 3/4 tsp active dry yeast",
+							"quantity": 2.75,
+							"unit": "tsp",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "½ cup warm water",
+							"quantity": 0.5,
+							"unit": "cup",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "1¼ cups milk",
+							"quantity": 1.25,
+							"unit": "cups",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "2-3 tbsp olive oil",
+							"quantity": 2,
+							"quantityMax": 3,
+							"unit": "tbsp",
+							"category": "range"
+						},
+						{
+							"raw": "4 to 5 carrots",
+							"quantity": 4,
+							"quantityMax": 5,
+							"unit": null,
+							"category": "range"
+						},
+						{
+							"raw": "2 pounds (900g) potatoes",
+							"quantity": 2,
+							"unit": "pounds",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "3 cups (720 ml) vegetable stock",
+							"quantity": 3,
+							"unit": "cups",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "2 Tbsp. tomato paste",
+							"quantity": 2,
+							"unit": "Tbsp.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "1 c. frozen peas",
+							"quantity": 1,
+							"unit": "c.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "8 fl oz apple juice",
+							"quantity": 8,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "2 fl. oz. cider vinegar",
+							"quantity": 2,
+							"unit": "fl. oz.",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "2 sprigs rosemary",
+							"quantity": 2,
+							"unit": "sprigs",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "a pinch red pepper flakes",
+							"quantity": null,
+							"unit": null,
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "salt to taste",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "olive oil as needed",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "1 onion, finely diced",
+							"quantity": 1,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "3 cloves garlic, minced",
+							"quantity": 3,
+							"unit": "cloves",
+							"category": "comma-prep"
+						},
+						{
+							"raw": "2 cups flour",
+							"quantity": 2,
+							"unit": "cups",
+							"category": "simple"
+						},
+						{
+							"raw": "400 g tomatoes",
+							"quantity": 400,
+							"unit": "g",
+							"category": "simple"
+						}
 					],
-					"instructions": ["Warm the oil and garlic.", "Add the remaining ingredients.", "Simmer until the potatoes are tender."],
+					"instructions": [
+						"Warm the oil and garlic.",
+						"Add the remaining ingredients.",
+						"Simmer until the potatoes are tender."
+					],
 					"servingsRaw": "6 servings",
 					"prepTimeMinutes": 15,
 					"cookTimeMinutes": 35,
 					"totalTimeMinutes": 50,
-					"cookingMethods": ["Simmer"],
+					"cookingMethods": [
+						"Simmer"
+					],
 					"author": "Public Domain Test Kitchen",
 					"siteName": "Open Recipes"
 				}
@@ -161,11 +360,29 @@
 					"title": "Lemon Rice",
 					"extractionMethod": "dom-heuristic",
 					"ingredients": [
-						{ "raw": "1 cup rice", "quantity": 1, "unit": "cup" },
-						{ "raw": "1 tbsp lemon juice", "quantity": 1, "unit": "tbsp" },
-						{ "raw": "1/2 tsp salt", "quantity": 0.5, "unit": "tsp" }
+						{
+							"raw": "1 cup rice",
+							"quantity": 1,
+							"unit": "cup",
+							"category": "simple"
+						},
+						{
+							"raw": "1 tbsp lemon juice",
+							"quantity": 1,
+							"unit": "tbsp",
+							"category": "simple"
+						},
+						{
+							"raw": "1/2 tsp salt",
+							"quantity": 0.5,
+							"unit": "tsp",
+							"category": "simple"
+						}
 					],
-					"instructions": ["Cook the rice.", "Fold in lemon juice and salt."],
+					"instructions": [
+						"Cook the rice.",
+						"Fold in lemon juice and salt."
+					],
 					"servingsRaw": "Serves 4",
 					"prepTimeMinutes": 5,
 					"cookTimeMinutes": 18,
@@ -186,10 +403,23 @@
 					"title": "Two Simple Toasts",
 					"extractionMethod": "dom-heuristic",
 					"ingredients": [
-						{ "raw": "1 slice bread", "quantity": 1, "unit": "slice" },
-						{ "raw": "1 tsp olive oil", "quantity": 1, "unit": "tsp" }
+						{
+							"raw": "1 slice bread",
+							"quantity": 1,
+							"unit": "slice",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "1 tsp olive oil",
+							"quantity": 1,
+							"unit": "tsp",
+							"category": "simple"
+						}
 					],
-					"instructions": ["Toast the bread.", "Drizzle with oil."],
+					"instructions": [
+						"Toast the bread.",
+						"Drizzle with oil."
+					],
 					"servingsRaw": null,
 					"prepTimeMinutes": null,
 					"cookTimeMinutes": null,
@@ -202,10 +432,23 @@
 					"title": "Two Simple Toasts",
 					"extractionMethod": "dom-heuristic",
 					"ingredients": [
-						{ "raw": "1 slice bread", "quantity": 1, "unit": "slice" },
-						{ "raw": "2 tsp berry jam", "quantity": 2, "unit": "tsp" }
+						{
+							"raw": "1 slice bread",
+							"quantity": 1,
+							"unit": "slice",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "2 tsp berry jam",
+							"quantity": 2,
+							"unit": "tsp",
+							"category": "simple"
+						}
 					],
-					"instructions": ["Toast the bread.", "Spread with jam."],
+					"instructions": [
+						"Toast the bread.",
+						"Spread with jam."
+					],
 					"servingsRaw": null,
 					"prepTimeMinutes": null,
 					"cookTimeMinutes": null,
@@ -230,15 +473,30 @@
 					"title": "Garlic Noodles",
 					"extractionMethod": "ollama",
 					"ingredients": [
-						{ "raw": "8 oz noodles", "quantity": 8, "unit": "oz" },
-						{ "raw": "2 cloves garlic", "quantity": 2, "unit": "cloves" }
+						{
+							"raw": "8 oz noodles",
+							"quantity": 8,
+							"unit": "oz",
+							"category": "simple"
+						},
+						{
+							"raw": "2 cloves garlic",
+							"quantity": 2,
+							"unit": "cloves",
+							"category": "simple"
+						}
 					],
-					"instructions": ["Boil the noodles.", "Stir in the garlic."],
+					"instructions": [
+						"Boil the noodles.",
+						"Stir in the garlic."
+					],
 					"servingsRaw": "Serves 2",
 					"prepTimeMinutes": 5,
 					"cookTimeMinutes": 10,
 					"totalTimeMinutes": null,
-					"cookingMethods": ["Boil"],
+					"cookingMethods": [
+						"Boil"
+					],
 					"author": "Archive Cook",
 					"siteName": "Open Recipes"
 				}
@@ -249,107 +507,735 @@
 			"tier": 1,
 			"file": "tier1/array-jsonld.html",
 			"pageUrl": "https://public.example/recipes/harvest-grain-bowl",
-			"expected": [{
-				"title": "Harvest Grain Bowl",
-				"extractionMethod": "json-ld",
-				"ingredients": [
-					{ "raw": "1 cup barley", "quantity": 1, "unit": "cup" },
-					{ "raw": "2 tbsp olive oil", "quantity": 2, "unit": "tbsp" },
-					{ "raw": "3 tsp cumin", "quantity": 3, "unit": "tsp" },
-					{ "raw": "400 g lentils", "quantity": 400, "unit": "g" },
-					{ "raw": "1 kg squash", "quantity": 1, "unit": "kg" },
-					{ "raw": "250 ml broth", "quantity": 250, "unit": "ml" },
-					{ "raw": "1 l water", "quantity": 1, "unit": "l" },
-					{ "raw": "2 cloves garlic", "quantity": 2, "unit": "cloves" },
-					{ "raw": "3 cans beans", "quantity": 3, "unit": "cans" },
-					{ "raw": "1 bunch parsley", "quantity": 1, "unit": "bunch" },
-					{ "raw": "4 carrots", "quantity": 4, "unit": null },
-					{ "raw": "8 oz mushrooms", "quantity": 8, "unit": "oz" },
-					{ "raw": "1/2 lb turnips", "quantity": 0.5, "unit": "lb" },
-					{ "raw": "2 cups spinach", "quantity": 2, "unit": "cups" },
-					{ "raw": "1/4 tsp pepper", "quantity": 0.25, "unit": "tsp" }
-				],
-				"instructions": ["Rinse the grains and lentils.", "Simmer everything until tender."],
-				"servingsRaw": "8 bowls", "prepTimeMinutes": 12, "cookTimeMinutes": 40, "totalTimeMinutes": 52,
-				"cookingMethods": [], "author": null, "siteName": null
-			}]
+			"expected": [
+				{
+					"title": "Harvest Grain Bowl",
+					"extractionMethod": "json-ld",
+					"ingredients": [
+						{
+							"raw": "1 1/4 cups pearl barley",
+							"quantity": 1.25,
+							"unit": "cups",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "3 1/2 tbsp lemon juice",
+							"quantity": 3.5,
+							"unit": "tbsp",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "¾ tsp ground cumin",
+							"quantity": 0.75,
+							"unit": "tsp",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "2½ cups cooked lentils",
+							"quantity": 2.5,
+							"unit": "cups",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "1-2 bay leaves",
+							"quantity": 1,
+							"quantityMax": 2,
+							"unit": null,
+							"category": "range"
+						},
+						{
+							"raw": "2 to 3 zucchini",
+							"quantity": 2,
+							"quantityMax": 3,
+							"unit": null,
+							"category": "range"
+						},
+						{
+							"raw": "1 pound (454 g) winter squash",
+							"quantity": 1,
+							"unit": "pound",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "2 cups (480ml) mushroom broth",
+							"quantity": 2,
+							"unit": "cups",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "1 Tbsp. tahini",
+							"quantity": 1,
+							"unit": "Tbsp.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "2 oz. feta",
+							"quantity": 2,
+							"unit": "oz.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "6 fl oz pomegranate juice",
+							"quantity": 6,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "1 fl. oz. lemon juice",
+							"quantity": 1,
+							"unit": "fl. oz.",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "1 slice sourdough",
+							"quantity": 1,
+							"unit": "slice",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "3 stalks celery",
+							"quantity": 3,
+							"unit": "stalks",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "black pepper to taste",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "water as needed",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "2 carrots, thinly sliced",
+							"quantity": 2,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "1 bunch parsley, chopped",
+							"quantity": 1,
+							"unit": "bunch",
+							"category": "comma-prep"
+						},
+						{
+							"raw": "250 ml broth",
+							"quantity": 250,
+							"unit": "ml",
+							"category": "simple"
+						},
+						{
+							"raw": "300 g chickpeas",
+							"quantity": 300,
+							"unit": "g",
+							"category": "simple"
+						}
+					],
+					"instructions": [
+						"Rinse the grains and lentils.",
+						"Simmer everything until tender."
+					],
+					"servingsRaw": "8 bowls",
+					"prepTimeMinutes": 12,
+					"cookTimeMinutes": 40,
+					"totalTimeMinutes": 52,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": null
+				}
+			]
 		},
 		{
 			"id": "tier1-rdfa-recipe",
 			"tier": 1,
 			"file": "tier1/rdfa-recipe.html",
 			"pageUrl": "https://public.example/recipes/rdfa-pantry-salad",
-			"expected": [{
-				"title": "RDFa Pantry Salad", "extractionMethod": "microdata",
-				"ingredients": [
-					{ "raw": "2 cups chickpeas", "quantity": 2, "unit": "cups" }, { "raw": "1 cup cucumber", "quantity": 1, "unit": "cup" },
-					{ "raw": "3 tbsp lemon juice", "quantity": 3, "unit": "tbsp" }, { "raw": "2 tbsp olive oil", "quantity": 2, "unit": "tbsp" },
-					{ "raw": "1 tsp salt", "quantity": 1, "unit": "tsp" }, { "raw": "1/2 tsp pepper", "quantity": 0.5, "unit": "tsp" },
-					{ "raw": "100 g radishes", "quantity": 100, "unit": "g" }, { "raw": "250 g tomatoes", "quantity": 250, "unit": "g" },
-					{ "raw": "1 bunch mint", "quantity": 1, "unit": "bunch" }, { "raw": "2 cloves garlic", "quantity": 2, "unit": "cloves" },
-					{ "raw": "1 can corn", "quantity": 1, "unit": "can" }, { "raw": "4 oz feta", "quantity": 4, "unit": "oz" },
-					{ "raw": "1 onion", "quantity": 1, "unit": null }, { "raw": "2 cups lettuce", "quantity": 2, "unit": "cups" },
-					{ "raw": "30 ml vinegar", "quantity": 30, "unit": "ml" }
-				],
-				"instructions": ["Whisk the dressing.", "Toss the vegetables and serve."],
-				"servingsRaw": null, "prepTimeMinutes": null, "cookTimeMinutes": null, "totalTimeMinutes": null,
-				"cookingMethods": [], "author": null, "siteName": null
-			}]
+			"expected": [
+				{
+					"title": "RDFa Pantry Salad",
+					"extractionMethod": "microdata",
+					"ingredients": [
+						{
+							"raw": "2 1/2 cups chickpeas",
+							"quantity": 2.5,
+							"unit": "cups",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "1 3/4 tbsp olive oil",
+							"quantity": 1.75,
+							"unit": "tbsp",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "⅓ cup chopped mint",
+							"quantity": 0.3333333333333333,
+							"unit": "cup",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "1½ tsp sumac",
+							"quantity": 1.5,
+							"unit": "tsp",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "3-4 radishes",
+							"quantity": 3,
+							"quantityMax": 4,
+							"unit": null,
+							"category": "range"
+						},
+						{
+							"raw": "1 to 2 cucumbers",
+							"quantity": 1,
+							"quantityMax": 2,
+							"unit": null,
+							"category": "range"
+						},
+						{
+							"raw": "4 ounces (113 g) feta",
+							"quantity": 4,
+							"unit": "ounces",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "1 cup (240 ml) tomato juice",
+							"quantity": 1,
+							"unit": "cup",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "3 tsp. lemon zest",
+							"quantity": 3,
+							"unit": "tsp.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "½ c. toasted seeds",
+							"quantity": 0.5,
+							"unit": "c.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "4 fl oz orange juice",
+							"quantity": 4,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "3 fl. oz. olive brine",
+							"quantity": 3,
+							"unit": "fl. oz.",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "2 handfuls lettuce",
+							"quantity": 2,
+							"unit": "handfuls",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "1 head radicchio",
+							"quantity": 1,
+							"unit": "head",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "sea salt as desired",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "mint leaves as needed",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "1 cucumber, seeded and diced",
+							"quantity": 1,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "2 tomatoes, roughly chopped",
+							"quantity": 2,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "100 g olives",
+							"quantity": 100,
+							"unit": "g",
+							"category": "simple"
+						},
+						{
+							"raw": "2 cups lettuce",
+							"quantity": 2,
+							"unit": "cups",
+							"category": "simple"
+						}
+					],
+					"instructions": [
+						"Whisk the dressing.",
+						"Toss the vegetables and serve."
+					],
+					"servingsRaw": null,
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": null,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": null
+				}
+			]
 		},
 		{
-			"id": "tier2-wprm-large", "tier": 2, "file": "tier2/wprm-card-large.html", "pageUrl": "https://public.example/recipes/root-tray",
-			"expected": [{
-				"title": "Root Vegetable Tray", "extractionMethod": "dom-heuristic",
-				"ingredients": [
-					{ "raw": "2 lb potatoes", "quantity": 2, "unit": "lb" }, { "raw": "1 lb carrots", "quantity": 1, "unit": "lb" },
-					{ "raw": "8 oz parsnips", "quantity": 8, "unit": "oz" }, { "raw": "3 tbsp olive oil", "quantity": 3, "unit": "tbsp" },
-					{ "raw": "2 tsp salt", "quantity": 2, "unit": "tsp" }, { "raw": "1 tsp pepper", "quantity": 1, "unit": "tsp" },
-					{ "raw": "2 cloves garlic", "quantity": 2, "unit": "cloves" }, { "raw": "1 onion", "quantity": 1, "unit": null },
-					{ "raw": "1 cup mushrooms", "quantity": 1, "unit": "cup" }, { "raw": "250 g beets", "quantity": 250, "unit": "g" },
-					{ "raw": "1 bunch rosemary", "quantity": 1, "unit": "bunch" }, { "raw": "2 tbsp vinegar", "quantity": 2, "unit": "tbsp" },
-					{ "raw": "1/2 cup stock", "quantity": 0.5, "unit": "cup" }, { "raw": "1 can chickpeas", "quantity": 1, "unit": "can" },
-					{ "raw": "4 cups spinach", "quantity": 4, "unit": "cups" }
-				],
-				"instructions": ["Cut the vegetables evenly.", "Roast until browned."],
-				"servingsRaw": null, "prepTimeMinutes": null, "cookTimeMinutes": null, "totalTimeMinutes": null,
-				"cookingMethods": [], "author": null, "siteName": null
-			}]
+			"id": "tier2-wprm-large",
+			"tier": 2,
+			"file": "tier2/wprm-card-large.html",
+			"pageUrl": "https://public.example/recipes/root-tray",
+			"expected": [
+				{
+					"title": "Root Vegetable Tray",
+					"extractionMethod": "dom-heuristic",
+					"ingredients": [
+						{
+							"raw": "1 1/2 lb red potatoes",
+							"quantity": 1.5,
+							"unit": "lb",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "2 1/4 tbsp olive oil",
+							"quantity": 2.25,
+							"unit": "tbsp",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "½ tsp smoked paprika",
+							"quantity": 0.5,
+							"unit": "tsp",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "1¾ cups sliced carrots",
+							"quantity": 1.75,
+							"unit": "cups",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "2-3 parsnips",
+							"quantity": 2,
+							"quantityMax": 3,
+							"unit": null,
+							"category": "range"
+						},
+						{
+							"raw": "1 to 2 onions",
+							"quantity": 1,
+							"quantityMax": 2,
+							"unit": null,
+							"category": "range"
+						},
+						{
+							"raw": "2 pounds (900 g) sweet potatoes",
+							"quantity": 2,
+							"unit": "pounds",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "1 cup (240ml) vegetable stock",
+							"quantity": 1,
+							"unit": "cup",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "2 Tbsp. balsamic vinegar",
+							"quantity": 2,
+							"unit": "Tbsp.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "4 oz. mushrooms",
+							"quantity": 4,
+							"unit": "oz.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "5 fl oz apple cider",
+							"quantity": 5,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "1 fl. oz. lemon juice",
+							"quantity": 1,
+							"unit": "fl. oz.",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "3 sprigs thyme",
+							"quantity": 3,
+							"unit": "sprigs",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "a pinch chili flakes",
+							"quantity": null,
+							"unit": null,
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "salt to taste",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "olive oil as needed",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "2 cloves garlic, finely minced",
+							"quantity": 2,
+							"unit": "cloves",
+							"category": "comma-prep"
+						},
+						{
+							"raw": "1 onion, cut into wedges",
+							"quantity": 1,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "250 g beets",
+							"quantity": 250,
+							"unit": "g",
+							"category": "simple"
+						},
+						{
+							"raw": "2 cups spinach",
+							"quantity": 2,
+							"unit": "cups",
+							"category": "simple"
+						}
+					],
+					"instructions": [
+						"Cut the vegetables evenly.",
+						"Roast until browned."
+					],
+					"servingsRaw": null,
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": null,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": null
+				}
+			]
 		},
 		{
-			"id": "tier2-tasty-large", "tier": 2, "file": "tier2/tasty-card-large.html", "pageUrl": "https://public.example/recipes/skillet-beans",
-			"expected": [{
-				"title": "Skillet Bean Supper", "extractionMethod": "dom-heuristic",
-				"ingredients": [
-					{ "raw": "2 cans white beans", "quantity": 2, "unit": "cans" }, { "raw": "1 cup tomato sauce", "quantity": 1, "unit": "cup" },
-					{ "raw": "1 onion", "quantity": 1, "unit": null }, { "raw": "3 cloves garlic", "quantity": 3, "unit": "cloves" },
-					{ "raw": "2 tbsp olive oil", "quantity": 2, "unit": "tbsp" }, { "raw": "1 tsp paprika", "quantity": 1, "unit": "tsp" },
-					{ "raw": "1/2 tsp cumin", "quantity": 0.5, "unit": "tsp" }, { "raw": "250 ml broth", "quantity": 250, "unit": "ml" },
-					{ "raw": "100 g kale", "quantity": 100, "unit": "g" }, { "raw": "1 cup corn", "quantity": 1, "unit": "cup" },
-					{ "raw": "2 tbsp parsley", "quantity": 2, "unit": "tbsp" }, { "raw": "1 tsp salt", "quantity": 1, "unit": "tsp" },
-					{ "raw": "1/4 tsp pepper", "quantity": 0.25, "unit": "tsp" }, { "raw": "4 oz noodles", "quantity": 4, "unit": "oz" }
-				],
-				"instructions": ["Soften the onion and garlic.", "Simmer the beans and noodles."],
-				"servingsRaw": null, "prepTimeMinutes": null, "cookTimeMinutes": null, "totalTimeMinutes": null,
-				"cookingMethods": [], "author": null, "siteName": null
-			}]
+			"id": "tier2-tasty-large",
+			"tier": 2,
+			"file": "tier2/tasty-card-large.html",
+			"pageUrl": "https://public.example/recipes/skillet-beans",
+			"expected": [
+				{
+					"title": "Skillet Bean Supper",
+					"extractionMethod": "dom-heuristic",
+					"ingredients": [
+						{
+							"raw": "2 1/2 cups white beans",
+							"quantity": 2.5,
+							"unit": "cups",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "1 1/4 tsp ground cumin",
+							"quantity": 1.25,
+							"unit": "tsp",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "¼ cup tomato paste",
+							"quantity": 0.25,
+							"unit": "cup",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "2⅓ cups vegetable broth",
+							"quantity": 2.3333333333333335,
+							"unit": "cups",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "3-4 kale leaves",
+							"quantity": 3,
+							"quantityMax": 4,
+							"unit": null,
+							"category": "range"
+						},
+						{
+							"raw": "2 to 3 cans white beans",
+							"quantity": 2,
+							"quantityMax": 3,
+							"unit": "cans",
+							"category": "range"
+						},
+						{
+							"raw": "8 ounces (227g) noodles",
+							"quantity": 8,
+							"unit": "ounces",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "2 cups (480 ml) tomato sauce",
+							"quantity": 2,
+							"unit": "cups",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "1 Tbsp. olive oil",
+							"quantity": 1,
+							"unit": "Tbsp.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "½ c. sweet corn",
+							"quantity": 0.5,
+							"unit": "c.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "7 fl oz bean broth",
+							"quantity": 7,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "2 fl. oz. lime juice",
+							"quantity": 2,
+							"unit": "fl. oz.",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "1 wedge lime",
+							"quantity": 1,
+							"unit": "wedge",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "2 stalks scallions",
+							"quantity": 2,
+							"unit": "stalks",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "hot sauce as desired",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "water as needed",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "1 onion, coarsely chopped",
+							"quantity": 1,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "3 cloves garlic, crushed",
+							"quantity": 3,
+							"unit": "cloves",
+							"category": "comma-prep"
+						},
+						{
+							"raw": "100 g kale",
+							"quantity": 100,
+							"unit": "g",
+							"category": "simple"
+						},
+						{
+							"raw": "1 tsp paprika",
+							"quantity": 1,
+							"unit": "tsp",
+							"category": "simple"
+						}
+					],
+					"instructions": [
+						"Soften the onion and garlic.",
+						"Simmer the beans and noodles."
+					],
+					"servingsRaw": null,
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": null,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": null
+				}
+			]
 		},
 		{
-			"id": "tier2-mediavine-large", "tier": 2, "file": "tier2/mediavine-card-large.html", "pageUrl": "https://public.example/recipes/orchard-bake",
-			"expected": [{
-				"title": "Orchard Breakfast Bake", "extractionMethod": "dom-heuristic",
-				"ingredients": [
-					{ "raw": "3 cups rolled oats", "quantity": 3, "unit": "cups" }, { "raw": "2 cups milk", "quantity": 2, "unit": "cups" },
-					{ "raw": "2 apples", "quantity": 2, "unit": null }, { "raw": "1 cup pears", "quantity": 1, "unit": "cup" },
-					{ "raw": "1/2 cup raisins", "quantity": 0.5, "unit": "cup" }, { "raw": "2 tbsp butter", "quantity": 2, "unit": "tbsp" },
-					{ "raw": "1 tsp cinnamon", "quantity": 1, "unit": "tsp" }, { "raw": "1/4 tsp salt", "quantity": 0.25, "unit": "tsp" },
-					{ "raw": "2 eggs", "quantity": 2, "unit": null }, { "raw": "1/2 cup walnuts", "quantity": 0.5, "unit": "cup" },
-					{ "raw": "3 tbsp maple syrup", "quantity": 3, "unit": "tbsp" }, { "raw": "1 tsp vanilla", "quantity": 1, "unit": "tsp" },
-					{ "raw": "1 cup water", "quantity": 1, "unit": "cup" }, { "raw": "2 tbsp flour", "quantity": 2, "unit": "tbsp" }
-				],
-				"instructions": ["Combine the oat mixture.", "Bake until the fruit is soft."],
-				"servingsRaw": null, "prepTimeMinutes": null, "cookTimeMinutes": null, "totalTimeMinutes": null,
-				"cookingMethods": [], "author": null, "siteName": null
-			}]
+			"id": "tier2-mediavine-large",
+			"tier": 2,
+			"file": "tier2/mediavine-card-large.html",
+			"pageUrl": "https://public.example/recipes/orchard-bake",
+			"expected": [
+				{
+					"title": "Orchard Breakfast Bake",
+					"extractionMethod": "dom-heuristic",
+					"ingredients": [
+						{
+							"raw": "3 1/2 cups rolled oats",
+							"quantity": 3.5,
+							"unit": "cups",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "1 3/4 cups whole milk",
+							"quantity": 1.75,
+							"unit": "cups",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "⅔ cup raisins",
+							"quantity": 0.6666666666666666,
+							"unit": "cup",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "1½ tsp cinnamon",
+							"quantity": 1.5,
+							"unit": "tsp",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "2-3 apples",
+							"quantity": 2,
+							"quantityMax": 3,
+							"unit": null,
+							"category": "range"
+						},
+						{
+							"raw": "1 to 2 pears",
+							"quantity": 1,
+							"quantityMax": 2,
+							"unit": null,
+							"category": "range"
+						},
+						{
+							"raw": "1 pound (454g) apples",
+							"quantity": 1,
+							"unit": "pound",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "2 cups (480 ml) oat milk",
+							"quantity": 2,
+							"unit": "cups",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "2 Tbsp. maple syrup",
+							"quantity": 2,
+							"unit": "Tbsp.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "1 c. chopped walnuts",
+							"quantity": 1,
+							"unit": "c.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "6 fl oz apple juice",
+							"quantity": 6,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "3 fl. oz. orange juice",
+							"quantity": 3,
+							"unit": "fl. oz.",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "2 scoops yogurt",
+							"quantity": 2,
+							"unit": "scoops",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "1 slice whole-grain bread",
+							"quantity": 1,
+							"unit": "slice",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "butter as needed",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "nutmeg to taste",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "2 apples, peeled and diced",
+							"quantity": 2,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "1 pear, thinly sliced",
+							"quantity": 1,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "2 eggs",
+							"quantity": 2,
+							"unit": null,
+							"category": "simple"
+						},
+						{
+							"raw": "200 g rolled oats",
+							"quantity": 200,
+							"unit": "g",
+							"category": "simple"
+						}
+					],
+					"instructions": [
+						"Combine the oat mixture.",
+						"Bake until the fruit is soft."
+					],
+					"servingsRaw": null,
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": null,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": null
+				}
+			]
 		}
 	]
 }
