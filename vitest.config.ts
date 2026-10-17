@@ -9,7 +9,7 @@ export default defineConfig({
 			["tests/unit/extraction/**/*.test.ts", "jsdom"],
 		],
 		coverage: {
-			include: ["src/domain/aggregation/stage1LexicalParser.ts"],
+			include: ["src/domain/aggregation/**/*.ts"],
 			branches: 90,
 		},
 	},

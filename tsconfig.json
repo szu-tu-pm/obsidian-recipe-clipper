@@ -8,6 +8,8 @@
 		"allowJs": true,
 		"strict": true,
 		"moduleResolution": "node",
+		"resolveJsonModule": true,
+		"allowSyntheticDefaultImports": true,
 		"importHelpers": true,
 		"isolatedModules": true,
 		"jsx": "react-jsx",

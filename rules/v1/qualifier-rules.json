@@ -1,0 +1,11 @@
+{
+  "version": "v1",
+  "blocking": [
+    { "id": "freshness", "values": ["fresh", "dried"] },
+    { "id": "salt", "values": ["salted", "unsalted"] },
+    { "id": "doneness", "values": ["raw", "cooked"] },
+    { "id": "form", "values": ["whole", "ground"] },
+    { "id": "bone", "values": ["boneless", "bone-in", "bone in"] }
+  ],
+  "mergeablePreparation": ["diced", "minced", "divided", "chopped", "sliced", "crushed"]
+}

@@ -1,0 +1,28 @@
+{
+  "version": "v1",
+  "groups": [
+    {
+      "id": "green-onion",
+      "display": "green onion",
+      "names": ["scallion", "scallions", "green onion", "green onions"]
+    },
+    {
+      "id": "cilantro",
+      "display": "cilantro",
+      "names": ["cilantro", "fresh cilantro", "coriander leaves", "fresh coriander leaves"]
+    },
+    { "id": "butter", "display": "butter", "names": ["butter"] },
+    { "id": "onion", "display": "onion", "names": ["onion", "onions"] },
+    { "id": "garlic", "display": "garlic", "names": ["garlic"] },
+    {
+      "id": "flour",
+      "display": "flour",
+      "names": ["flour", "all-purpose flour", "all purpose flour"]
+    },
+    { "id": "chicken", "display": "chicken", "names": ["chicken", "chicken thigh", "chicken thighs"] },
+    { "id": "shrimp", "display": "shrimp", "names": ["shrimp"] },
+    { "id": "water", "display": "water", "names": ["water"] },
+    { "id": "salt", "display": "salt", "names": ["salt"] },
+    { "id": "coriander-seed", "display": "coriander", "names": ["coriander", "coriander seed", "coriander seeds"] }
+  ]
+}
