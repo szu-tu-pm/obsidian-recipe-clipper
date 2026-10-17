@@ -22,6 +22,7 @@ Arguments:
 - Worktrees: `../obsidian-recipe-clipper-wt/<task-id>`. Run artifacts (briefs, reviews): `../obsidian-recipe-clipper-wt/_runs/<task-id>/`.
 - Scripts in `scripts/agents/`: `codex.sh` (implement and review), `verify.sh` (the orchestrator's checks), `review-rubric.md` (shared by implementers and reviewers), `review-schema.json` (verdict shape), `render-review.mjs` (verdict → PR comment).
 - Run every `git`/`gh` command for a task inside its worktree (`git -C <worktree>`, or `cd <worktree> && …` in the same command). `_runs/` is not a git repo, and the shell's directory resets between calls.
+- The shell is zsh, so unquoted `$var` does not word-split. Never loop with `set -- $t` or `for x in $list`. Write one explicit `git worktree add <path> -b <branch> origin/main` per task, and check `git worktree list` afterwards. A split failure once created a local branch named `origin/main`.
 - Notion property names are used exactly as the schema shows them: `"PR Link"`, `"Status"` (no `userDefined:` prefix).
 
 ## 1. Pick
