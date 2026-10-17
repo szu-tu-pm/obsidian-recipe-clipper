@@ -1,13 +1,19 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { JSDOM } from "jsdom";
-import { aggregateIngredients, RULES_VERSION } from "../../src/domain/aggregation/aggregator";
+import {
+	aggregateIngredients,
+	RULES_VERSION,
+	type AggregatedIngredient,
+} from "../../src/domain/aggregation/aggregator";
 import { parseIngredientLine } from "../../src/domain/aggregation/stage1LexicalParser";
 import { recipeFrontmatterSchema } from "../../src/domain/schema/recipeSchema";
 import { OLLAMA_RECIPE_EXTRACTION_PROMPT } from "../../src/domain/extraction/ollamaExtractor";
 import { extractRecipeFromPage } from "../../src/domain/extraction/urlClipper";
 import type { ExtractionCandidate } from "../../src/domain/extraction/types";
+import type { ExtractionMethod } from "../../src/domain/schema/recipeSchema";
 
 const PROJECT_ROOT = process.cwd();
 const FIXTURE_ROOT = resolve(PROJECT_ROOT, "tests/evals/fixtures");
@@ -25,6 +31,13 @@ export const EXIT_GATES = {
 	safeMergeRecall: 0.92,
 } as const;
 
+export const MINIMUM_DENOMINATORS = {
+	tier1Ingredients: 50,
+	tier2Ingredients: 50,
+	safeMergePairs: 50,
+	unsafeMergePairs: 50,
+} as const;
+
 interface ExpectedIngredient {
 	raw: string;
 	quantity: number | null;
@@ -34,6 +47,7 @@ interface ExpectedIngredient {
 
 interface ExpectedRecipe {
 	title: string;
+	extractionMethod: Exclude<ExtractionMethod, "manual">;
 	ingredients: ExpectedIngredient[];
 	instructions: string[];
 	servingsRaw: string | null;
@@ -54,22 +68,32 @@ interface ExtractionFixture {
 	expected: ExpectedRecipe[];
 }
 
-interface FixtureManifest {
+export interface FixtureManifest {
 	version: string;
 	promptVersion: string;
 	fixtures: ExtractionFixture[];
 }
 
-interface AggregationPair {
+export interface AggregationPair {
 	id: string;
 	left: string;
 	right: string;
-	rule: string;
 }
 
-interface AggregationCorpus {
-	safeMerges: AggregationPair[];
-	unsafeMerges: AggregationPair[];
+export interface SafeAggregationPair extends AggregationPair {
+	expectedQuantity: number;
+	expectedQuantityMax: number | null;
+	expectedUnit: string;
+	expectedMergeRuleId: string;
+}
+
+export interface UnsafeAggregationPair extends AggregationPair {
+	expectedMergeRuleId: string;
+}
+
+export interface AggregationCorpus {
+	safeMerges: SafeAggregationPair[];
+	unsafeMerges: UnsafeAggregationPair[];
 }
 
 interface CountMetric {
@@ -84,16 +108,37 @@ interface TierMetrics {
 	ingredientRecall: CountMetric;
 	quantityUnitFidelity: CountMetric;
 	instructionFidelity: CountMetric;
+	extractionMethodFidelity: CountMetric;
+	expectedScalarFidelity: CountMetric;
 }
 
 interface MergeFailure extends AggregationPair {
+	expectedMergeRuleId: string;
 	actualRules: string[];
 }
 
+interface WrongQuantityMerge extends SafeAggregationPair {
+	actualQuantity: number | null;
+	actualQuantityMax: number | null;
+}
+
+interface SafeMergeMismatch extends SafeAggregationPair {
+	actualUnit: string | null;
+	actualMergeRuleId: string;
+}
+
+interface CorpusMinimum {
+	actual: number;
+	minimum: number;
+	passed: boolean;
+}
+
 export interface EvaluationReport {
-	reportVersion: 1;
+	reportVersion: 2;
 	gitCommit: string;
+	workingTreeDirty: boolean | null;
 	fixtureVersion: string;
+	fixtureManifestSha256: string;
 	rulesVersion: string;
 	ollama: { models: string[]; promptVersion: string; promptFingerprint: string } | null;
 	metrics: {
@@ -106,8 +151,14 @@ export interface EvaluationReport {
 	};
 	hallucinatedFieldDetails: string[];
 	quantityUnitMismatchDetails: string[];
+	missingExpectedScalarDetails: string[];
+	extractionMethodMismatchDetails: string[];
 	falseMergeDetails: MergeFailure[];
 	missedSafeMergeDetails: MergeFailure[];
+	wrongQuantityMergeDetails: WrongQuantityMerge[];
+	incorrectSafeMergeDetails: SafeMergeMismatch[];
+	unsafeMergeRuleMismatchDetails: MergeFailure[];
+	corpusMinimums: Record<keyof typeof MINIMUM_DENOMINATORS, CorpusMinimum>;
 	gates: Record<keyof typeof EXIT_GATES, { threshold: number; actual: number; passed: boolean }>;
 	passed: boolean;
 }
@@ -121,6 +172,16 @@ interface MutableTier {
 	quantityUnitTotal: number;
 	instructionsMatched: number;
 	instructionsTotal: number;
+	methodsMatched: number;
+	methodsTotal: number;
+	expectedScalarsMatched: number;
+	expectedScalarsTotal: number;
+}
+
+export interface EvaluationOptions {
+	aggregationCorpus?: AggregationCorpus;
+	aggregatePair?: (pair: AggregationPair) => AggregatedIngredient[];
+	transformCandidates?: (fixtureId: string, candidates: ExtractionCandidate[]) => ExtractionCandidate[];
 }
 
 function readJson<T>(path: string): T {
@@ -135,8 +196,8 @@ function sameNumber(actual: number | null, expected: number | null): boolean {
 	return actual === expected || (actual != null && expected != null && Math.abs(actual - expected) < 1e-9);
 }
 
-function metric(matched: number, total: number): CountMetric {
-	return { matched, total, rate: total === 0 ? 1 : matched / total };
+export function metric(matched: number, total: number): CountMetric {
+	return { matched, total, rate: total === 0 ? 0 : matched / total };
 }
 
 function promptFingerprint(): string {
@@ -195,13 +256,30 @@ function evaluateRecipe(
 	tier: MutableTier,
 	hallucinations: string[],
 	quantityUnitMismatches: string[],
+	missingExpectedScalars: string[],
+	extractionMethodMismatches: string[],
 ): { schemaValid: boolean; outputFields: number } {
 	tier.recipes++;
 	tier.ingredientsTotal += expected.ingredients.length;
 	tier.quantityUnitTotal += expected.ingredients.length;
 	tier.instructionsTotal += expected.instructions.length;
+	tier.methodsTotal++;
 	if (!actual) {
+		extractionMethodMismatches.push(`${fixtureId} recipe ${recipeIndex + 1}: no candidate was extracted`);
+		for (const [name, value] of expectedScalarEntries(expected)) {
+			if (populatedScalar(value)) {
+				tier.expectedScalarsTotal++;
+				missingExpectedScalars.push(`${fixtureId} recipe ${recipeIndex + 1}: missing ${name}`);
+			}
+		}
 		return { schemaValid: false, outputFields: 0 };
+	}
+	if (actual.extractionMethod === expected.extractionMethod) {
+		tier.methodsMatched++;
+	} else {
+		extractionMethodMismatches.push(
+			`${fixtureId} recipe ${recipeIndex + 1}: expected ${expected.extractionMethod}, observed ${actual.extractionMethod}`,
+		);
 	}
 
 	const actualIngredientMap = new Map(actual.ingredients.map((item) => [normalized(item.raw), item]));
@@ -253,6 +331,14 @@ function evaluateRecipe(
 		["siteName", actual.attribution.siteName, expected.siteName],
 	];
 	for (const [name, actualValue, expectedValue] of scalarChecks) {
+		if (populatedScalar(expectedValue)) {
+			tier.expectedScalarsTotal++;
+			if (actualValue === expectedValue) {
+				tier.expectedScalarsMatched++;
+			} else if (!populatedScalar(actualValue)) {
+				missingExpectedScalars.push(`${fixtureId} recipe ${recipeIndex + 1}: missing ${name}`);
+			}
+		}
 		if (populatedScalar(actualValue) && actualValue !== expectedValue) {
 			hallucinations.push(`${fixtureId} recipe ${recipeIndex + 1}: ${name}=${JSON.stringify(actualValue)}`);
 		}
@@ -274,6 +360,18 @@ function evaluateRecipe(
 	};
 }
 
+function expectedScalarEntries(expected: ExpectedRecipe): Array<[string, unknown]> {
+	return [
+		["title", expected.title],
+		["servingsRaw", expected.servingsRaw],
+		["prepTimeMinutes", expected.prepTimeMinutes],
+		["cookTimeMinutes", expected.cookTimeMinutes],
+		["totalTimeMinutes", expected.totalTimeMinutes],
+		["author", expected.author],
+		["siteName", expected.siteName],
+	];
+}
+
 function finalizedTier(value: MutableTier): TierMetrics {
 	return {
 		fixtures: value.fixtures,
@@ -281,6 +379,8 @@ function finalizedTier(value: MutableTier): TierMetrics {
 		ingredientRecall: metric(value.ingredientsMatched, value.ingredientsTotal),
 		quantityUnitFidelity: metric(value.quantityUnitMatched, value.quantityUnitTotal),
 		instructionFidelity: metric(value.instructionsMatched, value.instructionsTotal),
+		extractionMethodFidelity: metric(value.methodsMatched, value.methodsTotal),
+		expectedScalarFidelity: metric(value.expectedScalarsMatched, value.expectedScalarsTotal),
 	};
 }
 
@@ -302,16 +402,62 @@ function gitCommit(): string {
 	}
 }
 
-export async function runEvaluation(): Promise<EvaluationReport> {
+function workingTreeDirty(): boolean | null {
+	try {
+		return execFileSync("git", ["status", "--porcelain"], {
+			cwd: PROJECT_ROOT,
+			encoding: "utf8",
+		}).trim().length > 0;
+	} catch {
+		return null;
+	}
+}
+
+function matchCandidates(
+	expectedRecipes: ExpectedRecipe[],
+	candidates: ExtractionCandidate[],
+): Array<ExtractionCandidate | undefined> {
+	const remaining = new Set(candidates.map((_, index) => index));
+	return expectedRecipes.map((expected) => {
+		let bestIndex: number | undefined;
+		let bestScore = 0;
+		const expectedIngredients = new Set(expected.ingredients.map((item) => normalized(item.raw)));
+		for (const index of remaining) {
+			const candidate = candidates[index];
+			const titleScore = normalized(candidate.title) === normalized(expected.title) ? 1000 : 0;
+			const ingredientScore = candidate.ingredients.reduce(
+				(score, item) => score + Number(expectedIngredients.has(normalized(item.raw))),
+				0,
+			);
+			const score = titleScore + ingredientScore;
+			if (score > bestScore) {
+				bestScore = score;
+				bestIndex = index;
+			}
+		}
+		if (bestIndex === undefined) {
+			return undefined;
+		}
+		remaining.delete(bestIndex);
+		return candidates[bestIndex];
+	});
+}
+
+export async function runEvaluation(options: EvaluationOptions = {}): Promise<EvaluationReport> {
 	ensureDomParser();
-	const manifest = readJson<FixtureManifest>(resolve(FIXTURE_ROOT, "manifest.json"));
-	const aggregation = readJson<AggregationCorpus>(resolve(FIXTURE_ROOT, "aggregation/pairs.json"));
+	const manifestPath = resolve(FIXTURE_ROOT, "manifest.json");
+	const manifestBytes = readFileSync(manifestPath);
+	const manifest = JSON.parse(manifestBytes.toString("utf8")) as FixtureManifest;
+	const aggregation = options.aggregationCorpus ?? readJson<AggregationCorpus>(resolve(FIXTURE_ROOT, "aggregation/pairs.json"));
+	const pairEvaluator = options.aggregatePair ?? evaluatePair;
 	const mutable: Record<1 | 2, MutableTier> = {
-		1: { fixtures: 0, recipes: 0, ingredientsMatched: 0, ingredientsTotal: 0, quantityUnitMatched: 0, quantityUnitTotal: 0, instructionsMatched: 0, instructionsTotal: 0 },
-		2: { fixtures: 0, recipes: 0, ingredientsMatched: 0, ingredientsTotal: 0, quantityUnitMatched: 0, quantityUnitTotal: 0, instructionsMatched: 0, instructionsTotal: 0 },
+		1: { fixtures: 0, recipes: 0, ingredientsMatched: 0, ingredientsTotal: 0, quantityUnitMatched: 0, quantityUnitTotal: 0, instructionsMatched: 0, instructionsTotal: 0, methodsMatched: 0, methodsTotal: 0, expectedScalarsMatched: 0, expectedScalarsTotal: 0 },
+		2: { fixtures: 0, recipes: 0, ingredientsMatched: 0, ingredientsTotal: 0, quantityUnitMatched: 0, quantityUnitTotal: 0, instructionsMatched: 0, instructionsTotal: 0, methodsMatched: 0, methodsTotal: 0, expectedScalarsMatched: 0, expectedScalarsTotal: 0 },
 	};
 	const hallucinations: string[] = [];
 	const quantityUnitMismatches: string[] = [];
+	const missingExpectedScalars: string[] = [];
+	const extractionMethodMismatches: string[] = [];
 	let schemaValid = 0;
 	let schemaTotal = 0;
 	let outputFields = 0;
@@ -340,39 +486,80 @@ export async function runEvaluation(): Promise<EvaluationReport> {
 				}
 				: null,
 		});
-		const candidates = extractionCandidates(result);
+		const extractedCandidates = extractionCandidates(result);
+		const candidates = options.transformCandidates
+			? options.transformCandidates(fixture.id, extractedCandidates)
+			: extractedCandidates;
+		const matchedCandidates = matchCandidates(fixture.expected, candidates);
 		for (let index = 0; index < fixture.expected.length; index++) {
 			const evaluated = evaluateRecipe(
 				fixture.id,
 				index,
-				candidates[index],
+				matchedCandidates[index],
 				fixture.expected[index],
 				mutable[fixture.tier],
 				hallucinations,
 				quantityUnitMismatches,
+				missingExpectedScalars,
+				extractionMethodMismatches,
 			);
 			schemaTotal++;
 			schemaValid += Number(evaluated.schemaValid);
 			outputFields += evaluated.outputFields;
 		}
-		for (let index = fixture.expected.length; index < candidates.length; index++) {
+		const matched = new Set(matchedCandidates.filter((candidate) => candidate != null));
+		for (let index = 0; index < candidates.length; index++) {
+			if (matched.has(candidates[index])) {
+				continue;
+			}
 			hallucinations.push(`${fixture.id}: unexpected recipe candidate ${index + 1}`);
 			outputFields++;
 		}
 	}
 
 	const falseMergeDetails: MergeFailure[] = [];
+	const unsafeMergeRuleMismatchDetails: MergeFailure[] = [];
 	for (const pair of aggregation.unsafeMerges) {
-		const result = evaluatePair(pair);
+		const result = pairEvaluator(pair);
+		const actualRules = [...new Set(result.map((row) => row.mergeRuleId))];
 		if (result.some((row) => row.sourceRefs.length > 1)) {
-			falseMergeDetails.push({ ...pair, actualRules: [...new Set(result.map((row) => row.mergeRuleId))] });
+			falseMergeDetails.push({ ...pair, actualRules });
+		}
+		if (actualRules.some((rule) => rule !== pair.expectedMergeRuleId)) {
+			unsafeMergeRuleMismatchDetails.push({ ...pair, actualRules });
 		}
 	}
 	const missedSafeMergeDetails: MergeFailure[] = [];
+	const wrongQuantityMergeDetails: WrongQuantityMerge[] = [];
+	const incorrectSafeMergeDetails: SafeMergeMismatch[] = [];
+	let correctSafeMerges = 0;
 	for (const pair of aggregation.safeMerges) {
-		const result = evaluatePair(pair);
-		if (!result.some((row) => row.sourceRefs.length === 2)) {
+		const result = pairEvaluator(pair);
+		const merged = result.find((row) => row.sourceRefs.length === 2);
+		if (!merged) {
 			missedSafeMergeDetails.push({ ...pair, actualRules: [...new Set(result.map((row) => row.mergeRuleId))] });
+			continue;
+		}
+		const quantityMatches = sameNumber(merged.quantity, pair.expectedQuantity) &&
+			sameNumber(merged.quantityMax, pair.expectedQuantityMax);
+		if (!quantityMatches) {
+			wrongQuantityMergeDetails.push({
+				...pair,
+				actualQuantity: merged.quantity,
+				actualQuantityMax: merged.quantityMax,
+			});
+		}
+		const semanticsMatch = merged.unit === pair.expectedUnit &&
+			merged.mergeRuleId === pair.expectedMergeRuleId;
+		if (!semanticsMatch) {
+			incorrectSafeMergeDetails.push({
+				...pair,
+				actualUnit: merged.unit,
+				actualMergeRuleId: merged.mergeRuleId,
+			});
+		}
+		if (quantityMatches && semanticsMatch) {
+			correctSafeMerges++;
 		}
 	}
 
@@ -384,7 +571,13 @@ export async function runEvaluation(): Promise<EvaluationReport> {
 		schemaValidity: metric(schemaValid, schemaTotal),
 		hallucinatedFields: metric(hallucinations.length, outputFields),
 		falseMerges: metric(falseMergeDetails.length, aggregation.unsafeMerges.length),
-		safeMergeRecall: metric(aggregation.safeMerges.length - missedSafeMergeDetails.length, aggregation.safeMerges.length),
+		safeMergeRecall: metric(correctSafeMerges, aggregation.safeMerges.length),
+	};
+	const corpusMinimums: EvaluationReport["corpusMinimums"] = {
+		tier1Ingredients: minimum(mutable[1].ingredientsTotal, MINIMUM_DENOMINATORS.tier1Ingredients),
+		tier2Ingredients: minimum(mutable[2].ingredientsTotal, MINIMUM_DENOMINATORS.tier2Ingredients),
+		safeMergePairs: minimum(aggregation.safeMerges.length, MINIMUM_DENOMINATORS.safeMergePairs),
+		unsafeMergePairs: minimum(aggregation.unsafeMerges.length, MINIMUM_DENOMINATORS.unsafeMergePairs),
 	};
 	const actuals: Record<keyof typeof EXIT_GATES, number> = {
 		schemaValidity: metrics.schemaValidity.rate,
@@ -401,13 +594,21 @@ export async function runEvaluation(): Promise<EvaluationReport> {
 		(Object.keys(EXIT_GATES) as Array<keyof typeof EXIT_GATES>).map((name) => {
 			const threshold = EXIT_GATES[name];
 			const actual = actuals[name];
-			return [name, { threshold, actual, passed: zeroIsBest.has(name) ? actual <= threshold : actual >= threshold }];
+			let denominatorPassed = true;
+			if (name.startsWith("tier1")) denominatorPassed = corpusMinimums.tier1Ingredients.passed;
+			if (name.startsWith("tier2")) denominatorPassed = corpusMinimums.tier2Ingredients.passed;
+			if (name === "falseMergeRate") denominatorPassed = corpusMinimums.unsafeMergePairs.passed;
+			if (name === "safeMergeRecall") denominatorPassed = corpusMinimums.safeMergePairs.passed;
+			const thresholdPassed = zeroIsBest.has(name) ? actual <= threshold : actual >= threshold;
+			return [name, { threshold, actual, passed: thresholdPassed && denominatorPassed }];
 		}),
 	) as EvaluationReport["gates"];
 	return {
-		reportVersion: 1,
+		reportVersion: 2,
 		gitCommit: gitCommit(),
+		workingTreeDirty: workingTreeDirty(),
 		fixtureVersion: manifest.version,
+		fixtureManifestSha256: createHash("sha256").update(manifestBytes).digest("hex"),
 		rulesVersion: RULES_VERSION,
 		ollama: models.size > 0
 			? { models: [...models].sort(), promptVersion: manifest.promptVersion, promptFingerprint: promptFingerprint() }
@@ -415,11 +616,23 @@ export async function runEvaluation(): Promise<EvaluationReport> {
 		metrics,
 		hallucinatedFieldDetails: hallucinations,
 		quantityUnitMismatchDetails: quantityUnitMismatches,
+		missingExpectedScalarDetails: missingExpectedScalars,
+		extractionMethodMismatchDetails: extractionMethodMismatches,
 		falseMergeDetails,
 		missedSafeMergeDetails,
+		wrongQuantityMergeDetails,
+		incorrectSafeMergeDetails,
+		unsafeMergeRuleMismatchDetails,
+		corpusMinimums,
 		gates,
-		passed: Object.values(gates).every((gate) => gate.passed),
+		passed: Object.values(gates).every((gate) => gate.passed) &&
+			Object.values(corpusMinimums).every((floor) => floor.passed) &&
+			unsafeMergeRuleMismatchDetails.length === 0,
 	};
+}
+
+function minimum(actual: number, minimumValue: number): CorpusMinimum {
+	return { actual, minimum: minimumValue, passed: actual >= minimumValue };
 }
 
 function percent(value: number): string {
@@ -431,8 +644,12 @@ function detailList(items: MergeFailure[]): string {
 		return "- None.\n";
 	}
 	return items
-		.map((item) => `- **${item.id}**: \`${item.left}\` + \`${item.right}\`; expected \`${item.rule}\`, observed ${item.actualRules.map((rule) => `\`${rule}\``).join(", ")}.`)
+		.map((item) => `- **${item.id}**: \`${item.left}\` + \`${item.right}\`; expected \`${item.expectedMergeRuleId}\`, observed ${item.actualRules.map((rule) => `\`${rule}\``).join(", ")}.`)
 		.join("\n") + "\n";
+}
+
+function textDetails(items: string[]): string {
+	return items.length === 0 ? "- None." : items.map((item) => `- ${item}`).join("\n");
 }
 
 export function renderMarkdown(report: EvaluationReport): string {
@@ -443,12 +660,19 @@ export function renderMarkdown(report: EvaluationReport): string {
 		const value = tier === 1 ? report.metrics.tier1 : report.metrics.tier2;
 		return `| Tier ${tier} | ${value.fixtures} | ${value.recipes} | ${percent(value.ingredientRecall.rate)} (${value.ingredientRecall.matched}/${value.ingredientRecall.total}) | ${percent(value.quantityUnitFidelity.rate)} (${value.quantityUnitFidelity.matched}/${value.quantityUnitFidelity.total}) | ${percent(value.instructionFidelity.rate)} (${value.instructionFidelity.matched}/${value.instructionFidelity.total}) |`;
 	}).join("\n");
-	const hallucinations = report.hallucinatedFieldDetails.length === 0
+	const floors = Object.entries(report.corpusMinimums)
+		.map(([name, floor]) => `| ${name} | ${floor.actual} | ${floor.minimum} | ${floor.passed ? "PASS" : "FAIL"} |`)
+		.join("\n");
+	const wrongQuantities = report.wrongQuantityMergeDetails.length === 0
 		? "- None."
-		: report.hallucinatedFieldDetails.map((item) => `- ${item}`).join("\n");
-	const fidelityMismatches = report.quantityUnitMismatchDetails.length === 0
+		: report.wrongQuantityMergeDetails.map((item) =>
+			`- **${item.id}**: expected quantity ${item.expectedQuantity}, quantityMax ${item.expectedQuantityMax}; observed ${item.actualQuantity}, quantityMax ${item.actualQuantityMax}.`,
+		).join("\n");
+	const incorrectSafe = report.incorrectSafeMergeDetails.length === 0
 		? "- None."
-		: report.quantityUnitMismatchDetails.map((item) => `- ${item}`).join("\n");
+		: report.incorrectSafeMergeDetails.map((item) =>
+			`- **${item.id}**: expected unit \`${item.expectedUnit}\` and rule \`${item.expectedMergeRuleId}\`; observed unit \`${item.actualUnit}\` and rule \`${item.actualMergeRuleId}\`.`,
+		).join("\n");
 	return `# Phase 2 Baseline Evaluation Report
 
 Overall result: **${report.passed ? "PASS" : "FAIL"}**
@@ -456,7 +680,9 @@ Overall result: **${report.passed ? "PASS" : "FAIL"}**
 ## Reproducibility metadata
 
 - Git commit: \`${report.gitCommit}\`
+- Working tree dirty: \`${report.workingTreeDirty ?? "unknown"}\`
 - Fixture corpus: \`${report.fixtureVersion}\`
+- Fixture manifest SHA-256: \`${report.fixtureManifestSha256}\`
 - Aggregation rules: \`${report.rulesVersion}\`
 - Ollama model(s): ${report.ollama ? report.ollama.models.map((model) => `\`${model}\``).join(", ") : "not used"}
 - Ollama prompt version: ${report.ollama ? `\`${report.ollama.promptVersion}\` (fingerprint \`${report.ollama.promptFingerprint}\`)` : "not used"}
@@ -468,6 +694,12 @@ Overall result: **${report.passed ? "PASS" : "FAIL"}**
 | --- | ---: | ---: | :---: |
 ${rows}
 
+## Corpus denominator floors
+
+| Corpus | Actual | Minimum | Result |
+| --- | ---: | ---: | :---: |
+${floors}
+
 ## Extraction fidelity
 
 | Corpus | Fixtures | Recipes | Ingredient recall | Quantity/unit fidelity | Instruction fidelity |
@@ -476,15 +708,27 @@ ${tierRows}
 
 Schema validity: ${percent(report.metrics.schemaValidity.rate)} (${report.metrics.schemaValidity.matched}/${report.metrics.schemaValidity.total}).
 
+Extraction-method fidelity: Tier 1 ${percent(report.metrics.tier1.extractionMethodFidelity.rate)} (${report.metrics.tier1.extractionMethodFidelity.matched}/${report.metrics.tier1.extractionMethodFidelity.total}); Tier 2 ${percent(report.metrics.tier2.extractionMethodFidelity.rate)} (${report.metrics.tier2.extractionMethodFidelity.matched}/${report.metrics.tier2.extractionMethodFidelity.total}).
+
+Expected-scalar fidelity: Tier 1 ${percent(report.metrics.tier1.expectedScalarFidelity.rate)} (${report.metrics.tier1.expectedScalarFidelity.matched}/${report.metrics.tier1.expectedScalarFidelity.total}); Tier 2 ${percent(report.metrics.tier2.expectedScalarFidelity.rate)} (${report.metrics.tier2.expectedScalarFidelity.matched}/${report.metrics.tier2.expectedScalarFidelity.total}).
+
 ### Quantity/unit mismatches
 
-${fidelityMismatches}
+${textDetails(report.quantityUnitMismatchDetails)}
+
+### Missing expected scalar fields
+
+${textDetails(report.missingExpectedScalarDetails)}
+
+### Extraction-method mismatches
+
+${textDetails(report.extractionMethodMismatchDetails)}
 
 Hallucinated fields: ${report.metrics.hallucinatedFields.matched} across ${report.metrics.hallucinatedFields.total} evaluated output fields (${percent(report.metrics.hallucinatedFields.rate)}).
 
 ### Hallucinated field details
 
-${hallucinations}
+${textDetails(report.hallucinatedFieldDetails)}
 
 ## Aggregation compatibility
 
@@ -498,9 +742,20 @@ ${detailList(report.falseMergeDetails)}
 ### Missed safe merges
 
 ${detailList(report.missedSafeMergeDetails)}
+### Wrong-quantity safe merges
+
+${wrongQuantities}
+
+### Incorrect-unit or rule safe merges
+
+${incorrectSafe}
+
+### Unsafe-pair rule mismatches
+
+${detailList(report.unsafeMergeRuleMismatchDetails)}
 ## Method
 
-Recall uses normalized exact matching against hand-written ingredient lines and instruction steps. Quantity/unit fidelity requires the matched ingredient's parsed quantity, upper range bound, and typed unit to equal ground truth. Schema validity is established with the production Zod schema. Hallucinations are unexpected populated recipe fields, ingredients, instructions, cooking methods, or extra recipe candidates. Aggregation is evaluated by executing the production deterministic rules over labeled safe and unsafe pairs; no LLM judge is used.
+Candidates are paired to hand-written ground truth by title and ingredient overlap rather than array position. Recall uses normalized exact matching against hand-written ingredient lines and instruction steps. Quantity/unit fidelity requires the matched ingredient's parsed quantity, upper range bound, and typed unit to equal ground truth. Schema validity is established with the production Zod schema. Hallucinations are unexpected populated recipe fields, ingredients, instructions, cooking methods, or extra recipe candidates; missing expected scalar fields are reported separately. A safe aggregation pair is correct only when the canonical quantity, upper range bound, canonical unit, and merge rule all match hand-written ground truth. No LLM judge is used.
 `;
 }
 

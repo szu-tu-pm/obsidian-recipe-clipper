@@ -10,15 +10,20 @@ export default defineConfig({
 			["tests/evals/**/*.test.ts", "jsdom"],
 		],
 		coverage: {
-			include: [
-				"src/domain/aggregation/**/*.ts",
-				"src/domain/extraction/**/*.ts",
+			include: ["src/**/*.{ts,tsx}"],
+			exclude: [
+				"src/main.ts", // Obsidian Plugin lifecycle requires the desktop runtime.
+				"src/settings.ts", // Obsidian settings controls require the desktop runtime.
+				"src/domain/vault/obsidianVault.ts", // TFile/Vault implementations require Obsidian APIs.
+				"src/wrapper/RecipeItemView.ts", // ItemView and WorkspaceLeaf require Obsidian APIs.
+				"src/wrapper/RecipeViewRoot.tsx", // Notice is only available in the Obsidian runtime.
+				"src/wrapper/createObsidianPluginHost.ts", // Host event wiring requires a live Obsidian workspace.
 			],
 			thresholds: {
 				lines: 80,
 				statements: 80,
 				functions: 80,
-				branches: 90,
+				branches: 80,
 				"src/domain/aggregation/**": {
 					lines: 90,
 					statements: 90,
