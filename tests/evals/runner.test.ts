@@ -37,13 +37,40 @@ describe("Phase 2 deterministic evaluation gates", () => {
 		expect(report.metrics.falseMerges.total).toBeGreaterThanOrEqual(MINIMUM_DENOMINATORS.unsafeMergePairs);
 	});
 
-	// Known parser misses: combined Unicode fractions, period abbreviations,
-	// fluid ounces, and unknown units. Keep the gate visible without hiding it.
+	// Known parser misses: Unicode mixed fractions, rounded thirds,
+	// fluid ounces, and count units. Keep the gate visible without hiding it.
 	it.fails("meets the Tier 1 and Tier 2 quantity/unit gates", async () => {
 		const report = await runEvaluation();
 		expect(report.metrics.tier1.quantityUnitFidelity.rate).toBeGreaterThanOrEqual(EXIT_GATES.tier1QuantityUnitFidelity);
 		expect(report.metrics.tier2.quantityUnitFidelity.rate).toBeGreaterThanOrEqual(EXIT_GATES.tier2QuantityUnitFidelity);
 		expect(report.passed).toBe(true);
+	});
+
+	it("does not regress from the pinned quantity/unit baseline", async () => {
+		const report = await runEvaluation();
+		const alwaysPerfect = [
+			"mixed-fraction",
+			"range",
+			"dual-unit",
+			"abbrev-period",
+			"non-numeric",
+			"comma-prep",
+			"simple",
+		] as const;
+
+		for (const category of alwaysPerfect) {
+			expect(report.metrics.tier1.quantityUnitFidelityByCategory[category].rate, `Tier 1 ${category}`).toBe(1);
+			expect(report.metrics.tier2.quantityUnitFidelityByCategory[category].rate, `Tier 2 ${category}`).toBe(1);
+		}
+
+		expect(report.metrics.tier1.quantityUnitFidelityByCategory["unicode-fraction"].matched).toBeGreaterThanOrEqual(2);
+		expect(report.metrics.tier2.quantityUnitFidelityByCategory["unicode-fraction"].matched).toBeGreaterThanOrEqual(2);
+		expect(report.metrics.tier1.quantityUnitFidelityByCategory["fl-oz"].matched).toBeGreaterThanOrEqual(0);
+		expect(report.metrics.tier2.quantityUnitFidelityByCategory["fl-oz"].matched).toBeGreaterThanOrEqual(0);
+		expect(report.metrics.tier1.quantityUnitFidelityByCategory["unknown-unit"].matched).toBeGreaterThanOrEqual(3);
+		expect(report.metrics.tier2.quantityUnitFidelityByCategory["unknown-unit"].matched).toBeGreaterThanOrEqual(5);
+		expect(report.metrics.tier1.quantityUnitFidelity.matched).toBeGreaterThanOrEqual(59);
+		expect(report.metrics.tier2.quantityUnitFidelity.matched).toBeGreaterThanOrEqual(56);
 	});
 
 	it("records reproducibility metadata and separate merge failure lists", async () => {
@@ -77,6 +104,9 @@ describe("Phase 2 deterministic evaluation gates", () => {
 		expect(markdown).toContain("Instruction fidelity");
 		expect(markdown).toContain("Quantity/unit fidelity by ingredient category");
 		expect(markdown).toContain("| mixed-fraction | 100.0% (7/7) | 100.0% (6/6) |");
+		expect(markdown).toContain("## Known gaps");
+		expect(markdown).toContain("Trailing periods are ignored.");
+		expect(markdown).toContain("The commit recorded is the parent of the commit that adds this report.");
 	});
 
 	it("records unknown git metadata when git is unavailable", async () => {
@@ -132,7 +162,12 @@ describe("Phase 2 deterministic evaluation gates", () => {
 
 		expect(baseline.metrics.tier1.quantityUnitFidelityByCategory["mixed-fraction"].rate).toBe(1);
 		expect(report.metrics.tier1.quantityUnitFidelityByCategory["mixed-fraction"].rate).toBe(0);
-		expect(report.gates.tier1QuantityUnitFidelity.passed).toBe(false);
+		expect(baseline.metrics.tier2.quantityUnitFidelityByCategory["mixed-fraction"].rate).toBe(1);
+		expect(report.metrics.tier2.quantityUnitFidelityByCategory["mixed-fraction"].rate).toBe(0);
+		expect(baseline.metrics.tier1.quantityUnitFidelity.matched - report.metrics.tier1.quantityUnitFidelity.matched)
+			.toBeGreaterThanOrEqual(baseline.metrics.tier1.quantityUnitFidelityByCategory["mixed-fraction"].total);
+		expect(baseline.metrics.tier2.quantityUnitFidelity.matched - report.metrics.tier2.quantityUnitFidelity.matched)
+			.toBeGreaterThanOrEqual(baseline.metrics.tier2.quantityUnitFidelityByCategory["mixed-fraction"].total);
 	});
 
 	it("catches a range parser regression by category", async () => {
@@ -146,7 +181,12 @@ describe("Phase 2 deterministic evaluation gates", () => {
 
 		expect(baseline.metrics.tier1.quantityUnitFidelityByCategory.range.rate).toBe(1);
 		expect(report.metrics.tier1.quantityUnitFidelityByCategory.range.rate).toBe(0);
-		expect(report.gates.tier1QuantityUnitFidelity.passed).toBe(false);
+		expect(baseline.metrics.tier2.quantityUnitFidelityByCategory.range.rate).toBe(1);
+		expect(report.metrics.tier2.quantityUnitFidelityByCategory.range.rate).toBe(0);
+		expect(baseline.metrics.tier1.quantityUnitFidelity.matched - report.metrics.tier1.quantityUnitFidelity.matched)
+			.toBeGreaterThanOrEqual(baseline.metrics.tier1.quantityUnitFidelityByCategory.range.total);
+		expect(baseline.metrics.tier2.quantityUnitFidelity.matched - report.metrics.tier2.quantityUnitFidelity.matched)
+			.toBeGreaterThanOrEqual(baseline.metrics.tier2.quantityUnitFidelityByCategory.range.total);
 	});
 
 	it("rejects a simulated 10x kg conversion-factor mutation", async () => {

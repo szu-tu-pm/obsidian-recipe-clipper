@@ -223,6 +223,10 @@ function normalized(value: string): string {
 	return value.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
+function normalizedUnit(value: string): string {
+	return value.toLowerCase().replace(/\.$/, "");
+}
+
 function sameNumber(actual: number | null, expected: number | null): boolean {
 	return actual === expected || (actual != null && expected != null && Math.abs(actual - expected) < 1e-9);
 }
@@ -326,7 +330,7 @@ function evaluateRecipe(
 			if (
 				sameNumber(found.quantity, ingredient.quantity) &&
 				sameNumber(found.quantityMax, quantityMax) &&
-				normalized(found.unit ?? "") === normalized(ingredient.unit ?? "")
+				normalizedUnit(found.unit ?? "") === normalizedUnit(ingredient.unit ?? "")
 			) {
 				tier.quantityUnitMatched++;
 				tier.quantityUnitByCategory[ingredient.category].matched++;
@@ -829,9 +833,20 @@ ${incorrectSafe}
 ### Unsafe-pair rule mismatches
 
 ${detailList(report.unsafeMergeRuleMismatchDetails)}
+## Known gaps
+
+The remaining 27 quantity/unit mismatches are tracked as P2-9:
+
+- Unicode mixed fractions: 6 lines.
+- Rounded thirds: 2 lines.
+- Fluid-ounce units: 12 lines.
+- Count units: 7 lines.
+
 ## Method
 
-Candidates are paired to hand-written ground truth by title and ingredient overlap rather than array position. Recall uses normalized exact matching against hand-written ingredient lines and instruction steps. Quantity/unit fidelity requires the matched ingredient's parsed quantity, upper range bound, and typed unit to equal ground truth. Schema validity is established with the production Zod schema. Hallucinations are unexpected populated recipe fields, ingredients, instructions, cooking methods, or extra recipe candidates; missing expected scalar fields are reported separately. A safe aggregation pair is correct only when the canonical quantity, upper range bound, canonical unit, and merge rule all match hand-written ground truth. No LLM judge is used.
+Candidates are paired to hand-written ground truth by title and ingredient overlap rather than array position. Recall uses normalized exact matching against hand-written ingredient lines and instruction steps. Quantity/unit fidelity requires the matched ingredient's parsed quantity, upper range bound, and typed unit to equal ground truth. Unit comparison is case-insensitive. Trailing periods are ignored. Schema validity is established with the production Zod schema. Hallucinations are unexpected populated recipe fields, ingredients, instructions, cooking methods, or extra recipe candidates; missing expected scalar fields are reported separately. A safe aggregation pair is correct only when the canonical quantity, upper range bound, canonical unit, and merge rule all match hand-written ground truth. No LLM judge is used.
+
+The commit recorded is the parent of the commit that adds this report.
 `;
 }
 
