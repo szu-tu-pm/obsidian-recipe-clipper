@@ -8,6 +8,11 @@ import {
 import type { UrlExtractionResult } from "../domain/extraction/types";
 import { selectExtractionCandidate } from "../domain/extraction/urlClipper";
 import type { RecipeDocument } from "../domain/schema/recipeSchema";
+import {
+	createShoppingListFromRecipes,
+	replaceShoppingListContents,
+	type ShoppingListDocument,
+} from "../domain/schema/shoppingListSchema";
 import type { RecipeIndexEntry } from "../domain/vault/recipeIndexer";
 import { usePluginServices, useRecipeIndex } from "../wrapper/WrapperContext";
 import type { PluginServices } from "../wrapper/PluginServiceAdapter";
@@ -19,6 +24,7 @@ import { ratingBadge } from "./components/StarRating";
 import { filterRecipes, type RatingFilter } from "./filterRecipes";
 import { downloadSourceImage, ensureHttpsUrl, importRecipePage } from "./importRecipePage";
 import { RecipeEditorModal } from "./RecipeEditorModal";
+import { RegenerateListDialog, ShoppingListView } from "./ShoppingListView";
 import { useEscapeToClose } from "./useEscapeToClose";
 
 export function CollectionView({
@@ -42,6 +48,10 @@ export function CollectionView({
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [editor, setEditor] = useState<RecipeDocument | null | "new">(null);
 	const [pendingDelete, setPendingDelete] = useState<RecipeIndexEntry | null>(null);
+	const [shoppingList, setShoppingList] = useState<ShoppingListDocument | null>(null);
+	const [savedLists, setSavedLists] = useState<ShoppingListDocument[]>([]);
+	const [regenerateOpen, setRegenerateOpen] = useState(false);
+	const [generating, setGenerating] = useState(false);
 	const [status, setStatus] = useState<string | null>(null);
 	const [urlOpen, setUrlOpen] = useState(false);
 	const [urlValue, setUrlValue] = useState("");
@@ -93,6 +103,18 @@ export function CollectionView({
 	function cancelImport(): void {
 		sessionRef.current?.cancel();
 	}
+
+	useEffect(() => {
+		let cancelled = false;
+		void services.listShoppingLists().then((lists) => {
+			if (!cancelled) {
+				setSavedLists(lists);
+			}
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [services]);
 
 	useEffect(() => {
 		return () => {
@@ -175,6 +197,75 @@ export function CollectionView({
 		setStatus("Recipe deleted. Existing shopping lists were not changed.");
 	}
 
+	async function draftFromSelection(): Promise<ShoppingListDocument | null> {
+		const loaded: RecipeDocument[] = [];
+		for (const id of selected) {
+			const result = await services.loadRecipe(id);
+			if (!result.ok) {
+				setStatus(result.message);
+				return null;
+			}
+			loaded.push(result.recipe);
+		}
+		return createShoppingListFromRecipes(loaded);
+	}
+
+	async function persistShoppingList(next: ShoppingListDocument): Promise<void> {
+		setShoppingList(next);
+		const saved = await services.saveShoppingList(next);
+		if (!saved) {
+			setStatus("Could not save the shopping list.");
+			return;
+		}
+		setShoppingList((current) =>
+			current?.frontmatter.id === saved.frontmatter.id ? saved : current,
+		);
+		setSavedLists(await services.listShoppingLists());
+		setStatus(null);
+	}
+
+	async function createShoppingList(): Promise<void> {
+		setGenerating(true);
+		try {
+			const draft = await draftFromSelection();
+			if (!draft) {
+				return;
+			}
+			await persistShoppingList(draft);
+			setRegenerateOpen(false);
+		} finally {
+			setGenerating(false);
+		}
+	}
+
+	async function replaceShoppingList(): Promise<void> {
+		if (!shoppingList) {
+			return;
+		}
+		setGenerating(true);
+		try {
+			const draft = await draftFromSelection();
+			if (!draft) {
+				return;
+			}
+			await persistShoppingList(replaceShoppingListContents(shoppingList, draft));
+			setRegenerateOpen(false);
+		} finally {
+			setGenerating(false);
+		}
+	}
+
+	function requestGenerate(): void {
+		if (selected.size === 0 || generating) {
+			return;
+		}
+		if (shoppingList) {
+			setRegenerateOpen(true);
+			return;
+		}
+		void createShoppingList();
+	}
+
 	return (
 		<div className="recipe-clipper-view recipe-clipper-collection">
 			<header className="recipe-clipper-collection-header">
@@ -225,15 +316,42 @@ export function CollectionView({
 				</label>
 			</div>
 
+			{savedLists.length > 0 ? (
+				<div className="recipe-clipper-saved-lists">
+					<h5>Saved shopping lists</h5>
+					<ul>
+						{savedLists.map((list) => (
+							<li key={list.frontmatter.id}>
+								<button
+									type="button"
+									aria-label={`Open shopping list ${list.frontmatter.id}`}
+									onClick={() => {
+										void services.loadShoppingList(list.frontmatter.id).then((loaded) => {
+											if (loaded.ok) {
+												setShoppingList(loaded.list);
+												return;
+											}
+											setStatus(loaded.message);
+										});
+									}}
+								>
+									{list.frontmatter.title}
+								</button>
+							</li>
+						))}
+					</ul>
+				</div>
+			) : null}
+
 			<div className="recipe-clipper-selection-bar">
 				<p>
-					{selected.size} selected for a future shopping list. Existing shopping lists
-					are not changed from this view.
+					{selected.size} selected for a shopping list. Saved lists stay unchanged when
+					recipes are edited or deleted.
 				</p>
 				<button
 					type="button"
-					disabled
-					title="Shopping list generation ships in Phase 2"
+					disabled={selected.size === 0 || generating}
+					onClick={requestGenerate}
 				>
 					Generate shopping list
 				</button>
@@ -372,6 +490,28 @@ export function CollectionView({
 					services={services}
 					initial={editor === "new" ? null : editor}
 					onClose={() => setEditor(null)}
+				/>
+			) : null}
+
+			{shoppingList ? (
+				<ShoppingListView
+					list={shoppingList}
+					onChange={(next) => {
+						void persistShoppingList(next);
+					}}
+					onClose={() => setShoppingList(null)}
+				/>
+			) : null}
+
+			{regenerateOpen ? (
+				<RegenerateListDialog
+					onCancel={() => setRegenerateOpen(false)}
+					onCreateNew={() => {
+						void createShoppingList();
+					}}
+					onReplace={() => {
+						void replaceShoppingList();
+					}}
 				/>
 			) : null}
 

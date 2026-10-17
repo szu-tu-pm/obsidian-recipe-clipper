@@ -239,3 +239,60 @@
 	margin: 0.4em 0 0.8em;
 	padding-left: 1.2em;
 }
+
+.recipe-clipper-modal-wide {
+	width: min(52em, 100%);
+}
+
+.recipe-clipper-inline-check {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	margin: 0.5em 0;
+}
+
+.recipe-clipper-shopping-list {
+	list-style: none;
+	margin: 0.5em 0;
+	padding: 0;
+}
+
+.recipe-clipper-shopping-item {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35em;
+	padding: 0.75em 0;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.recipe-clipper-availability {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75em;
+	margin: 0.2em 0;
+}
+
+.recipe-clipper-source-badges {
+	list-style: none;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35em;
+	margin: 0.2em 0 0;
+	padding: 0;
+}
+
+.recipe-clipper-source-badge {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 999px;
+	padding: 0.1em 0.55em;
+	font-size: 0.85em;
+}
+
+.recipe-clipper-saved-lists ul {
+	list-style: none;
+	margin: 0.35em 0 0.75em;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em;
+}
