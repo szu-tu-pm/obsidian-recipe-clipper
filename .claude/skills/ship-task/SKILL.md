@@ -77,6 +77,8 @@ Write `_runs/<id>/review-prompt-<n>.md`: the task spec and acceptance criteria, 
 - **Codex reviews Claude's work**: `scripts/agents/codex.sh review <worktree> _runs/<id>/review-prompt-<n>.md _runs/<id>/review-<n>.json`.
 - **Claude reviews Codex's work**: a fresh Agent (no implementation context), told to `git fetch` and read `git diff origin/main...HEAD` in the worktree, and to write its JSON to the output path itself.
 
+After each review, run `git -C <worktree> status`. Reviewers' eval runs can rewrite committed reports, so restore anything they touched with `git -C <worktree> checkout -- <paths>` before the next step.
+
 Post every round with `node scripts/agents/render-review.mjs _runs/<id>/review-<n>.json <n> <reviewer> "<next step>" | gh pr comment <pr> -F -` (run from the worktree). Never hand-retype a review.
 
 Pass when there are no blocker or major findings and `unmet_criteria` is empty. Otherwise the implementer (not the reviewer) fixes, then Verify, push, and review again. Fix brief `_runs/<id>/fix-<n>.md` = the brief + guidance + findings JSON:
