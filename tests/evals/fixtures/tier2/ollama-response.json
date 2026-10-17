@@ -1,0 +1,12 @@
+{
+	"title": "Garlic Noodles",
+	"ingredientsRaw": ["8 oz noodles", "2 cloves garlic", "4 cups invented dust"],
+	"instructions": ["Boil the noodles.", "Stir in the garlic.", "Serve with invented garnish."],
+	"author": "Archive Cook",
+	"siteName": "Open Recipes",
+	"servingsRaw": "Serves 2",
+	"prepTimeMinutes": 5,
+	"cookTimeMinutes": 10,
+	"totalTimeMinutes": 30,
+	"cookingMethods": ["Boil", "Fry"]
+}

@@ -1,0 +1,238 @@
+{
+	"version": "phase2-v1",
+	"promptVersion": "ollama-recipe-extraction-v1",
+	"fixtures": [
+		{
+			"id": "tier1-basic-jsonld",
+			"tier": 1,
+			"file": "tier1/basic-jsonld.html",
+			"pageUrl": "https://public.example/recipes/oat-porridge",
+			"expected": [
+				{
+					"title": "Oat Porridge",
+					"ingredients": [
+						{ "raw": "1 cup rolled oats", "quantity": 1, "unit": "cup" },
+						{ "raw": "2 cups water", "quantity": 2, "unit": "cups" },
+						{ "raw": "1/4 tsp salt", "quantity": 0.25, "unit": "tsp" }
+					],
+					"instructions": ["Combine oats and water.", "Simmer for 8 minutes."],
+					"servingsRaw": "2 servings",
+					"prepTimeMinutes": 2,
+					"cookTimeMinutes": 8,
+					"totalTimeMinutes": 10,
+					"cookingMethods": ["Simmer"],
+					"author": "Public Domain Test Kitchen",
+					"siteName": "Open Recipes"
+				}
+			]
+		},
+		{
+			"id": "tier1-graph-multi",
+			"tier": 1,
+			"file": "tier1/graph-multi.html",
+			"pageUrl": "https://public.example/recipes/two-soups",
+			"expected": [
+				{
+					"title": "Clear Herb Broth",
+					"ingredients": [
+						{ "raw": "500 ml water", "quantity": 500, "unit": "ml" },
+						{ "raw": "2 sprigs thyme", "quantity": 2, "unit": "sprigs" }
+					],
+					"instructions": ["Bring the water to a boil.", "Steep thyme for 5 minutes."],
+					"servingsRaw": null,
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": 5,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": "Open Recipes"
+				},
+				{
+					"title": "Simple Tomato Soup",
+					"ingredients": [
+						{ "raw": "2 cups crushed tomatoes", "quantity": 2, "unit": "cups" },
+						{ "raw": "1 cup vegetable stock", "quantity": 1, "unit": "cup" }
+					],
+					"instructions": ["Stir tomatoes and stock together.", "Simmer for 12 minutes."],
+					"servingsRaw": "3",
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": 12,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": "Open Recipes"
+				}
+			]
+		},
+		{
+			"id": "tier1-malformed-jsonld-microdata",
+			"tier": 1,
+			"file": "tier1/malformed-jsonld-microdata.html",
+			"pageUrl": "https://public.example/recipes/baked-apple",
+			"expected": [
+				{
+					"title": "Baked Apple",
+					"ingredients": [
+						{ "raw": "1 apple", "quantity": 1, "unit": null },
+						{ "raw": "1 1/2 tsp sugar", "quantity": 1.5, "unit": "tsp" }
+					],
+					"instructions": ["Core the apple.", "Bake until tender."],
+					"servingsRaw": "1 serving",
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": 20,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": "Archive Cook",
+					"siteName": null
+				}
+			]
+		},
+		{
+			"id": "tier1-malformed-quantities",
+			"tier": 1,
+			"file": "edge-cases/malformed-quantities.html",
+			"pageUrl": "https://public.example/recipes/pantry-stew",
+			"expected": [
+				{
+					"title": "Pantry Stew",
+					"ingredients": [
+						{ "raw": "2-3 carrots", "quantity": 2, "quantityMax": 3, "unit": null },
+						{ "raw": "salt to taste", "quantity": null, "unit": null },
+						{ "raw": "??? leftover greens", "quantity": null, "unit": null },
+						{ "raw": "2 pounds (900g) potatoes", "quantity": 2, "unit": "pounds" }
+					],
+					"instructions": ["Add everything to a pot.", "Cook until the potatoes are tender."],
+					"servingsRaw": null,
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": null,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": null
+				}
+			]
+		},
+		{
+			"id": "tier1-large-jsonld",
+			"tier": 1,
+			"file": "tier1/large-jsonld.html",
+			"pageUrl": "https://public.example/recipes/garden-pot",
+			"expected": [
+				{
+					"title": "Garden Pot",
+					"ingredients": [
+						{ "raw": "1 tbsp olive oil", "quantity": 1, "unit": "tbsp" },
+						{ "raw": "2 cloves garlic", "quantity": 2, "unit": "cloves" },
+						{ "raw": "3 cups vegetable stock", "quantity": 3, "unit": "cups" },
+						{ "raw": "400 g tomatoes", "quantity": 400, "unit": "g" },
+						{ "raw": "1/2 tsp pepper", "quantity": 0.5, "unit": "tsp" },
+						{ "raw": "2 onions", "quantity": 2, "unit": null },
+						{ "raw": "1 lb potatoes", "quantity": 1, "unit": "lb" },
+						{ "raw": "250 ml water", "quantity": 250, "unit": "ml" },
+						{ "raw": "1 tsp paprika", "quantity": 1, "unit": "tsp" },
+						{ "raw": "2 tbsp flour", "quantity": 2, "unit": "tbsp" },
+						{ "raw": "1 cup beans", "quantity": 1, "unit": "cup" },
+						{ "raw": "1/4 cup parsley", "quantity": 0.25, "unit": "cup" }
+					],
+					"instructions": ["Warm the oil and garlic.", "Add the remaining ingredients.", "Simmer until the potatoes are tender."],
+					"servingsRaw": "6 servings",
+					"prepTimeMinutes": 15,
+					"cookTimeMinutes": 35,
+					"totalTimeMinutes": 50,
+					"cookingMethods": ["Simmer"],
+					"author": "Public Domain Test Kitchen",
+					"siteName": "Open Recipes"
+				}
+			]
+		},
+		{
+			"id": "tier2-dom-card",
+			"tier": 2,
+			"file": "tier2/dom-card.html",
+			"pageUrl": "https://public.example/recipes/lemon-rice",
+			"expected": [
+				{
+					"title": "Lemon Rice",
+					"ingredients": [
+						{ "raw": "1 cup rice", "quantity": 1, "unit": "cup" },
+						{ "raw": "1 tbsp lemon juice", "quantity": 1, "unit": "tbsp" },
+						{ "raw": "1/2 tsp salt", "quantity": 0.5, "unit": "tsp" }
+					],
+					"instructions": ["Cook the rice.", "Fold in lemon juice and salt."],
+					"servingsRaw": "Serves 4",
+					"prepTimeMinutes": 5,
+					"cookTimeMinutes": 18,
+					"totalTimeMinutes": 23,
+					"cookingMethods": [],
+					"author": "Public Domain Test Kitchen",
+					"siteName": "Open Recipes"
+				}
+			]
+		},
+		{
+			"id": "tier2-heading-multi",
+			"tier": 2,
+			"file": "tier2/heading-multi.html",
+			"pageUrl": "https://public.example/recipes/two-toasts",
+			"expected": [
+				{
+					"title": "Two Simple Toasts",
+					"ingredients": [
+						{ "raw": "1 slice bread", "quantity": 1, "unit": "slice" },
+						{ "raw": "1 tsp olive oil", "quantity": 1, "unit": "tsp" }
+					],
+					"instructions": ["Toast the bread.", "Drizzle with oil."],
+					"servingsRaw": null,
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": null,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": null
+				},
+				{
+					"title": "Two Simple Toasts",
+					"ingredients": [
+						{ "raw": "1 slice bread", "quantity": 1, "unit": "slice" },
+						{ "raw": "2 tsp berry jam", "quantity": 2, "unit": "tsp" }
+					],
+					"instructions": ["Toast the bread.", "Spread with jam."],
+					"servingsRaw": null,
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": null,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": null
+				}
+			]
+		},
+		{
+			"id": "tier2-recorded-ollama",
+			"tier": 2,
+			"file": "tier2/ollama-unstructured.html",
+			"pageUrl": "https://public.example/recipes/garlic-noodles",
+			"ollama": {
+				"model": "qwen2.5:7b-instruct",
+				"responseFile": "tier2/ollama-response.json"
+			},
+			"expected": [
+				{
+					"title": "Garlic Noodles",
+					"ingredients": [
+						{ "raw": "8 oz noodles", "quantity": 8, "unit": "oz" },
+						{ "raw": "2 cloves garlic", "quantity": 2, "unit": "cloves" }
+					],
+					"instructions": ["Boil the noodles.", "Stir in the garlic."],
+					"servingsRaw": "Serves 2",
+					"prepTimeMinutes": 5,
+					"cookTimeMinutes": 10,
+					"totalTimeMinutes": null,
+					"cookingMethods": ["Boil"],
+					"author": "Archive Cook",
+					"siteName": "Open Recipes"
+				}
+			]
+		}
+	]
+}

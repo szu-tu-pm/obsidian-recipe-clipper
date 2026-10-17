@@ -6,6 +6,8 @@
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && node scripts/check-bundle-size.mjs",
+		"eval": "vite-node --script tests/evals/runner.ts",
+		"eval:live": "vite-node --script tests/evals/live-url-smoke.ts",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"

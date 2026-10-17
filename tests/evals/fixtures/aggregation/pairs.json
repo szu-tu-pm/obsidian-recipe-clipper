@@ -1,0 +1,32 @@
+{
+	"safeMerges": [
+		{ "id": "alias-green-onion", "left": "1 cup scallions", "right": "2 tbsp green onions", "rule": "v1.merge-alias" },
+		{ "id": "mass-butter", "left": "8 oz butter", "right": "1/2 lb butter", "rule": "v1.merge-same-dimension" },
+		{ "id": "count-onion", "left": "1 onion, diced", "right": "2 onions, minced", "rule": "v1.merge-same-dimension" },
+		{ "id": "count-garlic", "left": "2 cloves garlic", "right": "3 cloves garlic", "rule": "v1.merge-same-dimension" },
+		{ "id": "metric-flour", "left": "500 g flour", "right": "0.5 kg flour", "rule": "v1.merge-same-dimension" },
+		{ "id": "volume-salt", "left": "1 tsp salt", "right": "2 tsp salt", "rule": "v1.merge-same-dimension" },
+		{ "id": "alias-cilantro", "left": "1 cup cilantro", "right": "1/2 cup fresh coriander leaves", "rule": "v1.merge-alias" },
+		{ "id": "volume-flour", "left": "1 cup flour", "right": "2 tbsp flour", "rule": "v1.merge-same-dimension" },
+		{ "id": "fresh-cilantro", "left": "1 cup fresh cilantro", "right": "1 cup cilantro", "rule": "v1.merge-alias" },
+		{ "id": "unknown-name-paprika", "left": "1 tsp paprika", "right": "2 tsp paprika", "rule": "v1.merge-same-dimension" },
+		{ "id": "diacritic-jalapeno", "left": "1 tsp jalapeño", "right": "2 tsp jalapeno", "rule": "v1.merge-same-dimension" },
+		{ "id": "tablespoon-alias", "left": "1 T butter", "right": "2 tbsp butter", "rule": "v1.merge-same-dimension" },
+		{ "id": "range-salt", "left": "1-2 tsp salt", "right": "1 tsp salt", "rule": "v1.merge-same-dimension" }
+	],
+	"unsafeMerges": [
+		{ "id": "fresh-vs-dried-cilantro", "left": "1 cup fresh cilantro", "right": "1 cup dried cilantro", "rule": "v1.keep-separate" },
+		{ "id": "salted-vs-unsalted-butter", "left": "1 tbsp salted butter", "right": "1 tbsp unsalted butter", "rule": "v1.keep-separate" },
+		{ "id": "cross-dimension-flour", "left": "1 cup all-purpose flour", "right": "120 g all-purpose flour", "rule": "v1.keep-separate" },
+		{ "id": "locale-volume-water", "left": "1 cup water", "right": "240 ml water", "rule": "v1.keep-separate" },
+		{ "id": "bone-state-chicken", "left": "1 lb boneless chicken thighs", "right": "1 lb bone-in chicken thighs", "rule": "v1.keep-separate" },
+		{ "id": "whole-vs-ground-coriander", "left": "1 tsp whole coriander", "right": "1 tsp ground coriander", "rule": "v1.keep-separate" },
+		{ "id": "raw-vs-cooked-shrimp", "left": "8 oz raw shrimp", "right": "8 oz cooked shrimp", "rule": "v1.keep-separate" },
+		{ "id": "count-unit-garlic", "left": "2 cloves garlic", "right": "1 bunch garlic", "rule": "v1.keep-separate" },
+		{ "id": "unqualified-vs-dried-cilantro", "left": "1 cup cilantro", "right": "1 cup dried cilantro", "rule": "v1.keep-separate" },
+		{ "id": "unqualified-vs-salted-butter", "left": "1 tbsp butter", "right": "1 tbsp salted butter", "rule": "v1.keep-separate" },
+		{ "id": "unqualified-vs-raw-shrimp", "left": "8 oz shrimp", "right": "8 oz raw shrimp", "rule": "v1.keep-separate" },
+		{ "id": "unqualified-vs-fresh-thyme", "left": "1 tsp thyme", "right": "1 tsp fresh thyme", "rule": "v1.keep-separate" },
+		{ "id": "non-numeric-salt", "left": "salt to taste", "right": "salt to taste", "rule": "v1.keep-separate" }
+	]
+}

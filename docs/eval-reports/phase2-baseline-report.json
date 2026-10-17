@@ -1,0 +1,122 @@
+{
+  "reportVersion": 1,
+  "gitCommit": "0e61fcc4a4bc6b068797751c4bc13566d0c64297",
+  "fixtureVersion": "phase2-v1",
+  "rulesVersion": "v1",
+  "ollama": {
+    "models": [
+      "qwen2.5:7b-instruct"
+    ],
+    "promptVersion": "ollama-recipe-extraction-v1",
+    "promptFingerprint": "69a97961"
+  },
+  "metrics": {
+    "tier1": {
+      "fixtures": 5,
+      "recipes": 6,
+      "ingredientRecall": {
+        "matched": 25,
+        "total": 25,
+        "rate": 1
+      },
+      "quantityUnitFidelity": {
+        "matched": 24,
+        "total": 25,
+        "rate": 0.96
+      },
+      "instructionFidelity": {
+        "matched": 13,
+        "total": 13,
+        "rate": 1
+      }
+    },
+    "tier2": {
+      "fixtures": 3,
+      "recipes": 4,
+      "ingredientRecall": {
+        "matched": 9,
+        "total": 9,
+        "rate": 1
+      },
+      "quantityUnitFidelity": {
+        "matched": 9,
+        "total": 9,
+        "rate": 1
+      },
+      "instructionFidelity": {
+        "matched": 8,
+        "total": 8,
+        "rate": 1
+      }
+    },
+    "schemaValidity": {
+      "matched": 10,
+      "total": 10,
+      "rate": 1
+    },
+    "hallucinatedFields": {
+      "matched": 0,
+      "total": 99,
+      "rate": 0
+    },
+    "falseMerges": {
+      "matched": 0,
+      "total": 13,
+      "rate": 0
+    },
+    "safeMergeRecall": {
+      "matched": 13,
+      "total": 13,
+      "rate": 1
+    }
+  },
+  "hallucinatedFieldDetails": [],
+  "quantityUnitMismatchDetails": [
+    "tier1-graph-multi recipe 1: '2 sprigs thyme' expected quantity=2, quantityMax=null, unit=sprigs; observed quantity=2, quantityMax=null, unit=null"
+  ],
+  "falseMergeDetails": [],
+  "missedSafeMergeDetails": [],
+  "gates": {
+    "schemaValidity": {
+      "threshold": 1,
+      "actual": 1,
+      "passed": true
+    },
+    "hallucinatedFieldRate": {
+      "threshold": 0,
+      "actual": 0,
+      "passed": true
+    },
+    "tier1IngredientRecall": {
+      "threshold": 0.98,
+      "actual": 1,
+      "passed": true
+    },
+    "tier1QuantityUnitFidelity": {
+      "threshold": 0.96,
+      "actual": 0.96,
+      "passed": true
+    },
+    "tier2IngredientRecall": {
+      "threshold": 0.9,
+      "actual": 1,
+      "passed": true
+    },
+    "tier2QuantityUnitFidelity": {
+      "threshold": 0.88,
+      "actual": 1,
+      "passed": true
+    },
+    "falseMergeRate": {
+      "threshold": 0,
+      "actual": 0,
+      "passed": true
+    },
+    "safeMergeRecall": {
+      "threshold": 0.92,
+      "actual": 1,
+      "passed": true
+    }
+  },
+  "passed": true
+}
