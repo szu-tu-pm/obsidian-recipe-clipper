@@ -45,12 +45,13 @@ The reviewer is always the other model. If a task fits both, prefer the model wi
 ## 2. Claim and brief (per task)
 
 1. Notion: set Status → In Progress; add a page comment "Picked up by <Claude|Codex>; review by <other>; branch <branch>."
-2. Fetch the task page. Also fetch the PRD page (`PRD - Recipe Project`) when the task text refers to it.
+2. Fetch the task page. Fetch the PRD page (`PRD - Recipe Project`) only when the task page refers to a number, rule or term that the page itself does not state. The PRD is about 12k tokens. Save only the sections the task needs, verbatim, to `_runs/<id>/prd-excerpt.md`, and paste them into the brief. Fix briefs and review prompts reuse that file and never fetch the PRD again.
 3. `git worktree add ../obsidian-recipe-clipper-wt/<id> -b <implementer>/<id>-<slug> origin/main`, then `npm ci` in the worktree (Codex runs sandboxed without network, so install first).
 4. Write `_runs/<id>/brief.md`: task title, Overview, Deliverables, every acceptance criterion as a checklist, Dependencies' relevant file paths, then:
    - Read AGENTS.md first and follow it. (If AGENTS.md is not yet on `origin/main`, paste its rules here.)
    - **How you will be reviewed**: the full text of `scripts/agents/review-rubric.md`. Self-check against it before finishing. For any task with tests, evals, gates or thresholds, say up front which categories the data must cover and that each gate needs a mutation test. The rubric is the bar from round 1; don't let the reviewer teach it one round at a time.
    - **External formats and APIs**: when the task targets a third-party tool, format or API (Obsidian Web Clipper templates, Ollama, Gmail, the Obsidian API), fetch its official docs yourself with WebFetch and paste the relevant passages verbatim, with their URLs. Codex has no network, and an implementer guessing a format writes fixtures that confirm its own guess (P2-7's template captured only the first ingredient). Tell the implementer that test emulations of the tool may implement only documented behavior.
+   - **Measure the real thing**: when a gate measures a build output, a production adapter or a config-driven artifact, require the gate to run the real one (the real config, the real adapter). Do not offer "copy its options and check for drift" as an alternative. A mirrored copy drifts in ways a drift check misses (P3-2: two review rounds found gaps in a copied esbuild config).
    - **Scope conflicts**: if a criterion cannot be met without changing code outside this task's deliverables, do not work around it. Measure honestly, leave it failing, and put it first in your report.
    - Do not commit, push or open a PR.
    - Run `npm run build` and `npm test` (plus coverage/eval if the gates name them) and end with: files changed; each criterion with the test proving it; measured numbers vs thresholds; criteria left for a person; anything unclear.
@@ -68,7 +69,13 @@ Start every task's implementer in the same turn so they run in parallel.
 
 ## 5. PR
 
-1. Commit in the worktree using the AGENTS.md commit style, ending with the attribution line from the system prompt. Push with `-u`.
+1. Commit in the worktree using the AGENTS.md commit style, ending with the attribution line from the system prompt. If the deliverables include a generated report that records the commit, follow this order:
+   1. Commit the code.
+   2. Regenerate the report on that commit, running every variant the report holds (for example plain and coverage).
+   3. Commit the report on its own.
+   4. Check that the report names the code commit as clean.
+
+   A report generated before the commit can only name the parent commit (P3-2's round-1 finding). Do this on every fix round too. Then push with `-u`.
 2. `gh pr create --draft` with the AGENTS.md PR body sections. Copy the task's acceptance criteria as checkboxes, tick only those the verify step proved, and leave the human gates unticked.
 3. Notion: set PR Link; Status → Ready for AI Review. Status stays there through review rounds.
 
@@ -95,7 +102,13 @@ Before another round, triage with the user instead of looping when:
 
 After round 2 still fails → step 7. Only the user can authorize an extra round for a specific task; record that on the PR.
 
-Reviews of user-authorized extra rounds are **verify-only**: the reviewer confirms each listed finding is fixed, with a test and a mutation, and checks the code the fix touched for regressions. It does not hunt for new edge cases elsewhere. A full review of a guard-style feature finds a smaller edge case every round (P2-8: word amounts, then pairs, then range endpoints). The extra rounds exist to close known findings, not to restart the search. Further edge cases go in the PR comment as minors or follow-ups.
+Reviews of user-authorized extra rounds, and of a narrow final fix, are **verify-only**. The reviewer:
+- confirms each listed finding is fixed, with a test and a mutation;
+- checks the code the fix touched for regressions;
+- reads `git show <fix-sha>` plus the functions that commit touches, not the full `git diff origin/main...HEAD` again;
+- still re-runs the full build, test and coverage checks, since their output is short.
+
+It does not hunt for new edge cases elsewhere. A full review of a guard-style feature finds a smaller edge case every round (P2-8: word amounts, then pairs, then range endpoints). The extra rounds exist to close known findings, not to restart the search. Further edge cases go in the PR comment as minors or follow-ups.
 
 The cross-review is Lin's audit (Lin does not use Antigravity). On pass: `gh pr ready <n>`, `gh pr edit <n> --add-reviewer szu-tu-pm`, tick the "**Lin**'s audit: the Claude/Codex cross-review passes…" box in the task page's acceptance checklist with a link to the passing PR comment, and add a Notion comment "AI cross-review passed (Lin's audit); awaiting Greg Szu-Tu sign-off." When a task goes Blocked, Lin takes over the audit by hand.
 
