@@ -3,9 +3,8 @@
 import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { cpus, platform, release } from "node:os";
+import { cpus, platform, release, tmpdir } from "node:os";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
 import builtins from "builtin-modules";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -54,6 +53,20 @@ const BUNDLE_EXTERNALS = [
 	"@lezer/lr",
 	...builtins,
 ];
+const MIRRORED_BUNDLE_OPTION_KEYS = new Set([
+	"banner",
+	"entryPoints",
+	"bundle",
+	"external",
+	"format",
+	"jsx",
+	"target",
+	"logLevel",
+	"sourcemap",
+	"treeShaking",
+	"minify",
+	"outfile",
+]);
 
 type VaultSize = 500 | 2500;
 
@@ -408,7 +421,76 @@ function runSearchBenchmark(
 	return { stats, gate };
 }
 
-function bundleConfigDrift(configText: string): string[] {
+function topLevelObjectKeys(objectText: string): string[] {
+	const keys: string[] = [];
+	let braceDepth = 0;
+	let quote: "\"" | "'" | "`" | null = null;
+	let escaped = false;
+	let lineComment = false;
+	let blockComment = false;
+	let previousSignificant = "";
+
+	for (let index = 0; index < objectText.length; index += 1) {
+		const character = objectText[index];
+		const next = objectText[index + 1];
+		if (lineComment) {
+			if (character === "\n") lineComment = false;
+			continue;
+		}
+		if (blockComment) {
+			if (character === "*" && next === "/") {
+				blockComment = false;
+				index += 1;
+			}
+			continue;
+		}
+		if (quote) {
+			if (escaped) escaped = false;
+			else if (character === "\\") escaped = true;
+			else if (character === quote) quote = null;
+			continue;
+		}
+		if (character === "/" && next === "/") {
+			lineComment = true;
+			index += 1;
+			continue;
+		}
+		if (character === "/" && next === "*") {
+			blockComment = true;
+			index += 1;
+			continue;
+		}
+		if (character === "\"" || character === "'" || character === "`") {
+			quote = character;
+			continue;
+		}
+		if (character === "{") {
+			braceDepth += 1;
+			previousSignificant = character;
+			continue;
+		}
+		if (character === "}") {
+			braceDepth -= 1;
+			previousSignificant = character;
+			continue;
+		}
+		if (
+			braceDepth === 1 &&
+			(previousSignificant === "{" || previousSignificant === ",") &&
+			/[A-Za-z_$]/.test(character)
+		) {
+			const keyMatch = objectText.slice(index).match(/^([A-Za-z_$][\w$]*)\s*:/);
+			if (keyMatch) keys.push(keyMatch[1]);
+		}
+		if (!/\s/.test(character)) previousSignificant = character;
+	}
+	return keys;
+}
+
+function bundleConfigDrift(rawConfigText: string): string[] {
+	// Git may check this file out as CRLF on Windows. Normalize once so the banner,
+	// option regexes, external list, and allowlist scanner all inspect identical LF text.
+	const configText = rawConfigText.replace(/\r\n?/g, "\n");
 	const mismatches: string[] = [];
 	const check = (name: string, pattern: RegExp): void => {
 		if (!pattern.test(configText)) {
@@ -425,6 +507,15 @@ function bundleConfigDrift(configText: string): string[] {
 	check("minify in production", /minify:\s*prod\b/);
 	check("sourcemap in production", /sourcemap:\s*prod\s*\?\s*false\s*:\s*["']inline["']/);
 	check("banner option", /banner:\s*\{\s*js:\s*banner\s*,?\s*\}/);
+
+	const optionsMatch = configText.match(/esbuild\.context\s*\(\s*(\{[\s\S]*?\n\})\s*\)/);
+	if (!optionsMatch) {
+		mismatches.push("options object");
+	} else {
+		for (const key of topLevelObjectKeys(optionsMatch[1])) {
+			if (!MIRRORED_BUNDLE_OPTION_KEYS.has(key)) mismatches.push(`unexpected option: ${key}`);
+		}
+	}
 
 	const bannerMatch = configText.match(/const\s+banner\s*=\s*`([\s\S]*?)`\s*;/);
 	if (bannerMatch?.[1] !== BUNDLE_BANNER) {
@@ -931,23 +1022,29 @@ describe("production bundle size", () => {
 		}
 	}, 30_000);
 
-	it("detects production minification and external-list config drift", async () => {
+	it("accepts CRLF config text and still detects known-option drift", async () => {
 		const configText = await readFile(join(process.cwd(), "esbuild.config.mjs"), "utf8");
-		const directory = await mkdtemp(join(tmpdir(), "recipe-clipper-config-mutation-"));
-		const configPath = join(directory, "esbuild.config.mjs");
-		try {
-			const withoutMinification = configText.replace("minify: prod", "minify: false");
-			expect(withoutMinification).not.toBe(configText);
-			await writeFile(configPath, withoutMinification, "utf8");
-			expect(bundleConfigDrift(await readFile(configPath, "utf8"))).toContain("minify in production");
+		const crlfText = configText.replace(/\r?\n/g, "\r\n");
+		expect(bundleConfigDrift(crlfText)).toEqual([]);
 
-			const withoutExternal = configText.replace('\n\t\t"@lezer/lr",', "");
-			expect(withoutExternal).not.toBe(configText);
-			await writeFile(configPath, withoutExternal, "utf8");
-			expect(bundleConfigDrift(await readFile(configPath, "utf8"))).toContain("external");
-		} finally {
-			await rm(directory, { recursive: true, force: true });
-		}
+		const withoutMinification = crlfText.replace("minify: prod", "minify: false");
+		expect(withoutMinification).not.toBe(crlfText);
+		expect(bundleConfigDrift(withoutMinification)).toContain("minify in production");
+
+		const withoutExternal = crlfText.replace('\r\n\t\t"@lezer/lr",', "");
+		expect(withoutExternal).not.toBe(crlfText);
+		expect(bundleConfigDrift(withoutExternal)).toContain("external");
+	});
+
+	it("detects an unmirrored top-level production bundle option", async () => {
+		const configText = await readFile(join(process.cwd(), "esbuild.config.mjs"), "utf8");
+		const crlfText = configText.replace(/\r?\n/g, "\r\n");
+		const withDefine = crlfText.replace(
+			"\tentryPoints: [\"src/main.ts\"],",
+			"\tdefine: { \"process.env.X\": '\"1\"' },\r\n\tentryPoints: [\"src/main.ts\"],",
+		);
+		expect(withDefine).not.toBe(crlfText);
+		expect(bundleConfigDrift(withDefine)).toContain("unexpected option: define");
 	});
 
 	it("uses a strict boundary for the bundle budget", () => {
