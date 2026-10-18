@@ -94,14 +94,23 @@ const UNIT_ALIASES: Record<string, string> = {
 	floz: "fl oz",
 };
 
+const QUANTITY_PART = String.raw`(?:\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)`;
+const LEADING_QUANTITY = new RegExp(
+	String.raw`^\s*(${QUANTITY_PART})(?:\s*(?:-|to|or)\s*(${QUANTITY_PART}))?`,
+	"i",
+);
+const CUSTOM_UNIT_AFTER_QUANTITY = new RegExp(
+	String.raw`^(\s*${QUANTITY_PART}(?:\s*(?:-|to|or)\s*${QUANTITY_PART})?\s+)(fl(?:\.\s*|\s+)oz\.?|fluid\s+ounces?|sprigs?|heads?|handfuls?|wedges?|scoops?)(?=\s|$)`,
+	"i",
+);
+
 const DUAL_UNIT_PAREN = /^\s*[\d./\s-]+\s*[a-zA-Zµμ.]+\s*$/;
 
 export function normalizeVulgarFractions(text: string): string {
-	let next = text;
-	for (const [symbol, ascii] of Object.entries(VULGAR_FRACTIONS)) {
-		next = next.split(symbol).join(ascii);
-	}
-	return next;
+	const symbols = Object.keys(VULGAR_FRACTIONS).join("");
+	return text.replace(new RegExp(String.raw`(\d)?([${symbols}])`, "gu"), (_match, whole: string | undefined, symbol: string) =>
+		`${whole ? `${whole} ` : ""}${VULGAR_FRACTIONS[symbol]}`,
+	);
 }
 
 export function hasExplicitNumericQuantity(text: string): boolean {
@@ -205,6 +214,8 @@ export function parseIngredientLine(raw: string): RecipeIngredient {
 	const { text: withoutParens, notes: parentheticals } = extractParentheticals(
 		normalizeVulgarFractions(trimmed).replace(/[\u2013\u2014]/g, "-"),
 	);
+	const exactQuantity = parseLeadingQuantity(withoutParens);
+	const customUnit = replaceCustomUnit(withoutParens);
 
 	if (isNonNumericQualifier(trimmed) && !hasExplicitNumericQuantity(trimmed)) {
 		const qualifiers = [
@@ -224,7 +235,7 @@ export function parseIngredientLine(raw: string): RecipeIngredient {
 
 	let parsed: ReturnType<typeof parseIngredient> = null;
 	try {
-		parsed = parseIngredient(withoutParens, "en", {
+		parsed = parseIngredient(customUnit.text, "en", {
 			includeExtra: true,
 			includeAlternativeUnits: false,
 			fallbackLanguage: "en",
@@ -243,11 +254,13 @@ export function parseIngredientLine(raw: string): RecipeIngredient {
 		};
 	}
 
-	const isRange = parsed.minQuantity !== parsed.maxQuantity;
-	const quantity = Number.isFinite(parsed.minQuantity) ? parsed.minQuantity : parsed.quantity;
-	const quantityMax = Number.isFinite(parsed.maxQuantity) ? parsed.maxQuantity : parsed.quantity;
+	const parsedQuantity = Number.isFinite(parsed.minQuantity) ? parsed.minQuantity : parsed.quantity;
+	const parsedQuantityMax = Number.isFinite(parsed.maxQuantity) ? parsed.maxQuantity : parsed.quantity;
+	const quantity = exactQuantity?.min ?? parsedQuantity;
+	const quantityMax = exactQuantity?.max ?? parsedQuantityMax;
+	const isRange = quantity !== quantityMax;
 	const hasQuantity = Number.isFinite(quantity) && quantity > 0;
-	const unit = parsed.unitText || parsed.unit || null;
+	const unit = customUnit.unit ?? (parsed.unitText || parsed.unit || null);
 	const preparation = parsed.extra?.trim() ? parsed.extra.trim() : null;
 	const dualUnits = parentheticals.filter((note) => DUAL_UNIT_PAREN.test(note));
 	const qualifiers = unique([
@@ -286,6 +299,40 @@ export function parseIngredientLine(raw: string): RecipeIngredient {
 		optional: /\boptional\b/i.test(trimmed),
 		parseConfidence: classify(trimmed, quantity, isRange ? quantityMax : quantity),
 	};
+}
+
+function replaceCustomUnit(text: string): { text: string; unit: string | null } {
+	const match = text.match(CUSTOM_UNIT_AFTER_QUANTITY);
+	if (!match) {
+		return { text, unit: null };
+	}
+	const proxyUnit = /^fl|^fluid/i.test(match[2]) ? "cup" : "piece";
+	return {
+		text: text.replace(CUSTOM_UNIT_AFTER_QUANTITY, `$1${proxyUnit}`),
+		unit: match[2],
+	};
+}
+
+function parseLeadingQuantity(text: string): { min: number; max: number } | null {
+	const match = text.match(LEADING_QUANTITY);
+	if (!match || !match[0].includes("/")) {
+		return null;
+	}
+	const min = parseQuantityPart(match[1]);
+	const max = match[2] ? parseQuantityPart(match[2]) : min;
+	return min > 0 && max > 0 ? { min, max } : null;
+}
+
+function parseQuantityPart(text: string): number {
+	const mixed = text.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+	if (mixed) {
+		return Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
+	}
+	const fraction = text.match(/^(\d+)\/(\d+)$/);
+	if (fraction) {
+		return Number(fraction[1]) / Number(fraction[2]);
+	}
+	return Number(text);
 }
 
 function stripNonNumeric(text: string): string {

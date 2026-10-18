@@ -37,9 +37,7 @@ describe("Phase 2 deterministic evaluation gates", () => {
 		expect(report.metrics.falseMerges.total).toBeGreaterThanOrEqual(MINIMUM_DENOMINATORS.unsafeMergePairs);
 	});
 
-	// Known parser misses: Unicode mixed fractions, rounded thirds,
-	// fluid ounces, and count units. Keep the gate visible without hiding it.
-	it.fails("meets the Tier 1 and Tier 2 quantity/unit gates", async () => {
+	it("meets the Tier 1 and Tier 2 quantity/unit gates", async () => {
 		const report = await runEvaluation();
 		expect(report.metrics.tier1.quantityUnitFidelity.rate).toBeGreaterThanOrEqual(EXIT_GATES.tier1QuantityUnitFidelity);
 		expect(report.metrics.tier2.quantityUnitFidelity.rate).toBeGreaterThanOrEqual(EXIT_GATES.tier2QuantityUnitFidelity);
@@ -48,29 +46,61 @@ describe("Phase 2 deterministic evaluation gates", () => {
 
 	it("does not regress from the pinned quantity/unit baseline", async () => {
 		const report = await runEvaluation();
-		const alwaysPerfect = [
-			"mixed-fraction",
-			"range",
-			"dual-unit",
-			"abbrev-period",
-			"non-numeric",
-			"comma-prep",
-			"simple",
-		] as const;
+		const expectedCounts = {
+			"mixed-fraction": [7, 6],
+			"unicode-fraction": [6, 6],
+			range: [7, 6],
+			"dual-unit": [7, 6],
+			"abbrev-period": [6, 6],
+			"fl-oz": [6, 6],
+			"unknown-unit": [7, 8],
+			"non-numeric": [8, 6],
+			"comma-prep": [6, 6],
+			simple: [13, 13],
+		} as const;
+		const alwaysPerfect = Object.keys(expectedCounts) as (keyof typeof expectedCounts)[];
 
 		for (const category of alwaysPerfect) {
+			const [tier1Count, tier2Count] = expectedCounts[category];
 			expect(report.metrics.tier1.quantityUnitFidelityByCategory[category].rate, `Tier 1 ${category}`).toBe(1);
 			expect(report.metrics.tier2.quantityUnitFidelityByCategory[category].rate, `Tier 2 ${category}`).toBe(1);
+			expect(report.metrics.tier1.quantityUnitFidelityByCategory[category].matched, `Tier 1 ${category} matched`).toBe(tier1Count);
+			expect(report.metrics.tier1.quantityUnitFidelityByCategory[category].total, `Tier 1 ${category} total`).toBe(tier1Count);
+			expect(report.metrics.tier2.quantityUnitFidelityByCategory[category].matched, `Tier 2 ${category} matched`).toBe(tier2Count);
+			expect(report.metrics.tier2.quantityUnitFidelityByCategory[category].total, `Tier 2 ${category} total`).toBe(tier2Count);
 		}
 
-		expect(report.metrics.tier1.quantityUnitFidelityByCategory["unicode-fraction"].matched).toBeGreaterThanOrEqual(2);
-		expect(report.metrics.tier2.quantityUnitFidelityByCategory["unicode-fraction"].matched).toBeGreaterThanOrEqual(2);
-		expect(report.metrics.tier1.quantityUnitFidelityByCategory["fl-oz"].matched).toBeGreaterThanOrEqual(0);
-		expect(report.metrics.tier2.quantityUnitFidelityByCategory["fl-oz"].matched).toBeGreaterThanOrEqual(0);
-		expect(report.metrics.tier1.quantityUnitFidelityByCategory["unknown-unit"].matched).toBeGreaterThanOrEqual(3);
-		expect(report.metrics.tier2.quantityUnitFidelityByCategory["unknown-unit"].matched).toBeGreaterThanOrEqual(5);
-		expect(report.metrics.tier1.quantityUnitFidelity.matched).toBeGreaterThanOrEqual(59);
-		expect(report.metrics.tier2.quantityUnitFidelity.matched).toBeGreaterThanOrEqual(56);
+		expect(report.metrics.tier1.quantityUnitFidelity.matched).toBe(73);
+		expect(report.metrics.tier2.quantityUnitFidelity.matched).toBe(69);
+	});
+
+	it("fails the quantity/unit gates under the legacy parser defects", async () => {
+		const baseline = await runEvaluation();
+		const report = await runEvaluation({
+			parseIngredient: (raw) => {
+				const parsed = parseIngredientLine(raw);
+				if (/\d[¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅛⅜⅝⅞⅑⅒]/u.test(raw)) {
+					return { ...parsed, quantity: 999 };
+				}
+				if (/^\s*\d+(?:\s*[⅓⅔]|\s+\d+\/3)|^\s*[⅓⅔]/u.test(raw)) {
+					return { ...parsed, quantity: Math.round((parsed.quantity ?? 0) * 100) / 100 };
+				}
+				if (/^\s*\d+\s+(?:fl(?:\.\s*|\s+)oz\.?|fluid\s+ounces?|sprigs?|heads?|handfuls?|wedges?|scoops?)(?=\s|$)/i.test(raw)) {
+					return { ...parsed, unit: null };
+				}
+				return parsed;
+			},
+		});
+
+		expect(baseline.metrics.tier1.quantityUnitFidelity.matched).toBe(73);
+		expect(baseline.metrics.tier2.quantityUnitFidelity.matched).toBe(69);
+		expect(report.metrics.tier1.quantityUnitFidelity.matched).toBe(59);
+		expect(report.metrics.tier2.quantityUnitFidelity.matched).toBe(56);
+		expect(report.metrics.tier1.quantityUnitFidelity.rate).toBeLessThan(EXIT_GATES.tier1QuantityUnitFidelity);
+		expect(report.metrics.tier2.quantityUnitFidelity.rate).toBeLessThan(EXIT_GATES.tier2QuantityUnitFidelity);
+		expect(report.gates.tier1QuantityUnitFidelity.passed).toBe(false);
+		expect(report.gates.tier2QuantityUnitFidelity.passed).toBe(false);
+		expect(report.passed).toBe(false);
 	});
 
 	it("records reproducibility metadata and separate merge failure lists", async () => {
