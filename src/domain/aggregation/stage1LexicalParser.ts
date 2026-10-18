@@ -100,7 +100,7 @@ const LEADING_QUANTITY = new RegExp(
 	"i",
 );
 const CUSTOM_UNIT_AFTER_QUANTITY = new RegExp(
-	String.raw`^(\s*${QUANTITY_PART}(?:\s*(?:-|to|or)\s*${QUANTITY_PART})?\s+)(fl(?:\.\s*|\s+)oz\.?|fluid\s+ounces?|sprigs?|heads?|handfuls?|wedges?|scoops?)(?=\s|$)`,
+	String.raw`^(\s*${QUANTITY_PART}(?:\s*(?:-|to|or)\s*${QUANTITY_PART})?\s+)(fl(?:\.\s*|\s+)oz\.?|fluid\s+ounces?|sprigs?|heads?|handfuls?|wedges?|scoops?)(?=\s+\S)`,
 	"i",
 );
 

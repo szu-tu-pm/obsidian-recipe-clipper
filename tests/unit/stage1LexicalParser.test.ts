@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { aggregateIngredients } from "../../src/domain/aggregation/aggregator";
+import { recipeIngredientSchema } from "../../src/domain/schema/recipeSchema";
 import {
 	inferUnitSystem,
 	normalizeVulgarFractions,
@@ -244,5 +245,28 @@ describe("stage1LexicalParser count units", () => {
 	it("documents that a recognized word directly after the quantity is a unit", () => {
 		expect(parseIngredientLine("1 wedge salad")).toMatchObject({ unit: "wedge", name: "salad" });
 		expect(parseIngredientLine("2 head cheese")).toMatchObject({ unit: "head", name: "cheese" });
+	});
+});
+
+describe("stage1LexicalParser bare custom units", () => {
+	it.each([
+		["10 sprigs", 10, null, "sprigs"],
+		["1 head", 1, null, "head"],
+		["2 handfuls", 2, null, "handfuls"],
+		["1 wedge", 1, null, "wedge"],
+		["3 scoops", 3, null, "scoops"],
+		["2 fl oz", 2, null, "fl oz"],
+		["2 fl. oz.", 2, null, "fl. oz."],
+		["8 fluid ounces", 8, null, "fluid ounces"],
+		["2-3 sprigs", 2, 3, "sprigs"],
+	] as const)("preserves the quantity and a valid name in %s", (raw, quantity, quantityMax, name) => {
+		const parsed = parseIngredientLine(raw);
+		expect(parsed.quantity).toBe(quantity);
+		expect(parsed.quantityMax).toBe(quantityMax);
+		expect(parsed.unit).toBeNull();
+		expect(parsed.name).toBe(name);
+		expect(parsed.name).not.toBe("");
+		expect(parsed.raw).toBe(raw);
+		expect(recipeIngredientSchema.safeParse(parsed).success).toBe(true);
 	});
 });
