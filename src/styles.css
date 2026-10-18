@@ -296,3 +296,24 @@
 	flex-wrap: wrap;
 	gap: 0.5em;
 }
+
+.recipe-clipper-translation-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 0.75em 0;
+	font-size: 0.95em;
+}
+
+.recipe-clipper-translation-table caption {
+	text-align: left;
+	font-weight: 600;
+	margin-bottom: 0.4em;
+}
+
+.recipe-clipper-translation-table th,
+.recipe-clipper-translation-table td {
+	border-bottom: 1px solid var(--background-modifier-border);
+	padding: 0.35em 0.5em;
+	text-align: left;
+	vertical-align: top;
+}

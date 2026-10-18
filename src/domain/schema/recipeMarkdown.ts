@@ -4,7 +4,79 @@ import {
 	parseRecipeFrontmatter,
 	type RecipeDocument,
 	type RecipeFrontmatter,
+	type RecipeIngredient,
 } from "./recipeSchema";
+
+/** Case- and whitespace-insensitive form of a displayed line, for matching edits. */
+export function normalizeDisplayedLine(line: string): string {
+	return line.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/** Longest common subsequence of two key lists, as index pairs (in order). */
+function commonSubsequence(a: string[], b: string[]): Array<[number, number]> {
+	const table = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
+	for (let i = a.length - 1; i >= 0; i--) {
+		for (let j = b.length - 1; j >= 0; j--) {
+			table[i][j] =
+				a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
+		}
+	}
+	const pairs: Array<[number, number]> = [];
+	let i = 0;
+	let j = 0;
+	while (i < a.length && j < b.length) {
+		if (a[i] === b[j]) {
+			pairs.push([i, j]);
+			i++;
+			j++;
+		} else if (table[i + 1][j] >= table[i][j + 1]) {
+			i++;
+		} else {
+			j++;
+		}
+	}
+	return pairs;
+}
+
+/**
+ * Turn displayed ingredient lines back into ingredients, keeping each existing
+ * ingredient (id, name, canonicalId, quantity, unit) for a line that is unchanged up to
+ * case and whitespace. Lines unchanged in place (longest common subsequence) are
+ * reserved first, so an edited line can never take an unchanged line's id. Remaining
+ * lines then match unreserved ingredients with the same text, in their existing order,
+ * which keeps duplicate lines' ids where they were. Only truly new lines are parsed
+ * again, with a fresh id.
+ */
+export function reconcileIngredientLines(
+	lines: string[],
+	existing: RecipeIngredient[],
+): RecipeIngredient[] {
+	const lineKeys = lines.map(normalizeDisplayedLine);
+	const existingKeys = existing.map((item) => normalizeDisplayedLine(item.raw));
+	const matched = new Array<number>(lines.length).fill(-1);
+	const reserved = new Set<number>();
+	for (const [line, item] of commonSubsequence(lineKeys, existingKeys)) {
+		matched[line] = item;
+		reserved.add(item);
+	}
+	lineKeys.forEach((key, line) => {
+		if (matched[line] !== -1) {
+			return;
+		}
+		const item = existingKeys.findIndex((other, index) => other === key && !reserved.has(index));
+		if (item !== -1) {
+			matched[line] = item;
+			reserved.add(item);
+		}
+	});
+	return lines.map((line, index) => {
+		if (matched[index] === -1) {
+			return parseIngredientLine(line);
+		}
+		const kept = existing[matched[index]];
+		return kept.raw === line ? kept : { ...kept, raw: line };
+	});
+}
 
 export interface YamlCodec {
 	parse(yaml: string): unknown;
@@ -223,7 +295,7 @@ export function parseRecipeFile(
 		author: parsedBody.author ?? frontmatter.author,
 		ingredients:
 			parsedBody.ingredientLines.length > 0
-				? parsedBody.ingredientLines.map(parseIngredientLine)
+				? reconcileIngredientLines(parsedBody.ingredientLines, frontmatter.ingredients)
 				: frontmatter.ingredients,
 		updatedAt: new Date().toISOString(),
 	};

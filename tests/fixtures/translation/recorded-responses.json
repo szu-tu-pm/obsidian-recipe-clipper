@@ -1,0 +1,1576 @@
+{
+  "_about": "Hand-written Ollama /api/chat message.content values. Expectations were worked out by hand from the sources, not by running the validator. 'output' is serialized to JSON as the model content; 'content' is used verbatim. The generator (kept out of the repo) only attaches the id/step keys to the hand-written texts.",
+  "sources": {
+    "shrimp": {
+      "title": "Garlic Butter Shrimp",
+      "ingredients": [
+        {
+          "id": "ing_0000000000000000000000SH01",
+          "text": "1 lb shrimp, peeled"
+        },
+        {
+          "id": "ing_0000000000000000000000SH02",
+          "text": "3 tbsp butter (unsalted)"
+        },
+        {
+          "id": "ing_0000000000000000000000SH03",
+          "text": "4 cloves garlic, minced"
+        },
+        {
+          "id": "ing_0000000000000000000000SH04",
+          "text": "½ tsp salt"
+        },
+        {
+          "id": "ing_0000000000000000000000SH05",
+          "text": "1-2 tbsp fresh parsley, chopped"
+        }
+      ],
+      "instructions": [
+        {
+          "step": 1,
+          "text": "Melt the butter in a large pan over medium heat."
+        },
+        {
+          "step": 2,
+          "text": "Add the garlic and cook for 1 minute."
+        },
+        {
+          "step": 3,
+          "text": "Add the shrimp and cook 2-3 minutes per side."
+        }
+      ]
+    },
+    "dough": {
+      "title": "Oil Dough",
+      "ingredients": [
+        {
+          "id": "ing_0000000000000000000000DO01",
+          "text": "1-3 tbsp oil and 2-4 cups flour"
+        },
+        {
+          "id": "ing_0000000000000000000000DO02",
+          "text": "1 tsp salt"
+        }
+      ],
+      "instructions": [
+        {
+          "step": 1,
+          "text": "Mix everything."
+        }
+      ]
+    },
+    "batter": {
+      "title": "Simple Batter",
+      "ingredients": [
+        {
+          "id": "ing_0000000000000000000000BA01",
+          "text": "2 cups flour and 3 tbsp oil"
+        },
+        {
+          "id": "ing_0000000000000000000000BA02",
+          "text": "1 cup milk"
+        },
+        {
+          "id": "ing_0000000000000000000000BA03",
+          "text": "a pinch of salt"
+        }
+      ],
+      "instructions": [
+        {
+          "step": 1,
+          "text": "Whisk 1 cup milk with 3 tbsp oil."
+        },
+        {
+          "step": 2,
+          "text": "Stir in 2 cups flour and the salt."
+        }
+      ]
+    },
+    "flatbread": {
+      "title": "Skillet Flatbread",
+      "ingredients": [
+        {
+          "id": "ing_0000000000000000000000BR01",
+          "text": "two cups flour"
+        },
+        {
+          "id": "ing_0000000000000000000000BR02",
+          "text": "a pinch of salt"
+        },
+        {
+          "id": "ing_0000000000000000000000BR03",
+          "text": "1 cup warm water"
+        },
+        {
+          "id": "ing_0000000000000000000000BR04",
+          "text": "olive oil"
+        },
+        {
+          "id": "ing_0000000000000000000000BR05",
+          "text": "flaky salt"
+        }
+      ],
+      "instructions": [
+        {
+          "step": 1,
+          "text": "Mix the flour and salt."
+        },
+        {
+          "step": 2,
+          "text": "Stir in the water and knead for two minutes."
+        },
+        {
+          "step": 3,
+          "text": "Rest the dough for twenty-five minutes."
+        },
+        {
+          "step": 4,
+          "text": "Cook in an oiled pan."
+        },
+        {
+          "step": 5,
+          "text": "Sprinkle with flaky salt."
+        }
+      ]
+    }
+  },
+  "responses": [
+    {
+      "id": "valid-french",
+      "category": "valid",
+      "source": "shrimp",
+      "language": "French",
+      "expect": "ready",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb crevettes, décortiquées"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp beurre (doux)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves ail, haché"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp sel"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp persil frais, haché"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Faire fondre le beurre dans une grande poêle à feu moyen."
+          },
+          {
+            "step": 2,
+            "text": "Ajouter l'ail et cuire 1 minute."
+          },
+          {
+            "step": 3,
+            "text": "Ajouter les crevettes et cuire 2-3 minutes de chaque côté."
+          }
+        ]
+      }
+    },
+    {
+      "id": "valid-spanish-reordered-words",
+      "category": "valid",
+      "source": "shrimp",
+      "language": "Spanish",
+      "expect": "ready",
+      "output": {
+        "title": "Camarones con mantequilla de ajo",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "Camarones pelados: 1 lb"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp mantequilla (sin sal)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves de ajo, picados"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp de sal"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "Perejil fresco picado, 1-2 tbsp"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Derrite la mantequilla en una sartén grande a fuego medio."
+          },
+          {
+            "step": 2,
+            "text": "Agrega el ajo y cocina durante 1 minuto."
+          },
+          {
+            "step": 3,
+            "text": "Agrega los camarones y cocina de 2-3 minutos por lado."
+          }
+        ]
+      }
+    },
+    {
+      "id": "valid-japanese-code-fenced",
+      "category": "valid",
+      "source": "shrimp",
+      "language": "Japanese",
+      "expect": "ready",
+      "content": "```json\n{\"title\": \"ガーリックバターシュリンプ\", \"ingredients\": [{\"id\": \"ing_0000000000000000000000SH01\", \"text\": \"1 lb エビ（殻をむく）\"}, {\"id\": \"ing_0000000000000000000000SH02\", \"text\": \"3 tbsp バター (無塩)\"}, {\"id\": \"ing_0000000000000000000000SH03\", \"text\": \"4 cloves にんにく、みじん切り\"}, {\"id\": \"ing_0000000000000000000000SH04\", \"text\": \"½ tsp 塩\"}, {\"id\": \"ing_0000000000000000000000SH05\", \"text\": \"1-2 tbsp 生パセリ、刻む\"}], \"instructions\": [{\"step\": 1, \"text\": \"大きなフライパンで中火でバターを溶かす。\"}, {\"step\": 2, \"text\": \"にんにくを加えて1分加熱する。\"}, {\"step\": 3, \"text\": \"エビを加えて片面2-3分焼く。\"}]}\n```"
+    },
+    {
+      "id": "valid-flatbread-french-digits",
+      "category": "valid",
+      "source": "flatbread",
+      "language": "French",
+      "expect": "ready",
+      "output": {
+        "title": "Pain plat à la poêle",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BR01",
+            "text": "2 cups farine"
+          },
+          {
+            "id": "ing_0000000000000000000000BR02",
+            "text": "1 pinch de sel"
+          },
+          {
+            "id": "ing_0000000000000000000000BR03",
+            "text": "1 cup eau tiède"
+          },
+          {
+            "id": "ing_0000000000000000000000BR04",
+            "text": "huile d'olive"
+          },
+          {
+            "id": "ing_0000000000000000000000BR05",
+            "text": "sel en flocons"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Mélanger la farine et le sel."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer l'eau et pétrir pendant 2 minutes."
+          },
+          {
+            "step": 3,
+            "text": "Laisser reposer la pâte 25 minutes."
+          },
+          {
+            "step": 4,
+            "text": "Cuire dans une poêle huilée."
+          },
+          {
+            "step": 5,
+            "text": "Saupoudrer de sel en flocons."
+          }
+        ]
+      }
+    },
+    {
+      "id": "valid-flatbread-english-words-kept",
+      "category": "valid",
+      "source": "flatbread",
+      "language": "English",
+      "expect": "ready",
+      "output": {
+        "title": "Skillet Flatbread",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BR01",
+            "text": "two cups flour"
+          },
+          {
+            "id": "ing_0000000000000000000000BR02",
+            "text": "a pinch of salt"
+          },
+          {
+            "id": "ing_0000000000000000000000BR03",
+            "text": "1 cup warm water"
+          },
+          {
+            "id": "ing_0000000000000000000000BR04",
+            "text": "olive oil"
+          },
+          {
+            "id": "ing_0000000000000000000000BR05",
+            "text": "flaky salt"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Mix the flour and the salt."
+          },
+          {
+            "step": 2,
+            "text": "Stir in the water and knead for two minutes."
+          },
+          {
+            "step": 3,
+            "text": "Let the dough rest for twenty five minutes."
+          },
+          {
+            "step": 4,
+            "text": "Cook in an oiled pan."
+          },
+          {
+            "step": 5,
+            "text": "Sprinkle with flaky salt."
+          }
+        ]
+      }
+    },
+    {
+      "id": "valid-batter-french",
+      "category": "valid",
+      "source": "batter",
+      "language": "French",
+      "expect": "ready",
+      "output": {
+        "title": "Pâte simple",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BA01",
+            "text": "2 cups farine et 3 tbsp huile"
+          },
+          {
+            "id": "ing_0000000000000000000000BA02",
+            "text": "1 cup lait"
+          },
+          {
+            "id": "ing_0000000000000000000000BA03",
+            "text": "1 pinch de sel"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Fouetter 1 cup de lait avec 3 tbsp d'huile."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer 2 cups de farine et le sel."
+          }
+        ]
+      }
+    },
+    {
+      "id": "pair-swap-ingredient",
+      "category": "pair-swap",
+      "source": "batter",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Ingredient 1 changed which amount goes with which unit (2 cups 3 tbsp → 3 cups 2 tbsp).",
+      "output": {
+        "title": "Pâte simple",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BA01",
+            "text": "3 cups farine et 2 tbsp huile"
+          },
+          {
+            "id": "ing_0000000000000000000000BA02",
+            "text": "1 cup lait"
+          },
+          {
+            "id": "ing_0000000000000000000000BA03",
+            "text": "1 pinch de sel"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Fouetter 1 cup de lait avec 3 tbsp d'huile."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer 2 cups de farine et le sel."
+          }
+        ]
+      }
+    },
+    {
+      "id": "pair-swap-step",
+      "category": "pair-swap",
+      "source": "batter",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Step 1 changed which amount goes with which unit (1 cup 3 tbsp → 3 cup 1 tbsp).",
+      "output": {
+        "title": "Pâte simple",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BA01",
+            "text": "2 cups farine et 3 tbsp huile"
+          },
+          {
+            "id": "ing_0000000000000000000000BA02",
+            "text": "1 cup lait"
+          },
+          {
+            "id": "ing_0000000000000000000000BA03",
+            "text": "1 pinch de sel"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Fouetter 3 cup de lait avec 1 tbsp d'huile."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer 2 cups de farine et le sel."
+          }
+        ]
+      }
+    },
+    {
+      "id": "valid-dough-french-ranges",
+      "category": "valid",
+      "source": "dough",
+      "language": "French",
+      "expect": "ready",
+      "output": {
+        "title": "Pâte à l'huile",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000DO01",
+            "text": "1-3 tbsp huile et 2-4 cups farine"
+          },
+          {
+            "id": "ing_0000000000000000000000DO02",
+            "text": "1 tsp sel"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Tout mélanger."
+          }
+        ]
+      }
+    },
+    {
+      "id": "pair-swap-range-low-ends",
+      "category": "pair-swap",
+      "source": "dough",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Ingredient 1 changed which amount goes with which unit (1-3 tbsp 2-4 cups → 2-3 tbsp 1-4 cups).",
+      "output": {
+        "title": "Pâte à l'huile",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000DO01",
+            "text": "2-3 tbsp huile et 1-4 cups farine"
+          },
+          {
+            "id": "ing_0000000000000000000000DO02",
+            "text": "1 tsp sel"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Tout mélanger."
+          }
+        ]
+      }
+    },
+    {
+      "id": "add-step-serving-tip",
+      "category": "add-step",
+      "source": "shrimp",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Expected 3 steps, got 4.",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb crevettes, décortiquées"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp beurre (doux)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves ail, haché"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp sel"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp persil frais, haché"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Faire fondre le beurre dans une grande poêle à feu moyen."
+          },
+          {
+            "step": 2,
+            "text": "Ajouter l'ail et cuire 1 minute."
+          },
+          {
+            "step": 3,
+            "text": "Ajouter les crevettes et cuire 2-3 minutes de chaque côté."
+          },
+          {
+            "step": 4,
+            "text": "Servir avec des quartiers de citron."
+          }
+        ]
+      }
+    },
+    {
+      "id": "add-step-split-step",
+      "category": "add-step",
+      "source": "shrimp",
+      "language": "Spanish",
+      "expect": "failed",
+      "problem": "Expected 3 steps, got 4.",
+      "output": {
+        "title": "Camarones con mantequilla de ajo",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb camarones, pelados"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp mantequilla (sin sal)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves de ajo, picados"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp de sal"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp perejil fresco, picado"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Derrite la mantequilla."
+          },
+          {
+            "step": 2,
+            "text": "Usa una sartén grande a fuego medio."
+          },
+          {
+            "step": 3,
+            "text": "Agrega el ajo y cocina durante 1 minuto."
+          },
+          {
+            "step": 4,
+            "text": "Agrega los camarones y cocina de 2-3 minutos por lado."
+          }
+        ]
+      }
+    },
+    {
+      "id": "change-amount-butter",
+      "category": "change-amount",
+      "source": "shrimp",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Ingredient 2 changed its numbers (3 → 2).",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb crevettes, décortiquées"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "2 tbsp beurre (doux)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves ail, haché"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp sel"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp persil frais, haché"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Faire fondre le beurre dans une grande poêle à feu moyen."
+          },
+          {
+            "step": 2,
+            "text": "Ajouter l'ail et cuire 1 minute."
+          },
+          {
+            "step": 3,
+            "text": "Ajouter les crevettes et cuire 2-3 minutes de chaque côté."
+          }
+        ]
+      }
+    },
+    {
+      "id": "change-amount-respelled-fraction",
+      "category": "change-amount",
+      "source": "shrimp",
+      "language": "German",
+      "expect": "failed",
+      "problem": "Ingredient 4 changed its numbers (½ → 0,5).",
+      "output": {
+        "title": "Knoblauchbutter-Garnelen",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb Garnelen, geschält"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp Butter (ungesalzen)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves Knoblauch, gehackt"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "0,5 tsp Salz"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp frische Petersilie, gehackt"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Die Butter in einer großen Pfanne bei mittlerer Hitze schmelzen."
+          },
+          {
+            "step": 2,
+            "text": "Den Knoblauch zugeben und 1 Minute braten."
+          },
+          {
+            "step": 3,
+            "text": "Die Garnelen zugeben und pro Seite 2-3 Minuten braten."
+          }
+        ]
+      }
+    },
+    {
+      "id": "change-amount-collapsed-range-in-step",
+      "category": "change-amount",
+      "source": "shrimp",
+      "language": "Italian",
+      "expect": "failed",
+      "problem": "Step 3 changed its numbers (2 3 → 3).",
+      "output": {
+        "title": "Gamberi al burro e aglio",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb gamberi, sgusciati"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp burro (non salato)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves aglio, tritato"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp sale"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp prezzemolo fresco, tritato"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Sciogliere il burro in una padella grande a fuoco medio."
+          },
+          {
+            "step": 2,
+            "text": "Aggiungere l'aglio e cuocere per 1 minuto."
+          },
+          {
+            "step": 3,
+            "text": "Aggiungere i gamberi e cuocere 3 minuti per lato."
+          }
+        ]
+      }
+    },
+    {
+      "id": "change-unit-translated-tbsp",
+      "category": "change-unit",
+      "source": "shrimp",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Ingredient 2 changed its units (tbsp → none).",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb crevettes, décortiquées"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 cuillères à soupe de beurre (doux)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves ail, haché"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp sel"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp persil frais, haché"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Faire fondre le beurre dans une grande poêle à feu moyen."
+          },
+          {
+            "step": 2,
+            "text": "Ajouter l'ail et cuire 1 minute."
+          },
+          {
+            "step": 3,
+            "text": "Ajouter les crevettes et cuire 2-3 minutes de chaque côté."
+          }
+        ]
+      }
+    },
+    {
+      "id": "change-unit-converted-to-grams",
+      "category": "change-unit",
+      "source": "shrimp",
+      "language": "German",
+      "expect": "failed",
+      "problem": "Ingredient 1 changed its units (lb → g).",
+      "output": {
+        "title": "Knoblauchbutter-Garnelen",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "450 g Garnelen, geschält"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp Butter (ungesalzen)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves Knoblauch, gehackt"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp Salz"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp frische Petersilie, gehackt"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Die Butter in einer großen Pfanne bei mittlerer Hitze schmelzen."
+          },
+          {
+            "step": 2,
+            "text": "Den Knoblauch zugeben und 1 Minute braten."
+          },
+          {
+            "step": 3,
+            "text": "Die Garnelen zugeben und pro Seite 2-3 Minuten braten."
+          }
+        ]
+      }
+    },
+    {
+      "id": "drop-line-salt",
+      "category": "drop-line",
+      "source": "shrimp",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Expected 5 ingredient lines, got 4.",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb crevettes, décortiquées"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp beurre (doux)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves ail, haché"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp persil frais, haché"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Faire fondre le beurre dans une grande poêle à feu moyen."
+          },
+          {
+            "step": 2,
+            "text": "Ajouter l'ail et cuire 1 minute."
+          },
+          {
+            "step": 3,
+            "text": "Ajouter les crevettes et cuire 2-3 minutes de chaque côté."
+          }
+        ]
+      }
+    },
+    {
+      "id": "drop-line-merged-steps",
+      "category": "drop-line",
+      "source": "shrimp",
+      "language": "Spanish",
+      "expect": "failed",
+      "problem": "Expected 3 steps, got 2.",
+      "output": {
+        "title": "Camarones con mantequilla de ajo",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb camarones, pelados"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp mantequilla (sin sal)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves de ajo, picados"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp de sal"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp perejil fresco, picado"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Derrite la mantequilla en una sartén grande a fuego medio y agrega el ajo durante 1 minuto."
+          },
+          {
+            "step": 3,
+            "text": "Agrega los camarones y cocina de 2-3 minutos por lado."
+          }
+        ]
+      }
+    },
+    {
+      "id": "drop-line-blank-step",
+      "category": "drop-line",
+      "source": "shrimp",
+      "language": "Italian",
+      "expect": "failed",
+      "problem": "Step 2 is empty.",
+      "output": {
+        "title": "Gamberi al burro e aglio",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb gamberi, sgusciati"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp burro (non salato)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves aglio, tritato"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp sale"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp prezzemolo fresco, tritato"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Sciogliere il burro in una padella grande a fuoco medio."
+          },
+          {
+            "step": 2,
+            "text": "   "
+          },
+          {
+            "step": 3,
+            "text": "Aggiungere i gamberi e cuocere 2-3 minuti per lato."
+          }
+        ]
+      }
+    },
+    {
+      "id": "add-ingredient-lemon",
+      "category": "add-ingredient",
+      "source": "shrimp",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Expected 5 ingredient lines, got 6.",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb crevettes, décortiquées"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp beurre (doux)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves ail, haché"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp sel"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp persil frais, haché"
+          },
+          {
+            "id": "ing_0000000000000000000000SH06",
+            "text": "1 citron"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Faire fondre le beurre dans une grande poêle à feu moyen."
+          },
+          {
+            "step": 2,
+            "text": "Ajouter l'ail et cuire 1 minute."
+          },
+          {
+            "step": 3,
+            "text": "Ajouter les crevettes et cuire 2-3 minutes de chaque côté."
+          }
+        ]
+      }
+    },
+    {
+      "id": "add-ingredient-inside-step",
+      "category": "add-ingredient",
+      "source": "shrimp",
+      "language": "German",
+      "expect": "failed",
+      "problem": "Step 3 changed its numbers (2 3 → 2 3 1).",
+      "output": {
+        "title": "Knoblauchbutter-Garnelen",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb Garnelen, geschält"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp Butter (ungesalzen)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves Knoblauch, gehackt"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp Salz"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp frische Petersilie, gehackt"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Die Butter in einer großen Pfanne bei mittlerer Hitze schmelzen."
+          },
+          {
+            "step": 2,
+            "text": "Den Knoblauch zugeben und 1 Minute braten."
+          },
+          {
+            "step": 3,
+            "text": "Die Garnelen zugeben, pro Seite 2-3 Minuten braten und 1 tsp Zitronensaft zugeben."
+          }
+        ]
+      }
+    },
+    {
+      "id": "word-amount-step-two-to-three",
+      "category": "word-amount",
+      "source": "flatbread",
+      "language": "English",
+      "expect": "failed",
+      "problem": "Step 2 changed its numbers (2 → 3).",
+      "output": {
+        "title": "Skillet Flatbread",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BR01",
+            "text": "two cups flour"
+          },
+          {
+            "id": "ing_0000000000000000000000BR02",
+            "text": "a pinch of salt"
+          },
+          {
+            "id": "ing_0000000000000000000000BR03",
+            "text": "1 cup warm water"
+          },
+          {
+            "id": "ing_0000000000000000000000BR04",
+            "text": "olive oil"
+          },
+          {
+            "id": "ing_0000000000000000000000BR05",
+            "text": "flaky salt"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Mix the flour and the salt."
+          },
+          {
+            "step": 2,
+            "text": "Stir in the water and knead for three minutes."
+          },
+          {
+            "step": 3,
+            "text": "Let the dough rest for twenty five minutes."
+          },
+          {
+            "step": 4,
+            "text": "Cook in an oiled pan."
+          },
+          {
+            "step": 5,
+            "text": "Sprinkle with flaky salt."
+          }
+        ]
+      }
+    },
+    {
+      "id": "word-amount-two-cups-to-three",
+      "category": "word-amount",
+      "source": "flatbread",
+      "language": "English",
+      "expect": "failed",
+      "problem": "Ingredient 1 changed its numbers (2 → 3).",
+      "output": {
+        "title": "Skillet Flatbread",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BR01",
+            "text": "three cups flour"
+          },
+          {
+            "id": "ing_0000000000000000000000BR02",
+            "text": "a pinch of salt"
+          },
+          {
+            "id": "ing_0000000000000000000000BR03",
+            "text": "1 cup warm water"
+          },
+          {
+            "id": "ing_0000000000000000000000BR04",
+            "text": "olive oil"
+          },
+          {
+            "id": "ing_0000000000000000000000BR05",
+            "text": "flaky salt"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Mix the flour and the salt."
+          },
+          {
+            "step": 2,
+            "text": "Stir in the water and knead for two minutes."
+          },
+          {
+            "step": 3,
+            "text": "Let the dough rest for twenty five minutes."
+          },
+          {
+            "step": 4,
+            "text": "Cook in an oiled pan."
+          },
+          {
+            "step": 5,
+            "text": "Sprinkle with flaky salt."
+          }
+        ]
+      }
+    },
+    {
+      "id": "word-amount-a-pinch-to-two-pinches",
+      "category": "word-amount",
+      "source": "flatbread",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Ingredient 2 changed its numbers (1 → 2).",
+      "output": {
+        "title": "Pain plat à la poêle",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BR01",
+            "text": "2 cups farine"
+          },
+          {
+            "id": "ing_0000000000000000000000BR02",
+            "text": "2 pinches de sel"
+          },
+          {
+            "id": "ing_0000000000000000000000BR03",
+            "text": "1 cup eau tiède"
+          },
+          {
+            "id": "ing_0000000000000000000000BR04",
+            "text": "huile d'olive"
+          },
+          {
+            "id": "ing_0000000000000000000000BR05",
+            "text": "sel en flocons"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Mélanger la farine et le sel."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer l'eau et pétrir pendant 2 minutes."
+          },
+          {
+            "step": 3,
+            "text": "Laisser reposer la pâte 25 minutes."
+          },
+          {
+            "step": 4,
+            "text": "Cuire dans une poêle huilée."
+          },
+          {
+            "step": 5,
+            "text": "Saupoudrer de sel en flocons."
+          }
+        ]
+      }
+    },
+    {
+      "id": "word-amount-compound-respelled",
+      "category": "word-amount",
+      "source": "flatbread",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Step 3 changed its numbers (25 → 20 5).",
+      "output": {
+        "title": "Pain plat à la poêle",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BR01",
+            "text": "2 cups farine"
+          },
+          {
+            "id": "ing_0000000000000000000000BR02",
+            "text": "1 pinch de sel"
+          },
+          {
+            "id": "ing_0000000000000000000000BR03",
+            "text": "1 cup eau tiède"
+          },
+          {
+            "id": "ing_0000000000000000000000BR04",
+            "text": "huile d'olive"
+          },
+          {
+            "id": "ing_0000000000000000000000BR05",
+            "text": "sel en flocons"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Mélanger la farine et le sel."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer l'eau et pétrir pendant 2 minutes."
+          },
+          {
+            "step": 3,
+            "text": "Laisser reposer la pâte 20 5 minutes."
+          },
+          {
+            "step": 4,
+            "text": "Cuire dans une poêle huilée."
+          },
+          {
+            "step": 5,
+            "text": "Saupoudrer de sel en flocons."
+          }
+        ]
+      }
+    },
+    {
+      "id": "reorder-swapped-plain-ingredients",
+      "category": "reorder",
+      "source": "flatbread",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Ingredient lines are out of order.",
+      "output": {
+        "title": "Pain plat à la poêle",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BR01",
+            "text": "2 cups farine"
+          },
+          {
+            "id": "ing_0000000000000000000000BR02",
+            "text": "1 pinch de sel"
+          },
+          {
+            "id": "ing_0000000000000000000000BR03",
+            "text": "1 cup eau tiède"
+          },
+          {
+            "id": "ing_0000000000000000000000BR05",
+            "text": "sel en flocons"
+          },
+          {
+            "id": "ing_0000000000000000000000BR04",
+            "text": "huile d'olive"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Mélanger la farine et le sel."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer l'eau et pétrir pendant 2 minutes."
+          },
+          {
+            "step": 3,
+            "text": "Laisser reposer la pâte 25 minutes."
+          },
+          {
+            "step": 4,
+            "text": "Cuire dans une poêle huilée."
+          },
+          {
+            "step": 5,
+            "text": "Saupoudrer de sel en flocons."
+          }
+        ]
+      }
+    },
+    {
+      "id": "reorder-swapped-plain-steps",
+      "category": "reorder",
+      "source": "flatbread",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Steps are out of order.",
+      "output": {
+        "title": "Pain plat à la poêle",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BR01",
+            "text": "2 cups farine"
+          },
+          {
+            "id": "ing_0000000000000000000000BR02",
+            "text": "1 pinch de sel"
+          },
+          {
+            "id": "ing_0000000000000000000000BR03",
+            "text": "1 cup eau tiède"
+          },
+          {
+            "id": "ing_0000000000000000000000BR04",
+            "text": "huile d'olive"
+          },
+          {
+            "id": "ing_0000000000000000000000BR05",
+            "text": "sel en flocons"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Mélanger la farine et le sel."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer l'eau et pétrir pendant 2 minutes."
+          },
+          {
+            "step": 3,
+            "text": "Laisser reposer la pâte 25 minutes."
+          },
+          {
+            "step": 5,
+            "text": "Saupoudrer de sel en flocons."
+          },
+          {
+            "step": 4,
+            "text": "Cuire dans une poêle huilée."
+          }
+        ]
+      }
+    },
+    {
+      "id": "missing-id-field",
+      "category": "missing-id",
+      "source": "flatbread",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Ingredient 4 has no id.",
+      "output": {
+        "title": "Pain plat à la poêle",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BR01",
+            "text": "2 cups farine"
+          },
+          {
+            "id": "ing_0000000000000000000000BR02",
+            "text": "1 pinch de sel"
+          },
+          {
+            "id": "ing_0000000000000000000000BR03",
+            "text": "1 cup eau tiède"
+          },
+          {
+            "text": "huile d'olive"
+          },
+          {
+            "id": "ing_0000000000000000000000BR05",
+            "text": "sel en flocons"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Mélanger la farine et le sel."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer l'eau et pétrir pendant 2 minutes."
+          },
+          {
+            "step": 3,
+            "text": "Laisser reposer la pâte 25 minutes."
+          },
+          {
+            "step": 4,
+            "text": "Cuire dans une poêle huilée."
+          },
+          {
+            "step": 5,
+            "text": "Saupoudrer de sel en flocons."
+          }
+        ]
+      }
+    },
+    {
+      "id": "missing-id-duplicated",
+      "category": "missing-id",
+      "source": "flatbread",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Ingredient id ing_0000000000000000000000BR04 is missing.",
+      "output": {
+        "title": "Pain plat à la poêle",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000BR01",
+            "text": "2 cups farine"
+          },
+          {
+            "id": "ing_0000000000000000000000BR02",
+            "text": "1 pinch de sel"
+          },
+          {
+            "id": "ing_0000000000000000000000BR03",
+            "text": "1 cup eau tiède"
+          },
+          {
+            "id": "ing_0000000000000000000000BR03",
+            "text": "huile d'olive"
+          },
+          {
+            "id": "ing_0000000000000000000000BR05",
+            "text": "sel en flocons"
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "text": "Mélanger la farine et le sel."
+          },
+          {
+            "step": 2,
+            "text": "Incorporer l'eau et pétrir pendant 2 minutes."
+          },
+          {
+            "step": 3,
+            "text": "Laisser reposer la pâte 25 minutes."
+          },
+          {
+            "step": 4,
+            "text": "Cuire dans une poêle huilée."
+          },
+          {
+            "step": 5,
+            "text": "Saupoudrer de sel en flocons."
+          }
+        ]
+      }
+    },
+    {
+      "id": "malformed-not-json",
+      "category": "malformed",
+      "source": "shrimp",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Local Ollama returned JSON that failed schema validation.",
+      "content": "Voici la recette traduite : Crevettes au beurre à l'ail..."
+    },
+    {
+      "id": "malformed-missing-instructions",
+      "category": "malformed",
+      "source": "shrimp",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Local Ollama returned JSON that failed schema validation.",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          {
+            "id": "ing_0000000000000000000000SH01",
+            "text": "1 lb crevettes, décortiquées"
+          },
+          {
+            "id": "ing_0000000000000000000000SH02",
+            "text": "3 tbsp beurre (doux)"
+          },
+          {
+            "id": "ing_0000000000000000000000SH03",
+            "text": "4 cloves ail, haché"
+          },
+          {
+            "id": "ing_0000000000000000000000SH04",
+            "text": "½ tsp sel"
+          },
+          {
+            "id": "ing_0000000000000000000000SH05",
+            "text": "1-2 tbsp persil frais, haché"
+          }
+        ]
+      }
+    },
+    {
+      "id": "malformed-plain-string-lines",
+      "category": "malformed",
+      "source": "shrimp",
+      "language": "French",
+      "expect": "failed",
+      "problem": "Local Ollama returned JSON that failed schema validation.",
+      "output": {
+        "title": "Crevettes au beurre à l'ail",
+        "ingredients": [
+          "1 lb crevettes, décortiquées",
+          "3 tbsp beurre (doux)",
+          "4 cloves ail, haché",
+          "½ tsp sel",
+          "1-2 tbsp persil frais, haché"
+        ],
+        "instructions": [
+          "Faire fondre le beurre dans une grande poêle à feu moyen.",
+          "Ajouter l'ail et cuire 1 minute.",
+          "Ajouter les crevettes et cuire 2-3 minutes de chaque côté."
+        ]
+      }
+    }
+  ]
+}

@@ -92,6 +92,24 @@ export const ratingSchema = z.union([
 	z.null(),
 ]);
 
+/**
+ * Present only on a translated recipe. `original` is the whole recipe text the
+ * translation replaced, with each ingredient's id and structured identity, so revert
+ * restores it exactly. `acceptedHash` fingerprints the text as accepted, so later edits
+ * can be detected. Optional, so existing files stay valid at schemaVersion 2.
+ */
+export const recipeTranslationSchema = z.object({
+	language: z.string().min(1),
+	translatedAt: z.string().min(1),
+	promptVersion: z.string().min(1),
+	original: z.object({
+		title: z.string().min(1),
+		ingredients: z.array(recipeIngredientSchema),
+		instructions: z.array(z.string()),
+	}),
+	acceptedHash: z.string().min(1),
+});
+
 export const recipeFrontmatterSchema = z.object({
 	schemaVersion: z.literal(RECIPE_SCHEMA_VERSION),
 	type: z.literal(RECIPE_TYPE),
@@ -112,6 +130,8 @@ export const recipeFrontmatterSchema = z.object({
 	images: z.array(recipeImageSchema).max(5).default([]),
 	ingredients: z.array(recipeIngredientSchema).default([]),
 	bodyHash: z.string().optional(),
+	// Keep last: bodyHash is computed over key order, and new keys are appended.
+	translation: recipeTranslationSchema.optional(),
 });
 
 export type ExtractionMethod = z.infer<typeof extractionMethodSchema>;
@@ -121,6 +141,7 @@ export type RecipeImage = z.infer<typeof recipeImageSchema>;
 export type RecipeIngredient = z.infer<typeof recipeIngredientSchema>;
 export type RecipeFrontmatter = z.infer<typeof recipeFrontmatterSchema>;
 export type RecipeRating = z.infer<typeof ratingSchema>;
+export type RecipeTranslation = z.infer<typeof recipeTranslationSchema>;
 
 export interface RecipeDocument {
 	frontmatter: RecipeFrontmatter;

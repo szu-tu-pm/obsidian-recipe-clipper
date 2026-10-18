@@ -25,12 +25,14 @@ import { filterRecipes, type RatingFilter } from "./filterRecipes";
 import { downloadSourceImage, ensureHttpsUrl, importRecipePage } from "./importRecipePage";
 import { RecipeEditorModal } from "./RecipeEditorModal";
 import { RegenerateListDialog, ShoppingListView } from "./ShoppingListView";
+import { TranslateRecipeModal } from "./TranslateRecipeModal";
 import { useEscapeToClose } from "./useEscapeToClose";
 
 export function CollectionView({
 	importPage = importRecipePage,
 	downloadImage = (url: string) => downloadSourceImage(url),
 	notify = () => undefined,
+	translationFetch,
 }: {
 	importPage?: (
 		url: string,
@@ -40,6 +42,7 @@ export function CollectionView({
 	) => Promise<UrlExtractionResult>;
 	downloadImage?: (url: string) => Promise<ArrayBuffer | null>;
 	notify?: (message: string) => void;
+	translationFetch?: typeof fetch;
 } = {}): JSX.Element {
 	const services = usePluginServices();
 	const recipes = useRecipeIndex();
@@ -47,6 +50,7 @@ export function CollectionView({
 	const [rating, setRating] = useState<RatingFilter>("any");
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [editor, setEditor] = useState<RecipeDocument | null | "new">(null);
+	const [translating, setTranslating] = useState<RecipeDocument | null>(null);
 	const [pendingDelete, setPendingDelete] = useState<RecipeIndexEntry | null>(null);
 	const [shoppingList, setShoppingList] = useState<ShoppingListDocument | null>(null);
 	const [savedLists, setSavedLists] = useState<ShoppingListDocument[]>([]);
@@ -93,6 +97,15 @@ export function CollectionView({
 			return;
 		}
 		setEditor(loaded.recipe);
+	}
+
+	async function openTranslation(id: string): Promise<void> {
+		const loaded = await services.loadRecipe(id);
+		if (!loaded.ok) {
+			setStatus(loaded.message);
+			return;
+		}
+		setTranslating(loaded.recipe);
 	}
 
 	function openImport(): void {
@@ -495,6 +508,9 @@ export function CollectionView({
 									<button type="button" onClick={() => void openEditor(recipe.id)}>
 										Edit
 									</button>
+									<button type="button" onClick={() => void openTranslation(recipe.id)}>
+										Translate
+									</button>
 									<button type="button" onClick={() => setPendingDelete(recipe)}>
 										Delete
 									</button>
@@ -543,6 +559,21 @@ export function CollectionView({
 					services={services}
 					initial={editor === "new" ? null : editor}
 					onClose={() => setEditor(null)}
+				/>
+			) : null}
+
+			{translating ? (
+				<TranslateRecipeModal
+					services={services}
+					recipe={translating}
+					fetchImpl={translationFetch}
+					onClose={(notice) => {
+						setTranslating(null);
+						if (notice) {
+							setStatus(notice);
+							notify(notice);
+						}
+					}}
 				/>
 			) : null}
 

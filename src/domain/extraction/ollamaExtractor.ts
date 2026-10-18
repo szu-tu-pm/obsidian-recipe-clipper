@@ -168,7 +168,7 @@ export function groundOllamaExtraction(
 	};
 }
 
-function parseModelContent(content: string): unknown {
+export function parseModelContent(content: string): unknown {
 	const trimmed = content
 		.trim()
 		.replace(/^```(?:json)?/i, "")
@@ -177,7 +177,7 @@ function parseModelContent(content: string): unknown {
 	return JSON.parse(trimmed);
 }
 
-async function request(
+export async function requestWithTimeout(
 	fetchImpl: typeof fetch,
 	url: string,
 	timeoutMs: number,
@@ -202,7 +202,7 @@ async function request(
 	}
 }
 
-function isAbortError(error: unknown): boolean {
+export function isAbortError(error: unknown): boolean {
 	return (
 		(error instanceof DOMException && error.name === "AbortError") ||
 		(error instanceof Error && error.name === "AbortError")
@@ -226,7 +226,7 @@ export async function extractWithOllama(
 	const fetchImpl = options.fetchImpl ?? fetch;
 	const model = resolveOllamaModel(options);
 	try {
-		const health = await request(
+		const health = await requestWithTimeout(
 			fetchImpl,
 			`${endpoint}/api/tags`,
 			options.healthCheckMs,
@@ -237,7 +237,7 @@ export async function extractWithOllama(
 			return { fields: null, warnings, cancelled: false };
 		}
 		const body = buildOllamaChatBody(model, pageUrl, sourceText);
-		const chat = await request(fetchImpl, `${endpoint}/api/chat`, options.timeoutMs, options.signal, {
+		const chat = await requestWithTimeout(fetchImpl, `${endpoint}/api/chat`, options.timeoutMs, options.signal, {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify(body),
