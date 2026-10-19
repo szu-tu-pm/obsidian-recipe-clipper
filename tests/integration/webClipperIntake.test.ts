@@ -800,6 +800,23 @@ describe("guarded review save", () => {
 		expect(listPendingWebClips(vault, "Recipes", "Recipes/_attachments")).toHaveLength(1);
 	});
 
+	it("accepts a read-back that only differs by CRLF", async () => {
+		const { vault, loaded } = await openClip();
+		const crlf = Object.create(vault) as ClipVault;
+		crlf.write = async (target: string, content: string) => {
+			await vault.write(target, content.replace(/\n/g, "\r\n"));
+		};
+		crlf.read = (target: string) => vault.read(target);
+		const outcome = await saveReviewedWebClip(
+			crlf,
+			clipYamlCodec,
+			path,
+			loaded.revision,
+			draftOf(loaded.review),
+		);
+		expect(outcome.status).toBe("saved");
+	});
+
 	it("restores the original clip when the note does not read back as written", async () => {
 		const { vault, loaded } = await openClip();
 		const original = await vault.read(path);
@@ -825,5 +842,82 @@ describe("guarded review save", () => {
 		const outcome = await saveReviewedWebClip(broken, clipYamlCodec, path, loaded.revision, draftOf(loaded.review));
 		expect(outcome.status).toBe("failed");
 		expect(outcome.status === "failed" && outcome.message).toMatch(/could not be restored/);
+	});
+
+	it("names a write failure that is not an Error and restores the clip", async () => {
+		const { vault, loaded } = await openClip();
+		const original = await vault.read(path);
+		const broken = Object.create(vault) as ClipVault;
+		let calls = 0;
+		broken.write = async (target: string, content: string) => {
+			calls += 1;
+			if (calls === 1) {
+				throw "disk full";
+			}
+			await vault.write(target, content);
+		};
+		broken.read = (target: string) => vault.read(target);
+		const outcome = await saveReviewedWebClip(broken, clipYamlCodec, path, loaded.revision, draftOf(loaded.review));
+		expect(outcome).toMatchObject({
+			status: "failed",
+			message: expect.stringContaining("The note could not be written."),
+		});
+		expect(outcome.status === "failed" && outcome.message).toMatch(/unchanged and still needs review/);
+		expect(await vault.read(path)).toBe(original);
+	});
+});
+
+describe("odd clip values", () => {
+	it("keeps a clip whose fields are numbers, blanks, or objects", async () => {
+		const frontmatter = {
+			type: WEB_CLIP_TYPE,
+			title: "   ",
+			pageTitle: null,
+			sourceUrl: "not a url",
+			clippedAt: "yesterday",
+			author: { name: 4 },
+			publisher: "[object Object]",
+			imageUrl: { caption: "no url" },
+			recipeYield: 4,
+			prepTime: "   ",
+			cookTime: "",
+			siteName: 12,
+			instructionTypes: "HowToSection",
+		};
+		const body = [
+			"## Ingredients",
+			"- {not json",
+			'- {"name":"salt"}',
+			"### Instruction items",
+			"1. [object Object]",
+			"2. [object Object]",
+			'3. [{"text":1},5]',
+		].join("\n");
+		const markdown = `---\n${JSON.stringify(frontmatter)}\n---\n${body}\n`;
+		const result = webClipToReviewResult({
+			markdown,
+			path: "Recipes/odd-clip.md",
+			yaml: clipYamlCodec,
+			now: () => NOW,
+		});
+		expect(result.warnings).toEqual(
+			expect.arrayContaining([
+				"The clipped source URL is not an http(s) address and was not kept.",
+				"Title was not on the page.",
+				"1 clipped ingredient entry could not be read. Add it in review.",
+				"3 clipped steps could not be read. Add them in review.",
+			]),
+		);
+		const draft = draftOf(result);
+		expect(draft.frontmatter.title).toBe("Untitled recipe");
+		expect(draft.frontmatter.author).toBe("4");
+		expect(draft.frontmatter.siteName).toBe("12");
+		expect(draft.frontmatter.importedAt).toBe(NOW);
+
+		const vault = new ClipVault();
+		await vault.write("Recipes/odd-clip.md", markdown);
+		expect(listPendingWebClips(vault, "Recipes", "Recipes/_attachments")).toEqual([
+			{ path: "Recipes/odd-clip.md", title: "odd-clip" },
+		]);
 	});
 });
