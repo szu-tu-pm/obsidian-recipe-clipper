@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { YamlCodec } from "../../src/domain/schema/recipeMarkdown";
+import { splitFrontmatter, type YamlCodec } from "../../src/domain/schema/recipeMarkdown";
 import { InMemoryVault } from "../../src/domain/vault/inMemoryVault";
 import type { CachedFrontmatter } from "../../src/domain/vault/vaultPort";
 
@@ -45,7 +45,7 @@ export function loadTemplate(path = TEMPLATE_PATH): WebClipperTemplate {
 export const LEGACY_TEMPLATE_PATH = join(FIXTURE_DIR, "legacy-bare-keys.web-clipper.json");
 
 export function loadClip(name: FixtureName): string {
-	return readFileSync(join(FIXTURE_DIR, `${name}.md`), "utf8");
+	return readFileSync(join(FIXTURE_DIR, `${name}.md`), "utf8").replace(/\r\n/g, "\n");
 }
 
 export function loadSource(name: FixtureName): ClipSource {
@@ -280,15 +280,12 @@ export const clipYamlCodec: YamlCodec = {
 };
 
 function frontmatterOf(markdown: string): Record<string, unknown> | null {
-	if (!markdown.startsWith("---\n")) {
-		return null;
-	}
-	const end = markdown.indexOf("\n---", 3);
-	if (end === -1) {
+	const { yaml } = splitFrontmatter(markdown);
+	if (!yaml) {
 		return null;
 	}
 	try {
-		return clipYamlCodec.parse(markdown.slice(4, end)) as Record<string, unknown>;
+		return clipYamlCodec.parse(yaml) as Record<string, unknown>;
 	} catch {
 		return null;
 	}

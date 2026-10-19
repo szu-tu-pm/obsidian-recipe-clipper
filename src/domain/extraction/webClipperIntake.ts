@@ -619,6 +619,10 @@ export const CLIP_CHANGED_MESSAGE =
  * exactly, the original clip text is written back, so a failed save never
  * leaves a partial note.
  */
+function sameNoteText(left: string, right: string): boolean {
+	return left.replace(/\r\n/g, "\n") === right.replace(/\r\n/g, "\n");
+}
+
 export async function saveReviewedWebClip(
 	vault: VaultPort,
 	yaml: YamlCodec,
@@ -645,7 +649,7 @@ export async function saveReviewedWebClip(
 	const markdown = serializeRecipeFile(next, yaml);
 	try {
 		await vault.write(path, markdown);
-		if ((await vault.read(path)) !== markdown) {
+		if (!sameNoteText(await vault.read(path), markdown)) {
 			throw new Error("The saved note did not read back as written.");
 		}
 		return { status: "saved", recipe: next };
@@ -654,7 +658,7 @@ export async function saveReviewedWebClip(
 		let restored = false;
 		try {
 			await vault.write(path, original);
-			restored = (await vault.read(path)) === original;
+			restored = sameNoteText(await vault.read(path), original);
 		} catch {
 			restored = false;
 		}
