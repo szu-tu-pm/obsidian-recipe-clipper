@@ -1,5 +1,14 @@
+import { useState } from "react";
 import type { RecipeImage } from "../../domain/schema/recipeSchema";
 import { MAX_RECIPE_IMAGES } from "../../domain/vault/attachmentManager";
+
+function GalleryPhoto({ url, alt }: { url: string | null; alt: string }): JSX.Element {
+	const [missing, setMissing] = useState(false);
+	if (!url || missing) {
+		return <div className="recipe-clipper-gallery-missing">Missing file</div>;
+	}
+	return <img src={url} alt={alt} onError={() => setMissing(true)} />;
+}
 
 export function ImageGalleryPicker({
 	images,
@@ -55,11 +64,7 @@ export function ImageGalleryPicker({
 					const url = resolveUrl(image.path);
 					return (
 						<li key={image.path} className="recipe-clipper-gallery-item">
-							{url ? (
-								<img src={url} alt={image.alt || "Recipe photo"} />
-							) : (
-								<div className="recipe-clipper-gallery-missing">Missing file</div>
-							)}
+							<GalleryPhoto url={url} alt={image.alt || "Recipe photo"} />
 							<label>
 								Alt text
 								<input

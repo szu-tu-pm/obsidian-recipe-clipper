@@ -7,7 +7,8 @@ import type { ExistingSourceRecipe } from "../domain/extraction/types";
 import type { RecipeDocument, RecipeImage } from "../domain/schema/recipeSchema";
 import type { ShoppingListDocument } from "../domain/schema/shoppingListSchema";
 import type { RecipeIndexEntry } from "../domain/vault/recipeIndexer";
-import type { RecipeLoadResult } from "../domain/vault/recipeRepository";
+import type { RecipeFileDiagnostic, RecipeLoadResult } from "../domain/vault/recipeRepository";
+import { VaultFilePreservedError } from "../domain/vault/safeWrite";
 import type { ShoppingListLoadResult } from "../domain/vault/shoppingListRepository";
 import { DEFAULT_SETTINGS, type RecipePluginSettings } from "../pluginSettings";
 
@@ -24,6 +25,7 @@ export type VaultChangeListener = (event: VaultChangeEvent) => void;
 export interface RecipeWorkspace {
 	listRecipes(): RecipeIndexEntry[];
 	loadRecipe(id: string): Promise<RecipeLoadResult>;
+	listRecipeDiagnostics(): Promise<RecipeFileDiagnostic[]>;
 	saveRecipe(recipe: RecipeDocument): Promise<RecipeDocument>;
 	deleteRecipe(id: string): Promise<void>;
 	saveShoppingList(list: ShoppingListDocument): Promise<ShoppingListDocument>;
@@ -58,6 +60,7 @@ export interface PluginServices {
 	/** Save a reviewed clip only over the revision that was reviewed. */
 	saveClipReview(path: string, revision: string, recipe: RecipeDocument): Promise<WebClipSaveOutcome>;
 	loadRecipe(id: string): Promise<RecipeLoadResult>;
+	listRecipeDiagnostics(): Promise<RecipeFileDiagnostic[]>;
 	saveRecipe(recipe: RecipeDocument): Promise<RecipeDocument | null>;
 	deleteRecipe(id: string): Promise<void>;
 	saveShoppingList(list: ShoppingListDocument): Promise<ShoppingListDocument | null>;
@@ -199,6 +202,18 @@ export class PluginServiceAdapter implements PluginServices {
 		}
 	}
 
+	async listRecipeDiagnostics(): Promise<RecipeFileDiagnostic[]> {
+		if (this.disposed || !this.workspace) {
+			return [];
+		}
+		try {
+			return await this.workspace.listRecipeDiagnostics();
+		} catch (error) {
+			this.host.logError("Failed to read recipe diagnostics", error);
+			return [];
+		}
+	}
+
 	async saveRecipe(recipe: RecipeDocument): Promise<RecipeDocument | null> {
 		if (this.disposed || !this.workspace) {
 			return null;
@@ -211,6 +226,9 @@ export class PluginServiceAdapter implements PluginServices {
 			return saved;
 		} catch (error) {
 			this.host.logError("Failed to save recipe", error);
+			if (error instanceof VaultFilePreservedError) {
+				throw error;
+			}
 			return null;
 		}
 	}
@@ -237,6 +255,9 @@ export class PluginServiceAdapter implements PluginServices {
 			return await this.workspace.saveShoppingList(list);
 		} catch (error) {
 			this.host.logError("Failed to save shopping list", error);
+			if (error instanceof VaultFilePreservedError) {
+				throw error;
+			}
 			return null;
 		}
 	}

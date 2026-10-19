@@ -77,6 +77,7 @@ export function CollectionView({
 		message: string;
 	} | null>(null);
 	const [progress, setProgress] = useState<ImportSessionSnapshot | null>(null);
+	const [fileProblems, setFileProblems] = useState<{ path: string; message: string }[]>([]);
 	const sessionRef = useRef<ImportSession | null>(null);
 	const stopSession = useRef<(() => void) | null>(null);
 	const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -142,6 +143,25 @@ export function CollectionView({
 		});
 		return () => {
 			cancelled = true;
+		};
+	}, [services]);
+
+	useEffect(() => {
+		let cancelled = false;
+		function refreshProblems(): void {
+			void services.listRecipeDiagnostics().then((problems) => {
+				if (!cancelled) {
+					setFileProblems(problems);
+				}
+			});
+		}
+		refreshProblems();
+		const stop = services.subscribeVaultChanges(() => {
+			refreshProblems();
+		});
+		return () => {
+			cancelled = true;
+			stop();
 		};
 	}, [services]);
 
@@ -300,7 +320,15 @@ export function CollectionView({
 	}
 
 	async function writeShoppingList(next: ShoppingListDocument, revision: number): Promise<void> {
-		const saved = await services.saveShoppingList(next);
+		let saved: ShoppingListDocument | null;
+		try {
+			saved = await services.saveShoppingList(next);
+		} catch (caught) {
+			if (saveRevision.current === revision) {
+				setStatus(caught instanceof Error ? caught.message : "Could not save the shopping list.");
+			}
+			return;
+		}
 		if (!saved) {
 			if (saveRevision.current === revision) {
 				setStatus("Could not save the shopping list.");
@@ -536,6 +564,16 @@ export function CollectionView({
 				</p>
 			) : null}
 
+			{fileProblems.length > 0 ? (
+				<ul className="recipe-clipper-error" role="alert">
+					{fileProblems.map((problem) => (
+						<li key={problem.path}>
+							{problem.path}: {problem.message} The file was not changed.
+						</li>
+					))}
+				</ul>
+			) : null}
+
 			{recipes.length === 0 ? (
 				<div className="recipe-clipper-empty">
 					<p>No recipes yet.</p>
@@ -572,17 +610,7 @@ export function CollectionView({
 										Select {recipe.title} for shopping list
 									</span>
 								</label>
-								{coverUrl ? (
-									<img
-										className="recipe-clipper-cover"
-										src={coverUrl}
-										alt=""
-									/>
-								) : (
-									<div className="recipe-clipper-cover recipe-clipper-cover-empty">
-										No cover
-									</div>
-								)}
+								<RecipeCover src={coverUrl} />
 								<div className="recipe-clipper-recipe-copy">
 									<button
 										type="button"
@@ -719,6 +747,20 @@ export function CollectionView({
 				/>
 			) : null}
 		</div>
+	);
+}
+
+function RecipeCover({ src }: { src: string | null }): JSX.Element {
+	const [missing, setMissing] = useState(false);
+	if (!src || missing) {
+		return (
+			<div className="recipe-clipper-cover recipe-clipper-cover-empty">
+				{missing ? "Missing file" : "No cover"}
+			</div>
+		);
+	}
+	return (
+		<img className="recipe-clipper-cover" src={src} alt="" onError={() => setMissing(true)} />
 	);
 }
 

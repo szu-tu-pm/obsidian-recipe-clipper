@@ -219,6 +219,7 @@ export default class RecipePlugin extends Plugin {
 				}
 				return this.repository.loadById(id);
 			},
+			listRecipeDiagnostics: () => this.repository?.listUnreadable() ?? Promise.resolve([]),
 			saveRecipe: (recipe) => {
 				if (!this.repository) {
 					return Promise.reject(new Error("Recipe repository is unavailable."));

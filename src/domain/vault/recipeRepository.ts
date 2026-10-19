@@ -9,7 +9,13 @@ import {
 	type RecipeDocument,
 } from "../schema/recipeSchema";
 import type { RecipeIndexer } from "./recipeIndexer";
+import { replaceTextFile, VaultFilePreservedError } from "./safeWrite";
 import type { VaultPort } from "./vaultPort";
+
+export interface RecipeFileDiagnostic {
+	path: string;
+	message: string;
+}
 
 export type RecipeLoadResult =
 	| { ok: true; recipe: RecipeDocument }
@@ -70,9 +76,41 @@ export class RecipeRepository {
 			editedExternally: false,
 		};
 		const path = recipe.path ?? (await this.nextPath(next.frontmatter.title, next.frontmatter.id));
+		await this.refuseUnreadableTarget(path, next.frontmatter.id);
 		const markdown = serializeRecipeFile({ ...next, path }, this.yaml);
-		await this.vault.write(path, markdown);
+		await replaceTextFile(this.vault, path, markdown);
 		return { ...next, path };
+	}
+
+	/** Files under the recipes folder that do not parse. Nothing is written. */
+	async listUnreadable(): Promise<RecipeFileDiagnostic[]> {
+		const paths = (await this.vault.list(this.recipesFolder)).filter((path) =>
+			path.endsWith(".md"),
+		);
+		const problems: RecipeFileDiagnostic[] = [];
+		for (const path of paths) {
+			const loaded = await this.loadByPath(path);
+			if (!loaded.ok) {
+				problems.push({ path, message: loaded.message });
+			}
+		}
+		problems.sort((a, b) => a.path.localeCompare(b.path));
+		return problems;
+	}
+
+	private async refuseUnreadableTarget(path: string, recipeId: string): Promise<void> {
+		if (!(await this.vault.exists(path))) {
+			return;
+		}
+		const current = await this.loadByPath(path);
+		if (!current.ok) {
+			throw new VaultFilePreservedError(`Left ${path} unchanged. ${current.message}`);
+		}
+		if (current.recipe.frontmatter.id !== recipeId) {
+			throw new VaultFilePreservedError(
+				`Left ${path} unchanged. It belongs to a different recipe.`,
+			);
+		}
 	}
 
 	async remove(id: string): Promise<void> {

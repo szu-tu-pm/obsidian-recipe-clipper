@@ -8,6 +8,7 @@ import {
 	shoppingListSlug,
 	type ShoppingListDocument,
 } from "../schema/shoppingListSchema";
+import { replaceTextFile, VaultFilePreservedError } from "./safeWrite";
 import type { VaultPort } from "./vaultPort";
 
 export type ShoppingListLoadResult =
@@ -38,8 +39,9 @@ export class ShoppingListRepository {
 			},
 		};
 		const path = await this.nextPath(next);
+		await this.refuseUnreadableTarget(path, next.frontmatter.id);
 		const markdown = serializeShoppingListFile({ ...next, path }, this.yaml);
-		await this.vault.write(path, markdown);
+		await replaceTextFile(this.vault, path, markdown);
 		this.paths.set(next.frontmatter.id, path);
 		return { ...next, path };
 	}
@@ -106,6 +108,21 @@ export class ShoppingListRepository {
 				message: error instanceof Error ? error.message : "Unable to read shopping list file.",
 				raw: null,
 			};
+		}
+	}
+
+	private async refuseUnreadableTarget(path: string, listId: string): Promise<void> {
+		if (!(await this.vault.exists(path))) {
+			return;
+		}
+		const current = await this.loadByPath(path);
+		if (!current.ok) {
+			throw new VaultFilePreservedError(`Left ${path} unchanged. ${current.message}`);
+		}
+		if (current.list.frontmatter.id !== listId) {
+			throw new VaultFilePreservedError(
+				`Left ${path} unchanged. It belongs to a different shopping list.`,
+			);
 		}
 	}
 
