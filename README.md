@@ -6,7 +6,7 @@ This repository is the implementation of the Recipe Project. Phase 1 starts with
 
 ## Requirements
 
-- Node.js 20+
+- Node.js 20.19+
 - Obsidian 1.7.7 or newer on Windows or macOS desktop
 
 ## Build
