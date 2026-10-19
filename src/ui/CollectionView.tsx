@@ -14,7 +14,11 @@ import {
 	type ShoppingListDocument,
 } from "../domain/schema/shoppingListSchema";
 import type { RecipeIndexEntry } from "../domain/vault/recipeIndexer";
-import { usePluginServices, useRecipeIndex } from "../wrapper/WrapperContext";
+import {
+	usePendingWebClips,
+	usePluginServices,
+	useRecipeIndex,
+} from "../wrapper/WrapperContext";
 import type { PluginServices } from "../wrapper/PluginServiceAdapter";
 import { ImportProgressBanner } from "./ImportProgressBanner";
 import { ConfirmDialog } from "./components/ConfirmDialog";
@@ -46,6 +50,7 @@ export function CollectionView({
 } = {}): JSX.Element {
 	const services = usePluginServices();
 	const recipes = useRecipeIndex();
+	const pendingClips = usePendingWebClips();
 	const [query, setQuery] = useState("");
 	const [rating, setRating] = useState<RatingFilter>("any");
 	const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -60,6 +65,13 @@ export function CollectionView({
 	const [urlOpen, setUrlOpen] = useState(false);
 	const [urlValue, setUrlValue] = useState("");
 	const [review, setReview] = useState<UrlExtractionResult | null>(null);
+	const [reviewSource, setReviewSource] = useState<"url" | "web-clip">("url");
+	const [clipReview, setClipReview] = useState<{ path: string; revision: string } | null>(null);
+	const [reviewKey, setReviewKey] = useState(0);
+	const offeredClips = useRef<Set<string>>(new Set());
+	const loadingClip = useRef(false);
+	const reviewRef = useRef<UrlExtractionResult | null>(null);
+	reviewRef.current = review;
 	const [readyImport, setReadyImport] = useState<{
 		result: UrlExtractionResult;
 		message: string;
@@ -171,8 +183,60 @@ export function CollectionView({
 			return;
 		}
 		setReadyImport(null);
+		setClipReview(null);
+		setReviewSource("url");
 		setReview(finished.result);
 	}, [editor, progress]);
+
+	async function openClipReview(path: string, reload = false): Promise<void> {
+		if (loadingClip.current) {
+			return;
+		}
+		loadingClip.current = true;
+		offeredClips.current.add(path);
+		try {
+			const loaded = await services.loadClipReview(path);
+			if (!loaded) {
+				if (reload) {
+					setReview(null);
+					setClipReview(null);
+				}
+				setStatus(`The web clip ${path} could not be read. It still needs review.`);
+				return;
+			}
+			if (reviewRef.current && !reload) {
+				// Another review opened while the clip was loading. Offer the clip again later.
+				offeredClips.current.delete(path);
+				return;
+			}
+			setReviewSource("web-clip");
+			setClipReview({ path: loaded.path, revision: loaded.revision });
+			setReviewKey((key) => key + 1);
+			setReview(loaded.review);
+		} finally {
+			loadingClip.current = false;
+		}
+	}
+
+	// A new web clip opens its review once, when nothing else is open.
+	// A cancelled clip stays listed as needing review instead of reopening.
+	useEffect(() => {
+		if (
+			review ||
+			editor !== null ||
+			urlOpen ||
+			progress ||
+			readyImport ||
+			pendingDelete ||
+			shoppingList
+		) {
+			return;
+		}
+		const next = pendingClips.find((clip) => !offeredClips.current.has(clip.path));
+		if (next) {
+			void openClipReview(next.path);
+		}
+	}, [pendingClips, review, editor, urlOpen, progress, readyImport, pendingDelete, shoppingList]);
 
 	function startImport(): void {
 		const url = ensureHttpsUrl(urlValue);
@@ -201,6 +265,8 @@ export function CollectionView({
 		if (!readyImport || editor !== null) {
 			return;
 		}
+		setClipReview(null);
+		setReviewSource("url");
 		setReview(readyImport.result);
 		setReadyImport(null);
 	}
@@ -439,6 +505,31 @@ export function CollectionView({
 				/>
 			) : null}
 
+			{pendingClips.length > 0 && !review ? (
+				<div className="recipe-clipper-import-progress" role="status">
+					<p>
+						{pendingClips.length === 1
+							? "1 web clip needs review before it is used as a recipe."
+							: `${pendingClips.length} web clips need review before they are used as recipes.`}
+					</p>
+					<ul>
+						{pendingClips.map((clip) => (
+							<li key={clip.path}>
+								<span>{clip.title}</span>{" "}
+								<button
+									type="button"
+									aria-label={`Review web clip ${clip.title}`}
+									disabled={editor !== null || importing}
+									onClick={() => void openClipReview(clip.path)}
+								>
+									Review
+								</button>
+							</li>
+						))}
+					</ul>
+				</div>
+			) : null}
+
 			{status ? (
 				<p className="recipe-clipper-status" role="status">
 					{status}
@@ -541,11 +632,25 @@ export function CollectionView({
 
 			{review && review.status !== "needs-selection" ? (
 				<ImportReviewModal
+					key={reviewKey}
 					result={review}
 					services={services}
 					downloadImage={downloadImage}
+					source={reviewSource}
+					saveDraft={
+						reviewSource === "web-clip" && clipReview
+							? (draft) =>
+									services.saveClipReview(clipReview.path, clipReview.revision, draft)
+							: undefined
+					}
+					onReload={
+						reviewSource === "web-clip" && clipReview
+							? () => void openClipReview(clipReview.path, true)
+							: undefined
+					}
 					onClose={(notice) => {
 						setReview(null);
+						setClipReview(null);
 						if (notice) {
 							setStatus(notice);
 							notify(notice);

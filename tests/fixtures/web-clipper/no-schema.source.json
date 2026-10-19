@@ -1,0 +1,11 @@
+{
+	"category": "no-schema",
+	"page": {
+		"url": "https://news.example.test/food/market-report",
+		"title": "Saturday market report",
+		"site": "Example News",
+		"author": "",
+		"date": "2026-10-17T09:30:00-07:00"
+	},
+	"recipe": {}
+}

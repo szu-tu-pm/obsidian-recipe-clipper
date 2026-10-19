@@ -1,6 +1,12 @@
 import { useEffect, useId, useState } from "react";
 import { formatSourceAttribution } from "../../domain/extraction/attributionExtractor";
 import { findDuplicateSourceUrls } from "../../domain/extraction/urlClipper";
+import {
+	applyWebClipCorrections,
+	correctionsFromDraft,
+	type WebClipCorrections,
+	type WebClipSaveOutcome,
+} from "../../domain/extraction/webClipperIntake";
 import type {
 	CandidateImage,
 	UrlExtractionFallback,
@@ -28,11 +34,20 @@ export function ImportReviewModal({
 	services,
 	downloadImage,
 	onClose,
+	source = "url",
+	saveDraft,
+	onReload,
 }: {
 	result: ReviewResult;
 	services: PluginServices;
 	downloadImage: (url: string) => Promise<ArrayBuffer | null>;
 	onClose: (notice?: string) => void;
+	/** A web clip is already a note in the vault; its review lets the user correct fields before saving. */
+	source?: "url" | "web-clip";
+	/** Replaces `services.saveRecipe` for the first write, e.g. a guarded web-clip save. */
+	saveDraft?: (draft: RecipeDocument) => Promise<WebClipSaveOutcome>;
+	/** Offered when `saveDraft` reports that the note changed under the review. */
+	onReload?: () => void;
 }): JSX.Element {
 	const headingId = useId();
 	const draft =
@@ -41,7 +56,12 @@ export function ImportReviewModal({
 	const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [changed, setChanged] = useState(false);
 	const manual = result.status === "manual-fallback";
+	const webClip = source === "web-clip";
+	const [corrections, setCorrections] = useState<WebClipCorrections>(() =>
+		correctionsFromDraft(draft),
+	);
 	const duplicates = findDuplicateSourceUrls(
 		draft.frontmatter.sourceUrl,
 		services.listRecipes(),
@@ -76,7 +96,19 @@ export function ImportReviewModal({
 		setBusy(true);
 		setError(null);
 		try {
-			const saved = await services.saveRecipe(draft);
+			const toSave = webClip ? applyWebClipCorrections(draft, corrections) : draft;
+			let saved: RecipeDocument | null;
+			if (saveDraft) {
+				const outcome = await saveDraft(toSave);
+				if (outcome.status !== "saved") {
+					setChanged(outcome.status === "changed");
+					setError(outcome.message);
+					return;
+				}
+				saved = outcome.recipe;
+			} else {
+				saved = await services.saveRecipe(toSave);
+			}
 			if (!saved) {
 				setError("Could not save the recipe.");
 				return;
@@ -122,8 +154,15 @@ export function ImportReviewModal({
 				aria-modal="true"
 				aria-labelledby={headingId}
 			>
-				<h3 id={headingId}>{manual ? "Manual entry" : "Review import"}</h3>
-				{manual ? (
+				<h3 id={headingId}>
+					{webClip ? "Review web clip" : manual ? "Manual entry" : "Review import"}
+				</h3>
+				{webClip ? (
+					<p role="status">
+						{manual ? "This clip has no schema.org recipe data. " : ""}This web clip needs review. It is not used as a recipe, or offered for
+						shopping lists, until you save this review. Missing fields stay empty.
+					</p>
+				) : manual ? (
 					<p role="status">
 						This import did not succeed ({result.reason}). The URL is kept so you can
 						save a manual recipe. Nothing has been written yet.
@@ -195,6 +234,41 @@ export function ImportReviewModal({
 						))}
 					</ol>
 				)}
+				{webClip ? (
+					<div className="recipe-clipper-editor-form">
+						<h4>Correct before saving</h4>
+						<label>
+							Ingredients (one per line)
+							<textarea
+								rows={8}
+								value={corrections.ingredientsText}
+								onChange={(event) =>
+									setCorrections({ ...corrections, ingredientsText: event.target.value })
+								}
+							/>
+						</label>
+						<label>
+							Instructions (one per line)
+							<textarea
+								rows={8}
+								value={corrections.instructionsText}
+								onChange={(event) =>
+									setCorrections({ ...corrections, instructionsText: event.target.value })
+								}
+							/>
+						</label>
+						<label>
+							Cooking methods (comma separated)
+							<input
+								type="text"
+								value={corrections.cookingMethodsText}
+								onChange={(event) =>
+									setCorrections({ ...corrections, cookingMethodsText: event.target.value })
+								}
+							/>
+						</label>
+					</div>
+				) : null}
 				<h4>Source images</h4>
 				{(candidate?.candidateImages.length ?? 0) === 0 ? (
 					<p>Not on the page</p>
@@ -218,9 +292,14 @@ export function ImportReviewModal({
 					</ul>
 				)}
 				{error ? (
-					<p className="recipe-clipper-error" role="alert">
-						{error}
-					</p>
+					<div className="recipe-clipper-error" role="alert">
+						<p>{error}</p>
+						{changed && onReload ? (
+							<button type="button" onClick={onReload} disabled={busy}>
+								Reload clip
+							</button>
+						) : null}
+					</div>
 				) : null}
 				<div className="recipe-clipper-modal-actions">
 					<button

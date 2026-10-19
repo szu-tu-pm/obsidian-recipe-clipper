@@ -1,4 +1,10 @@
 import { Plugin } from "obsidian";
+import {
+	isPendingWebClip,
+	listPendingWebClips,
+	loadWebClipForReview,
+	saveReviewedWebClip,
+} from "./domain/extraction/webClipperIntake";
 import { canvasImageProcessor } from "./domain/vault/canvasImageProcessor";
 import {
 	createObsidianFrontmatterCache,
@@ -31,6 +37,8 @@ export default class RecipePlugin extends Plugin {
 	private attachments: AttachmentManager | null = null;
 	private vaultPort: VaultPort | null = null;
 	private frontmatterCache: FrontmatterCachePort | null = null;
+	/** Clip paths that already opened the recipe view this session. */
+	private announcedClips = new Set<string>();
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -91,9 +99,42 @@ export default class RecipePlugin extends Plugin {
 		});
 		this.registerEvent(
 			this.app.metadataCache.on("resolved", () => {
-				this.requireAdapter().rebuildIndex();
+				const adapter = this.requireAdapter();
+				adapter.rebuildIndex();
+				// Covers clips whose frontmatter was not parsed yet when the layout became ready.
+				if (this.app.workspace.layoutReady) {
+					this.announceClips(adapter.listPendingClips().map((clip) => clip.path));
+				}
 			}),
 		);
+		// A Web Clipper save creates the note before its frontmatter is parsed,
+		// so wait for the metadata change and then open the view to review it.
+		this.registerEvent(
+			this.app.metadataCache.on("changed", (file, _data, cache) => {
+				if (
+					this.app.workspace.layoutReady &&
+					isPendingWebClip(
+						file.path,
+						cache.frontmatter,
+						this.settings.recipesFolder,
+						this.settings.attachmentsFolder,
+					)
+				) {
+					this.announceClips([file.path]);
+				}
+			}),
+		);
+	}
+
+	private announceClips(paths: string[]): void {
+		const fresh = paths.filter((path) => !this.announcedClips.has(path));
+		if (fresh.length === 0) {
+			return;
+		}
+		for (const path of fresh) {
+			this.announcedClips.add(path);
+		}
+		void this.activateView();
 	}
 
 	onunload(): void {
@@ -147,6 +188,7 @@ export default class RecipePlugin extends Plugin {
 		await this.vaultPort.mkdir(this.settings.shoppingListsFolder);
 		await this.vaultPort.mkdir(this.settings.attachmentsFolder);
 		this.requireAdapter().rebuildIndex();
+		this.announceClips(this.requireAdapter().listPendingClips().map((clip) => clip.path));
 	}
 
 	private applyFolderSettings(): void {
@@ -219,6 +261,22 @@ export default class RecipePlugin extends Plugin {
 					this.indexer.rebuildFromCache(this.frontmatterCache);
 				}
 			},
+			listPendingClips: () =>
+				this.frontmatterCache
+					? listPendingWebClips(
+							this.frontmatterCache,
+							this.settings.recipesFolder,
+							this.settings.attachmentsFolder,
+						)
+					: [],
+			loadClipReview: (path, existing) =>
+				this.vaultPort
+					? loadWebClipForReview(this.vaultPort, obsidianYamlCodec, path, existing)
+					: Promise.resolve(null),
+			saveClipReview: (path, revision, recipe) =>
+				this.vaultPort
+					? saveReviewedWebClip(this.vaultPort, obsidianYamlCodec, path, revision, recipe)
+					: Promise.resolve({ status: "failed", message: "Vault is unavailable." }),
 			applyVaultEvent: (event) => {
 				if (this.indexer && this.frontmatterCache) {
 					this.indexer.applyVaultEvent(event, this.frontmatterCache);

@@ -1,3 +1,9 @@
+import type {
+	LoadedWebClip,
+	PendingWebClip,
+	WebClipSaveOutcome,
+} from "../domain/extraction/webClipperIntake";
+import type { ExistingSourceRecipe } from "../domain/extraction/types";
 import type { RecipeDocument, RecipeImage } from "../domain/schema/recipeSchema";
 import type { ShoppingListDocument } from "../domain/schema/shoppingListSchema";
 import type { RecipeIndexEntry } from "../domain/vault/recipeIndexer";
@@ -32,6 +38,12 @@ export interface RecipeWorkspace {
 	removeImage(image: RecipeImage): Promise<void>;
 	rebuildIndex(): void;
 	applyVaultEvent(event: VaultChangeEvent): void;
+	listPendingClips(): PendingWebClip[];
+	loadClipReview(
+		path: string,
+		existing: ExistingSourceRecipe[],
+	): Promise<LoadedWebClip | null>;
+	saveClipReview(path: string, revision: string, recipe: RecipeDocument): Promise<WebClipSaveOutcome>;
 }
 
 export interface PluginServices {
@@ -40,6 +52,11 @@ export interface PluginServices {
 	subscribeVaultChanges(listener: VaultChangeListener): () => void;
 	subscribeRecipes(listener: () => void): () => void;
 	listRecipes(): RecipeIndexEntry[];
+	/** Web clips in the recipes folder that still need review. Changes notify `subscribeRecipes`. */
+	listPendingClips(): PendingWebClip[];
+	loadClipReview(path: string): Promise<LoadedWebClip | null>;
+	/** Save a reviewed clip only over the revision that was reviewed. */
+	saveClipReview(path: string, revision: string, recipe: RecipeDocument): Promise<WebClipSaveOutcome>;
 	loadRecipe(id: string): Promise<RecipeLoadResult>;
 	saveRecipe(recipe: RecipeDocument): Promise<RecipeDocument | null>;
 	deleteRecipe(id: string): Promise<void>;
@@ -65,6 +82,13 @@ export interface PluginServiceHost {
 	logError(message: string, error?: unknown): void;
 }
 
+function samePendingClips(a: PendingWebClip[], b: PendingWebClip[]): boolean {
+	return (
+		a.length === b.length &&
+		a.every((clip, index) => clip.path === b[index]?.path && clip.title === b[index]?.title)
+	);
+}
+
 function copySettings(settings: RecipePluginSettings): RecipePluginSettings {
 	return { ...settings };
 }
@@ -75,6 +99,7 @@ export class PluginServiceAdapter implements PluginServices {
 	private readonly recipeListeners = new Set<() => void>();
 	private settingsSnapshot: RecipePluginSettings;
 	private recipeSnapshot: RecipeIndexEntry[] = [];
+	private clipSnapshot: PendingWebClip[] = [];
 	private unsubscribeHost: (() => void) | null = null;
 	private disposed = false;
 
@@ -107,6 +132,54 @@ export class PluginServiceAdapter implements PluginServices {
 
 	listRecipes(): RecipeIndexEntry[] {
 		return this.recipeSnapshot;
+	}
+
+	listPendingClips(): PendingWebClip[] {
+		return this.clipSnapshot;
+	}
+
+	async loadClipReview(path: string): Promise<LoadedWebClip | null> {
+		if (this.disposed || !this.workspace) {
+			return null;
+		}
+		try {
+			return await this.workspace.loadClipReview(
+				path,
+				this.recipeSnapshot.map((recipe) => ({
+					id: recipe.id,
+					sourceUrl: recipe.sourceUrl,
+					path: recipe.path,
+				})),
+			);
+		} catch (error) {
+			this.host.logError("Failed to read web clip", error);
+			return null;
+		}
+	}
+
+	async saveClipReview(
+		path: string,
+		revision: string,
+		recipe: RecipeDocument,
+	): Promise<WebClipSaveOutcome> {
+		if (this.disposed || !this.workspace) {
+			return { status: "failed", message: "Recipe workspace is unavailable." };
+		}
+		try {
+			const outcome = await this.workspace.saveClipReview(path, revision, recipe);
+			if (outcome.status === "saved") {
+				this.workspace.rebuildIndex();
+				this.refreshRecipeSnapshot();
+				this.emitRecipeListeners();
+			}
+			return outcome;
+		} catch (error) {
+			this.host.logError("Failed to save web clip review", error);
+			return {
+				status: "failed",
+				message: error instanceof Error ? error.message : "Failed to save the web clip review.",
+			};
+		}
 	}
 
 	async loadRecipe(id: string): Promise<RecipeLoadResult> {
@@ -281,6 +354,7 @@ export class PluginServiceAdapter implements PluginServices {
 		this.unsubscribeHost = null;
 		this.settingsSnapshot = copySettings(DEFAULT_SETTINGS);
 		this.recipeSnapshot = [];
+		this.clipSnapshot = [];
 	}
 
 	private handleVaultEvent(event: VaultChangeEvent): void {
@@ -305,6 +379,11 @@ export class PluginServiceAdapter implements PluginServices {
 
 	private refreshRecipeSnapshot(): void {
 		this.recipeSnapshot = this.workspace?.listRecipes() ?? [];
+		const clips = this.workspace?.listPendingClips() ?? [];
+		// Keep the same array while nothing changed so React's external store stays stable.
+		if (!samePendingClips(this.clipSnapshot, clips)) {
+			this.clipSnapshot = clips;
+		}
 	}
 
 	private emitRecipeListeners(): void {

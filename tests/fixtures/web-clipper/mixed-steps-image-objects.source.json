@@ -1,0 +1,26 @@
+{
+	"category": "mixed-steps",
+	"page": {
+		"url": "https://bake.example.com/focaccia",
+		"title": "Focaccia",
+		"site": "Bake",
+		"author": "Ken Page",
+		"date": "2026-10-17T09:30:00-07:00"
+	},
+	"recipe": {
+		"@type": "Recipe",
+		"name": "Focaccia",
+		"author": ["Ken Forkish", "Jo Baker"],
+		"recipeYield": ["1 tray"],
+		"image": [
+			{ "@type": "ImageObject", "url": "https://bake.example.com/a.jpg" },
+			{ "@type": "ImageObject", "url": "https://bake.example.com/b.jpg" }
+		],
+		"recipeIngredient": ["500 g bread flour", "400 ml water", "10 g salt", "1 tsp instant yeast"],
+		"recipeInstructions": [
+			"Mix everything into a shaggy dough.",
+			{ "@type": "HowToStep", "text": "Rest overnight in the fridge." },
+			{ "@type": "HowToStep", "text": "Bake at 230 °C for 25 minutes." }
+		]
+	}
+}

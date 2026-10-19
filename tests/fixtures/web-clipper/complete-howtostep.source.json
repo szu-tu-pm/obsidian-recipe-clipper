@@ -1,0 +1,35 @@
+{
+	"category": "complete",
+	"page": {
+		"url": "https://www.example-kitchen.test/recipes/black-bean-chili",
+		"title": "Black Bean Chili | Example Kitchen",
+		"site": "Example Kitchen",
+		"author": "",
+		"date": "2026-10-17T09:30:00-07:00"
+	},
+	"recipe": {
+		"@type": "Recipe",
+		"name": "Black Bean Chili",
+		"author": [{ "@type": "Person", "name": "Ada Lovelace" }],
+		"publisher": { "@type": "Organization", "name": "Example Kitchen" },
+		"recipeYield": ["4", "4 servings"],
+		"prepTime": "PT15M",
+		"cookTime": "PT1H",
+		"totalTime": "PT1H15M",
+		"cookingMethod": "Simmering",
+		"image": { "@type": "ImageObject", "url": "https://cdn.example-kitchen.test/chili.jpg", "caption": "A bowl of chili" },
+		"recipeIngredient": [
+			"2 Tbsp. olive oil",
+			"1 large onion, diced",
+			"3-4 cloves garlic, minced",
+			"1 ½ cups dried black beans",
+			"400 g chopped tomatoes",
+			"salt to taste"
+		],
+		"recipeInstructions": [
+			{ "@type": "HowToStep", "text": "Warm the oil and soften the onion." },
+			{ "@type": "HowToStep", "text": "Add garlic, beans and tomatoes." },
+			{ "@type": "HowToStep", "text": "Simmer for 1 hour and season." }
+		]
+	}
+}
