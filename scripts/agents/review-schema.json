@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "findings", "unmet_criteria", "summary"],
+  "properties": {
+    "verdict": { "type": "string", "enum": ["approve", "request_changes"] },
+    "summary": { "type": "string" },
+    "unmet_criteria": {
+      "type": "array",
+      "description": "Acceptance criteria that code could satisfy but this diff does not. Exclude gates that need a person.",
+      "items": { "type": "string" }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "file", "line", "issue", "fix"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["blocker", "major", "minor"] },
+          "file": { "type": "string" },
+          "line": { "type": "integer", "description": "0 when the finding is not tied to a line" },
+          "issue": { "type": "string" },
+          "fix": { "type": "string" }
+        }
+      }
+    }
+  }
+}
