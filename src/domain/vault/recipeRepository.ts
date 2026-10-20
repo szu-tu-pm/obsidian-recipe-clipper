@@ -1,6 +1,8 @@
+import { isWebClip } from "../extraction/webClipperIntake";
 import {
 	parseRecipeFile,
 	serializeRecipeFile,
+	splitFrontmatter,
 	type YamlCodec,
 } from "../schema/recipeMarkdown";
 import {
@@ -9,7 +11,13 @@ import {
 	type RecipeDocument,
 } from "../schema/recipeSchema";
 import type { RecipeIndexer } from "./recipeIndexer";
+import { replaceTextFile, VaultFilePreservedError } from "./safeWrite";
 import type { VaultPort } from "./vaultPort";
+
+export interface RecipeFileDiagnostic {
+	path: string;
+	message: string;
+}
 
 export type RecipeLoadResult =
 	| { ok: true; recipe: RecipeDocument }
@@ -70,9 +78,48 @@ export class RecipeRepository {
 			editedExternally: false,
 		};
 		const path = recipe.path ?? (await this.nextPath(next.frontmatter.title, next.frontmatter.id));
+		await this.refuseUnreadableTarget(path, next.frontmatter.id);
 		const markdown = serializeRecipeFile({ ...next, path }, this.yaml);
-		await this.vault.write(path, markdown);
+		await replaceTextFile(this.vault, path, markdown);
 		return { ...next, path };
+	}
+
+	/**
+	 * Recipe notes that do not parse. Pending web clips and attachment files
+	 * are not recipes, and a path still in the index already has valid frontmatter.
+	 * Nothing is written.
+	 */
+	async listUnreadable(): Promise<RecipeFileDiagnostic[]> {
+		const paths = (await this.vault.list(this.recipesFolder)).filter((path) =>
+			this.indexer.isRecipeNotePath(path),
+		);
+		const problems: RecipeFileDiagnostic[] = [];
+		for (const path of paths) {
+			if (this.indexer.getByPath(path)) {
+				continue;
+			}
+			const loaded = await this.loadByPath(path);
+			if (!loaded.ok && !isPendingClipNote(loaded.raw, this.yaml)) {
+				problems.push({ path, message: loaded.message });
+			}
+		}
+		problems.sort((a, b) => a.path.localeCompare(b.path));
+		return problems;
+	}
+
+	private async refuseUnreadableTarget(path: string, recipeId: string): Promise<void> {
+		if (!(await this.vault.exists(path))) {
+			return;
+		}
+		const current = await this.loadByPath(path);
+		if (!current.ok) {
+			throw new VaultFilePreservedError(`Left ${path} unchanged. ${current.message}`);
+		}
+		if (current.recipe.frontmatter.id !== recipeId) {
+			throw new VaultFilePreservedError(
+				`Left ${path} unchanged. It belongs to a different recipe.`,
+			);
+		}
 	}
 
 	async remove(id: string): Promise<void> {
@@ -96,5 +143,21 @@ export class RecipeRepository {
 			return preferred;
 		}
 		return joinVaultPath(this.recipesFolder, `${slug}-${id.slice(4, 10)}.md`);
+	}
+}
+
+/** A web clip is waiting for review. It is not a broken recipe. */
+function isPendingClipNote(raw: string | null, yaml: YamlCodec): boolean {
+	if (!raw) {
+		return false;
+	}
+	try {
+		const { yaml: yamlText } = splitFrontmatter(raw);
+		if (!yamlText) {
+			return false;
+		}
+		return isWebClip(yaml.parse(yamlText));
+	} catch {
+		return false;
 	}
 }

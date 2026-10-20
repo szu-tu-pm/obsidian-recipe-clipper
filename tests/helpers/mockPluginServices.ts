@@ -114,6 +114,7 @@ export function createMockPluginServices(
 			return () => recipeListeners.delete(listener);
 		},
 		listRecipes: () => recipeSnapshot,
+		listRecipeDiagnostics: async () => [],
 		listPendingClips: () => clipSnapshot,
 		loadClipReview: (path) =>
 			loadWebClipForReview(

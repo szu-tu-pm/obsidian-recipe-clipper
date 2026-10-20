@@ -212,6 +212,8 @@ export function RecipeEditorModal({
 			sessionUploads.current = [];
 			setRecipe(saved);
 			onClose();
+		} catch (caught) {
+			setError(caught instanceof Error ? caught.message : "Could not save the recipe.");
 		} finally {
 			setBusy(false);
 		}

@@ -162,6 +162,10 @@ function cancelled(url: string): ImportSessionSnapshot {
 }
 
 function fallbackMessage(result: UrlExtractionFallback): string {
+	const ollama = result.warnings.find((warning) => warning.startsWith("Local Ollama"));
+	if (ollama) {
+		return `${ollama} The URL is kept so you can enter the recipe manually.`;
+	}
 	return `This import did not succeed (${result.reason}). The URL is kept so you can enter the recipe manually.`;
 }
 

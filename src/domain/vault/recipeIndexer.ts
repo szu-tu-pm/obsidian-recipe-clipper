@@ -80,6 +80,11 @@ export class RecipeIndexer {
 		this.attachmentsFolder = attachmentsFolder;
 	}
 
+	/** Recipe notes only. Attachment markdown under the recipes folder is not one. */
+	isRecipeNotePath(path: string): boolean {
+		return isRecipeMarkdownPath(path, this.recipesFolder, this.attachmentsFolder);
+	}
+
 	rebuild(rows: CachedFrontmatter[]): void {
 		this.byId.clear();
 		this.byPath.clear();
