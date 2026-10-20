@@ -133,15 +133,33 @@ export function CollectionView({
 		sessionRef.current?.cancel();
 	}
 
-	useEffect(() => {
-		let cancelled = false;
+	const listRefresh = useRef(0);
+	function refreshSavedLists(): void {
+		const request = ++listRefresh.current;
 		void services.listShoppingLists().then((lists) => {
-			if (!cancelled) {
+			// Only the newest read may update the section; unmount invalidates all of them.
+			if (request === listRefresh.current) {
 				setSavedLists(lists);
 			}
 		});
+	}
+
+	useEffect(() => {
+		refreshSavedLists();
+		const unsubscribe = services.subscribeVaultChanges((event) => {
+			if (event.kind === "metadata") {
+				return;
+			}
+			const folder = services.getSettings().shoppingListsFolder.replace(/^\/+|\/+$/g, "");
+			const inside = (path: string | undefined): boolean =>
+				path !== undefined && path.startsWith(`${folder}/`);
+			if (inside(event.path) || inside(event.previousPath)) {
+				refreshSavedLists();
+			}
+		});
 		return () => {
-			cancelled = true;
+			listRefresh.current += 1;
+			unsubscribe();
 		};
 	}, [services]);
 
@@ -463,7 +481,10 @@ export function CollectionView({
 												setShoppingList(loaded.list);
 												return;
 											}
-											setStatus(loaded.message);
+											setStatus(
+												`The shopping list "${list.frontmatter.title}" could not be opened: ${loaded.message}`,
+											);
+											refreshSavedLists();
 										});
 									}}
 								>
