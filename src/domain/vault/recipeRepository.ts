@@ -1,6 +1,8 @@
+import { isWebClip } from "../extraction/webClipperIntake";
 import {
 	parseRecipeFile,
 	serializeRecipeFile,
+	splitFrontmatter,
 	type YamlCodec,
 } from "../schema/recipeMarkdown";
 import {
@@ -82,15 +84,22 @@ export class RecipeRepository {
 		return { ...next, path };
 	}
 
-	/** Files under the recipes folder that do not parse. Nothing is written. */
+	/**
+	 * Recipe notes that do not parse. Pending web clips and attachment files
+	 * are not recipes, and a path still in the index already has valid frontmatter.
+	 * Nothing is written.
+	 */
 	async listUnreadable(): Promise<RecipeFileDiagnostic[]> {
 		const paths = (await this.vault.list(this.recipesFolder)).filter((path) =>
-			path.endsWith(".md"),
+			this.indexer.isRecipeNotePath(path),
 		);
 		const problems: RecipeFileDiagnostic[] = [];
 		for (const path of paths) {
+			if (this.indexer.getByPath(path)) {
+				continue;
+			}
 			const loaded = await this.loadByPath(path);
-			if (!loaded.ok) {
+			if (!loaded.ok && !isPendingClipNote(loaded.raw, this.yaml)) {
 				problems.push({ path, message: loaded.message });
 			}
 		}
@@ -134,5 +143,21 @@ export class RecipeRepository {
 			return preferred;
 		}
 		return joinVaultPath(this.recipesFolder, `${slug}-${id.slice(4, 10)}.md`);
+	}
+}
+
+/** A web clip is waiting for review. It is not a broken recipe. */
+function isPendingClipNote(raw: string | null, yaml: YamlCodec): boolean {
+	if (!raw) {
+		return false;
+	}
+	try {
+		const { yaml: yamlText } = splitFrontmatter(raw);
+		if (!yamlText) {
+			return false;
+		}
+		return isWebClip(yaml.parse(yamlText));
+	} catch {
+		return false;
 	}
 }

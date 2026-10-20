@@ -66,6 +66,19 @@ describe("edge-case defect corpus", () => {
 		expect(problems[0]?.message.length).toBeGreaterThan(0);
 	});
 
+	it("does not report a pending web clip or an attachment note as a broken recipe", async () => {
+		const vault = new InMemoryVault();
+		const { recipes } = repositories(vault);
+		const clip = `---\n${JSON.stringify({ type: "recipe-clip", title: "Chili" })}\n---\n\nWaiting for review.\n`;
+		await vault.write("Recipes/chili.md", clip);
+		await vault.write("Recipes/_attachments/note.md", "not a recipe\n");
+		await vault.write("Recipes/soup.md", "this is not a recipe\n");
+
+		expect((await recipes.listUnreadable()).map((problem) => problem.path)).toEqual([
+			"Recipes/soup.md",
+		]);
+	});
+
 	it("restores the previous recipe when a vault write fails after changing the file", async () => {
 		const vault = new FailAfterWriteVault();
 		const { recipes } = repositories(vault);

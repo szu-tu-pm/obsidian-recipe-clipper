@@ -148,6 +148,7 @@ export function CollectionView({
 
 	useEffect(() => {
 		let cancelled = false;
+		let timer: ReturnType<typeof setTimeout> | null = null;
 		function refreshProblems(): void {
 			void services.listRecipeDiagnostics().then((problems) => {
 				if (!cancelled) {
@@ -157,10 +158,19 @@ export function CollectionView({
 		}
 		refreshProblems();
 		const stop = services.subscribeVaultChanges(() => {
-			refreshProblems();
+			if (timer) {
+				clearTimeout(timer);
+			}
+			timer = setTimeout(() => {
+				timer = null;
+				refreshProblems();
+			}, 250);
 		});
 		return () => {
 			cancelled = true;
+			if (timer) {
+				clearTimeout(timer);
+			}
 			stop();
 		};
 	}, [services]);
