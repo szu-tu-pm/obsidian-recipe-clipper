@@ -581,8 +581,10 @@ export async function translateWithOllama(
 			options.signal,
 		);
 		if (!health.ok) {
+			health.cleanup?.();
 			return failed("Local Ollama is not reachable.");
 		}
+		await health.text().catch(() => "");
 		const body = buildTranslationChatBody(options.model, language, source);
 		const chat = await requestWithTimeout(
 			fetchImpl,
@@ -596,6 +598,7 @@ export async function translateWithOllama(
 			},
 		);
 		if (!chat.ok) {
+			chat.cleanup?.();
 			return failed("Local Ollama rejected the translation request.");
 		}
 		const payload = (await chat.json()) as { message?: { content?: unknown } };

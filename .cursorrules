@@ -4,7 +4,7 @@ Obsidian desktop plugin. TypeScript, React 18, Zod, Vitest. Read `AGENTS.md` and
 
 ## Boundaries
 
-- `src/ui` and `src/domain` do not import `obsidian`. Talk to the app through `PluginServiceAdapter`.
+- `src/ui` and core domain logic do not import `obsidian` (only `src/domain/vault/obsidianVault.ts` implements `VaultPort` against Obsidian). Talk to the app through `PluginServiceAdapter`.
 - Build only what the task's deliverables and acceptance criteria ask for. Put files at the paths those deliverables name.
 - Every acceptance criterion code can satisfy needs a test that fails without the change. Tests stay deterministic and offline. Live Ollama checks belong in a script CI does not run.
 - Do not weaken CI, coverage thresholds, or eval gates to make a change pass.
