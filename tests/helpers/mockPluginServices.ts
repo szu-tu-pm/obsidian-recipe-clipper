@@ -15,6 +15,7 @@ import type { RecipeIndexEntry } from "../../src/domain/vault/recipeIndexer";
 import { DEFAULT_SETTINGS, type RecipePluginSettings } from "../../src/pluginSettings";
 import type {
 	PluginServices,
+	VaultChangeEvent,
 	VaultChangeListener,
 } from "../../src/wrapper/PluginServiceAdapter";
 
@@ -47,6 +48,9 @@ function indexEntry(recipe: RecipeDocument): RecipeIndexEntry {
 export interface MockPluginServices extends PluginServices {
 	removedImages: string[];
 	shoppingLists: ShoppingListDocument[];
+	/** Deliver a vault event to every current subscriber, like the real adapter does. */
+	emitVaultChange(event: VaultChangeEvent): void;
+	vaultListenerCount(): number;
 }
 
 export function createMockPluginServices(
@@ -211,6 +215,12 @@ export function createMockPluginServices(
 		openSettings: () => {},
 		removedImages,
 		shoppingLists,
+		emitVaultChange: (event) => {
+			for (const listener of [...vaultListeners]) {
+				listener(event);
+			}
+		},
+		vaultListenerCount: () => vaultListeners.size,
 	};
 }
 

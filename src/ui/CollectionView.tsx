@@ -134,15 +134,33 @@ export function CollectionView({
 		sessionRef.current?.cancel();
 	}
 
-	useEffect(() => {
-		let cancelled = false;
-		void services.listShoppingLists().then((lists) => {
-			if (!cancelled) {
+	const listRefresh = useRef(0);
+	function refreshSavedLists(): Promise<void> {
+		const request = ++listRefresh.current;
+		return services.listShoppingLists().then((lists) => {
+			// Only the newest read may update the section; unmount invalidates all of them.
+			if (request === listRefresh.current) {
 				setSavedLists(lists);
 			}
 		});
+	}
+
+	useEffect(() => {
+		void refreshSavedLists();
+		const unsubscribe = services.subscribeVaultChanges((event) => {
+			if (event.kind === "metadata") {
+				return;
+			}
+			const folder = services.getSettings().shoppingListsFolder.replace(/^\/+|\/+$/g, "");
+			const inside = (path: string | undefined): boolean =>
+				path !== undefined && path.startsWith(`${folder}/`);
+			if (inside(event.path) || inside(event.previousPath)) {
+				void refreshSavedLists();
+			}
+		});
 		return () => {
-			cancelled = true;
+			listRefresh.current += 1;
+			unsubscribe();
 		};
 	}, [services]);
 
@@ -351,7 +369,7 @@ export function CollectionView({
 			);
 			setStatus(null);
 		}
-		setSavedLists(await services.listShoppingLists());
+		await refreshSavedLists();
 	}
 
 	function scheduleShoppingListWrite(next: ShoppingListDocument, revision: number): void {
@@ -501,7 +519,10 @@ export function CollectionView({
 												setShoppingList(loaded.list);
 												return;
 											}
-											setStatus(loaded.message);
+											setStatus(
+												`The shopping list "${list.frontmatter.title}" could not be opened: ${loaded.message}`,
+											);
+											void refreshSavedLists();
 										});
 									}}
 								>
