@@ -240,6 +240,10 @@
 	padding-left: 1.2em;
 }
 
+.recipe-clipper-review-notes {
+	white-space: pre-wrap;
+}
+
 .recipe-clipper-modal-wide {
 	width: min(52em, 100%);
 }

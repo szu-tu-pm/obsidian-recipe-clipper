@@ -21,6 +21,7 @@ import {
 	RecipeSettingTab,
 	type RecipePluginSettings,
 } from "./settings";
+import { requestPasteRecipe } from "./ui/pasteRequests";
 import { createObsidianPluginHost } from "./wrapper/createObsidianPluginHost";
 import {
 	PluginServiceAdapter,
@@ -90,6 +91,15 @@ export default class RecipePlugin extends Plugin {
 			id: "open-recipe-manager",
 			name: "Open recipe manager",
 			callback: () => {
+				void this.activateView();
+			},
+		});
+
+		this.addCommand({
+			id: "paste-recipe",
+			name: "Paste recipe",
+			callback: () => {
+				requestPasteRecipe();
 				void this.activateView();
 			},
 		});

@@ -25,9 +25,9 @@ import { DuplicateUrlWarningBanner } from "./DuplicateUrlWarningBanner";
 
 type ReviewResult = UrlExtractionSuccess | UrlExtractionFallback;
 
-function blank(value: string | null | undefined): string {
+function blank(value: string | null | undefined, absent = "Not on the page"): string {
 	const trimmed = value?.trim() ?? "";
-	return trimmed.length > 0 ? trimmed : "Not on the page";
+	return trimmed.length > 0 ? trimmed : absent;
 }
 
 function confidenceLabel(value: string | null): string {
@@ -47,8 +47,11 @@ export function ImportReviewModal({
 	services: PluginServices;
 	downloadImage: (url: string) => Promise<ArrayBuffer | null>;
 	onClose: (notice?: string) => void;
-	/** A web clip is already a note in the vault; its review lets the user correct fields before saving. */
-	source?: "url" | "web-clip";
+	/**
+	 * A web clip is already a note in the vault; its review lets the user correct fields before saving.
+	 * A pasted recipe was read from text the user pasted, and nothing exists in the vault yet.
+	 */
+	source?: "url" | "web-clip" | "pasted";
 	/** Replaces `services.saveRecipe` for the first write, e.g. a guarded web-clip save. */
 	saveDraft?: (draft: RecipeDocument) => Promise<WebClipSaveOutcome>;
 	/** Offered when `saveDraft` reports that the note changed under the review. */
@@ -64,6 +67,8 @@ export function ImportReviewModal({
 	const [changed, setChanged] = useState(false);
 	const manual = result.status === "manual-fallback";
 	const webClip = source === "web-clip";
+	const pasted = source === "pasted";
+	const absent = pasted ? "Not in the pasted text" : "Not on the page";
 	const disagreements = candidate?.ingredientDisagreements ?? [];
 	const flagged = new Set(disagreements.map((item) => item.index));
 	const [choices, setChoices] = useState<Map<IngredientDisagreement, IngredientChoice>>(
@@ -166,7 +171,13 @@ export function ImportReviewModal({
 				aria-labelledby={headingId}
 			>
 				<h3 id={headingId}>
-					{webClip ? "Review web clip" : manual ? "Manual entry" : "Review import"}
+					{pasted
+						? "Review pasted recipe"
+						: webClip
+							? "Review web clip"
+							: manual
+								? "Manual entry"
+								: "Review import"}
 				</h3>
 				{webClip ? (
 					<p role="status">
@@ -177,6 +188,11 @@ export function ImportReviewModal({
 					<p role="status">
 						This import did not succeed ({result.reason}). The URL is kept so you can
 						save a manual recipe. Nothing has been written yet.
+					</p>
+				) : pasted ? (
+					<p>
+						This recipe was read from the text you pasted, on this computer. Nothing is
+						written to the vault until you save this review.
 					</p>
 				) : (
 					<p>Nothing is written to the vault until you save this review.</p>
@@ -197,32 +213,38 @@ export function ImportReviewModal({
 					</div>
 					<div>
 						<dt>Author</dt>
-						<dd>{blank(draft.frontmatter.author)}</dd>
+						<dd>{blank(draft.frontmatter.author, absent)}</dd>
 					</div>
 					<div>
 						<dt>Site</dt>
-						<dd>{blank(draft.frontmatter.siteName)}</dd>
+						<dd>{blank(draft.frontmatter.siteName, absent)}</dd>
 					</div>
 					<div>
 						<dt>Source URL</dt>
-						<dd>{blank(draft.frontmatter.sourceUrl)}</dd>
+						<dd>{blank(draft.frontmatter.sourceUrl, absent)}</dd>
 					</div>
+					{draft.frontmatter.generatedBy ? (
+						<div>
+							<dt>Written by</dt>
+							<dd>{draft.frontmatter.generatedBy}</dd>
+						</div>
+					) : null}
 					<div>
 						<dt>Servings</dt>
-						<dd>{blank(draft.frontmatter.servings?.raw)}</dd>
+						<dd>{blank(draft.frontmatter.servings?.raw, absent)}</dd>
 					</div>
 					<div>
 						<dt>Cooking methods</dt>
 						<dd>
 							{draft.frontmatter.cookingMethods.length > 0
 								? draft.frontmatter.cookingMethods.join(", ")
-								: "Not on the page"}
+								: absent}
 						</dd>
 					</div>
 				</dl>
 				<h4>Ingredients</h4>
 				{draft.frontmatter.ingredients.length === 0 ? (
-					<p>Not on the page</p>
+					<p>{absent}</p>
 				) : (
 					<ul className="recipe-clipper-review-ingredients">
 						{draft.frontmatter.ingredients.map((ingredient, position) => (
@@ -277,7 +299,7 @@ export function ImportReviewModal({
 				) : null}
 				<h4>Instructions</h4>
 				{draft.instructions.length === 0 ? (
-					<p>Not on the page</p>
+					<p>{absent}</p>
 				) : (
 					<ol>
 						{draft.instructions.map((step, index) => (
@@ -285,6 +307,12 @@ export function ImportReviewModal({
 						))}
 					</ol>
 				)}
+				{pasted && draft.notes ? (
+					<>
+						<h4>Notes</h4>
+						<p className="recipe-clipper-review-notes">{draft.notes}</p>
+					</>
+				) : null}
 				{webClip ? (
 					<div className="recipe-clipper-editor-form">
 						<h4>Correct before saving</h4>

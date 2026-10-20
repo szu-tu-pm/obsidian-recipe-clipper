@@ -24,9 +24,11 @@ import { ImportProgressBanner } from "./ImportProgressBanner";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { ImportReviewModal } from "./components/ImportReviewModal";
 import { MultiRecipePickerModal } from "./components/MultiRecipePickerModal";
+import { PasteRecipeModal } from "./components/PasteRecipeModal";
 import { ratingBadge } from "./components/StarRating";
 import { filterRecipes, type RatingFilter } from "./filterRecipes";
 import { downloadSourceImage, ensureHttpsUrl, importRecipePage } from "./importRecipePage";
+import { subscribePasteRequests, takePasteRequest } from "./pasteRequests";
 import { RecipeEditorModal } from "./RecipeEditorModal";
 import { RegenerateListDialog, ShoppingListView } from "./ShoppingListView";
 import { TranslateRecipeModal } from "./TranslateRecipeModal";
@@ -37,6 +39,7 @@ export function CollectionView({
 	downloadImage = (url: string) => downloadSourceImage(url),
 	notify = () => undefined,
 	translationFetch,
+	pasteFetch,
 }: {
 	importPage?: (
 		url: string,
@@ -47,6 +50,8 @@ export function CollectionView({
 	downloadImage?: (url: string) => Promise<ArrayBuffer | null>;
 	notify?: (message: string) => void;
 	translationFetch?: typeof fetch;
+	/** Used only for the optional local model when a pasted recipe has no recognisable sections. */
+	pasteFetch?: typeof fetch;
 } = {}): JSX.Element {
 	const services = usePluginServices();
 	const recipes = useRecipeIndex();
@@ -65,7 +70,8 @@ export function CollectionView({
 	const [urlOpen, setUrlOpen] = useState(false);
 	const [urlValue, setUrlValue] = useState("");
 	const [review, setReview] = useState<UrlExtractionResult | null>(null);
-	const [reviewSource, setReviewSource] = useState<"url" | "web-clip">("url");
+	const [reviewSource, setReviewSource] = useState<"url" | "web-clip" | "pasted">("url");
+	const [pasteOpen, setPasteOpen] = useState(false);
 	const [clipReview, setClipReview] = useState<{ path: string; revision: string } | null>(null);
 	const [reviewKey, setReviewKey] = useState(0);
 	const offeredClips = useRef<Set<string>>(new Set());
@@ -129,6 +135,25 @@ export function CollectionView({
 	function closeImport(): void {
 		setUrlOpen(false);
 	}
+
+	function finishPaste(result: UrlExtractionResult): void {
+		setPasteOpen(false);
+		setClipReview(null);
+		setReviewSource("pasted");
+		setReviewKey((key) => key + 1);
+		setReview(result);
+	}
+
+	// The "Paste recipe" command asks the open view to show the paste window.
+	useEffect(() => {
+		const open = (): void => {
+			if (takePasteRequest()) {
+				setPasteOpen(true);
+			}
+		};
+		open();
+		return subscribePasteRequests(open);
+	}, []);
 
 	function cancelImport(): void {
 		sessionRef.current?.cancel();
@@ -273,6 +298,7 @@ export function CollectionView({
 			review ||
 			editor !== null ||
 			urlOpen ||
+			pasteOpen ||
 			progress ||
 			readyImport ||
 			pendingDelete ||
@@ -284,7 +310,7 @@ export function CollectionView({
 		if (next) {
 			void openClipReview(next.path);
 		}
-	}, [pendingClips, review, editor, urlOpen, progress, readyImport, pendingDelete, shoppingList]);
+	}, [pendingClips, review, editor, urlOpen, pasteOpen, progress, readyImport, pendingDelete, shoppingList]);
 
 	function startImport(): void {
 		const url = ensureHttpsUrl(urlValue);
@@ -460,9 +486,14 @@ export function CollectionView({
 				<h4>Recipes</h4>
 				<div className="recipe-clipper-row-actions">
 					{recipes.length > 0 ? (
-						<button type="button" onClick={openImport}>
-							Import URL
-						</button>
+						<>
+							<button type="button" onClick={openImport}>
+								Import URL
+							</button>
+							<button type="button" onClick={() => setPasteOpen(true)}>
+								Paste recipe
+							</button>
+						</>
 					) : null}
 					<button type="button" className="mod-cta" onClick={() => setEditor("new")}>
 						New recipe
@@ -612,6 +643,9 @@ export function CollectionView({
 						<button type="button" onClick={openImport}>
 							Import URL
 						</button>
+						<button type="button" onClick={() => setPasteOpen(true)}>
+							Paste recipe
+						</button>
 						<button type="button" onClick={() => setEditor("new")}>
 							Add manually
 						</button>
@@ -678,6 +712,15 @@ export function CollectionView({
 					onChange={setUrlValue}
 					onCancel={closeImport}
 					onSubmit={() => void startImport()}
+				/>
+			) : null}
+
+			{pasteOpen ? (
+				<PasteRecipeModal
+					services={services}
+					fetchImpl={pasteFetch}
+					onCancel={() => setPasteOpen(false)}
+					onParsed={finishPaste}
 				/>
 			) : null}
 
