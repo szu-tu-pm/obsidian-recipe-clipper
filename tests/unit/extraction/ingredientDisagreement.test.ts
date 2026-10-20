@@ -292,4 +292,28 @@ describe("applying the reviewer's picks", () => {
 			"1 teaspoon vanilla",
 		]);
 	});
+
+	it("removes a structured-only line the reviewer sets to visible, alongside a replacement and an addition", async () => {
+		const candidate = await allrecipesDraft();
+		const [structuredOnly, visibleOnly] = candidate.ingredientDisagreements;
+		const replacement: IngredientDisagreement = {
+			index: 2,
+			structured: "1 cup milk",
+			visible: "2 cups milk",
+		};
+		const applied = applyIngredientChoices(
+			candidate.draft,
+			[structuredOnly!, visibleOnly!, replacement],
+			new Map([
+				[structuredOnly!, "visible" as const],
+				[visibleOnly!, "visible" as const],
+				[replacement, "visible" as const],
+			]),
+		);
+		expect(applied.frontmatter.ingredients.map((item) => item.raw)).toEqual([
+			"1 egg",
+			"2 cups milk",
+			"1 teaspoon vanilla",
+		]);
+	});
 });

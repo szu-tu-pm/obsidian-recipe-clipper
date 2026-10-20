@@ -67,4 +67,15 @@ describe("import review of ingredients that disagree with the page", () => {
 		expect(screen.queryByText("Differs from the page")).toBeNull();
 		expect(screen.queryByRole("group", { name: /differ from the visible page/i })).toBeNull();
 	});
+
+	it("drops a structured-only ingredient when the reviewer picks Not on the visible page", async () => {
+		const store = await review("real-difference-extra-lines.html");
+		fireEvent.click(screen.getByRole("radio", { name: /Not on the visible page/ }));
+		fireEvent.click(screen.getByRole("button", { name: "Save recipe" }));
+		await waitFor(() => expect(store.recipes).toHaveLength(1));
+		expect(store.recipes[0]?.frontmatter.ingredients.map((item) => item.raw)).toEqual([
+			"1 egg",
+			"1 cup milk",
+		]);
+	});
 });

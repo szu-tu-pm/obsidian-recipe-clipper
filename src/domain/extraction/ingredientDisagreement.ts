@@ -105,7 +105,7 @@ export function compareIngredientLists(
 
 /**
  * Apply the reviewer's picks to a draft. Without a pick a line keeps the structured text,
- * and a visible-only line is left out, so nothing is replaced unless the reviewer chose it.
+ * and a visible-only line is left out. Picking "visible" on a structured-only line removes it, so nothing is replaced unless the reviewer chose it.
  */
 export function applyIngredientChoices(
 	draft: RecipeDocument,
@@ -114,8 +114,16 @@ export function applyIngredientChoices(
 ): RecipeDocument {
 	const ingredients = [...draft.frontmatter.ingredients];
 	const additions = [];
+	const removals = new Set<number>();
 	for (const item of disagreements) {
-		if (choices.get(item) !== "visible" || item.visible == null) {
+		if (choices.get(item) !== "visible") {
+			continue;
+		}
+		if (item.visible == null) {
+			// The visible page has no such line, so choosing it removes the structured one.
+			if (item.index != null) {
+				removals.add(item.index);
+			}
 			continue;
 		}
 		const parsed = parseIngredientLine(item.visible);
@@ -127,6 +135,9 @@ export function applyIngredientChoices(
 	}
 	return {
 		...draft,
-		frontmatter: { ...draft.frontmatter, ingredients: [...ingredients, ...additions] },
+		frontmatter: {
+			...draft.frontmatter,
+			ingredients: [...ingredients.filter((_, position) => !removals.has(position)), ...additions],
+		},
 	};
 }
