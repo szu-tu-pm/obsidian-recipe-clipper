@@ -15,9 +15,13 @@ function getSourceFiles(dir: string): string[] {
 	return files;
 }
 
-function hasObsidianImport(filePath: string): boolean {
+export function hasObsidianImport(filePath: string): boolean {
 	const content = readFileSync(filePath, "utf8");
-	return /from\s+["']obsidian["']/.test(content) || /require\(["']obsidian["']\)/.test(content);
+	return (
+		/from\s+["']obsidian["']/.test(content) ||
+		/require\s*\(\s*["']obsidian["']\s*\)/.test(content) ||
+		/import\s*\(\s*["']obsidian["']\s*\)/.test(content)
+	);
 }
 
 describe("ADR-001 architectural import boundaries", () => {
@@ -50,12 +54,21 @@ describe("ADR-001 architectural import boundaries", () => {
 	it("restricts obsidian imports in src/domain/vault to obsidianVault.ts only", () => {
 		const vaultFiles = getSourceFiles("src/domain/vault");
 		expect(vaultFiles.length).toBeGreaterThan(0);
+		const obsidianVaultFile = vaultFiles.find((file) =>
+			file.replace(/\\/g, "/").endsWith("src/domain/vault/obsidianVault.ts"),
+		);
+		expect(obsidianVaultFile, "obsidianVault.ts must exist").toBeDefined();
+		expect(
+			hasObsidianImport(obsidianVaultFile!),
+			"obsidianVault.ts must implement the Obsidian vault adapter by importing obsidian",
+		).toBe(true);
+
 		for (const file of vaultFiles) {
-			const importsObsidian = hasObsidianImport(file);
-			const isAllowed = file.replace(/\\/g, "/").endsWith("src/domain/vault/obsidianVault.ts");
-			if (importsObsidian) {
-				expect(isAllowed, `Unexpected obsidian import in ${file}`).toBe(true);
+			if (file === obsidianVaultFile) {
+				continue;
 			}
+			const importsObsidian = hasObsidianImport(file);
+			expect(importsObsidian, `Vault file ${file} must not import obsidian`).toBe(false);
 		}
 	});
 });

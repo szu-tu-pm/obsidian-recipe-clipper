@@ -14,7 +14,7 @@ React components in `src/ui` receive a `PluginServiceAdapter`. That adapter deco
 - `src/ui` never imports `obsidian`.
 - Core domain logic (`src/domain/aggregation`, `src/domain/extraction`, `src/domain/schema`, `src/domain/translation`) never imports `obsidian`.
 - The vault boundary (`src/domain/vault/vaultPort.ts`) defines an agnostic interface (`VaultPort`). Tests use `MockPluginServices` and `InMemoryVault`. The production runtime uses `ObsidianVaultAdapter` (`src/domain/vault/obsidianVault.ts`), which is the sole domain adapter with direct bindings to Obsidian's `Vault` and `MetadataCache`.
-- The production host (`createObsidianPluginHost` in `src/wrapper/obsidianPluginHost.ts`) implements `PluginServiceAdapter` using the Obsidian runtime and provides it to the React tree.
+- The production host (`createObsidianPluginHost` in `src/wrapper/createObsidianPluginHost.ts`) implements `PluginServiceAdapter` using the Obsidian runtime and provides it to the React tree.
 
 The view mounts React from `RecipeItemView`. Closing the view unmounts the tree and drops vault listeners.
 
