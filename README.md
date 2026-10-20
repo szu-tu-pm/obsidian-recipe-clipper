@@ -2,7 +2,12 @@
 
 Desktop-only Obsidian plugin (`minAppVersion: 1.7.7`) for capturing recipes, storing them as structured Markdown, and generating shopping lists.
 
-This repository is the implementation of the Recipe Project. Phase 1 starts with the plugin scaffold and settings; capture, storage, and UI land in later tasks.
+Capabilities include:
+- **3-Tier Local URL Extraction**: Extracts recipes from JSON-LD (`@graph`), Microdata, RDFa, and common DOM recipe cards (WPRM, Tasty, Mediavine, heading+list), with a local loopback Ollama fallback whose output is strictly grounded in the webpage text.
+- **Structured vs. Visible Disagreement Review**: Flags ingredients where a webpage's structured data and visible recipe card disagree, letting you choose per line before saving.
+- **Obsidian Web Clipper (Chrome) Intake**: Imports recipes clipped with `clipper/recipe.web-clipper.json` (`type: recipe-clip`) through the same human-in-the-loop review flow, with optimistic concurrency and read-back verification.
+- **Rule-Based Shopping List Aggregation**: Preserves units as typed in saved recipe notes and standardizes/merges ingredients only during shopping-list generation when local rules (`rules/v1/`) prove identity, dimensional compatibility, and matching blocking qualifiers.
+- **Local Ollama Recipe Translation**: Translates recipes into 13 languages while enforcing amount, unit, and amount-unit pair invariants and preserving the untranslated original for revert and shopping-list aggregation.
 
 ## Requirements
 
