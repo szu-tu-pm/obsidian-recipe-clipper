@@ -513,8 +513,8 @@ function matchCandidates(
 export async function runEvaluation(options: EvaluationOptions = {}): Promise<EvaluationReport> {
 	ensureDomParser();
 	const manifestPath = resolve(FIXTURE_ROOT, "manifest.json");
-	const manifestBytes = readFileSync(manifestPath);
-	const manifest = JSON.parse(manifestBytes.toString("utf8")) as FixtureManifest;
+	const manifestText = readFileSync(manifestPath, "utf8").replace(/\r\n/g, "\n");
+	const manifest = JSON.parse(manifestText) as FixtureManifest;
 	const aggregation = options.aggregationCorpus ?? readJson<AggregationCorpus>(resolve(FIXTURE_ROOT, "aggregation/pairs.json"));
 	const pairEvaluator = options.aggregatePair ?? evaluatePair;
 	const mutable: Record<1 | 2, MutableTier> = {
@@ -675,7 +675,7 @@ export async function runEvaluation(options: EvaluationOptions = {}): Promise<Ev
 		gitCommit: gitCommit(options.git),
 		workingTreeDirty: workingTreeDirty(options.git),
 		fixtureVersion: manifest.version,
-		fixtureManifestSha256: createHash("sha256").update(manifestBytes).digest("hex"),
+		fixtureManifestSha256: createHash("sha256").update(manifestText).digest("hex"),
 		rulesVersion: RULES_VERSION,
 		ollama: models.size > 0
 			? { models: [...models].sort(), promptVersion: manifest.promptVersion, promptFingerprint: promptFingerprint() }
@@ -835,12 +835,7 @@ ${incorrectSafe}
 ${detailList(report.unsafeMergeRuleMismatchDetails)}
 ## Known gaps
 
-The remaining 27 quantity/unit mismatches are tracked as P2-9:
-
-- Unicode mixed fractions: 6 lines.
-- Rounded thirds: 2 lines.
-- Fluid-ounce units: 12 lines.
-- Count units: 7 lines.
+${textDetails(report.quantityUnitMismatchDetails)}
 
 ## Method
 
@@ -865,6 +860,10 @@ async function main(): Promise<void> {
 	}
 }
 
-if (process.argv.slice(1).some((argument) => argument.endsWith("tests/evals/runner.ts"))) {
+if (
+	process.argv
+		.slice(1)
+		.some((argument) => argument.replace(/\\/g, "/").endsWith("tests/evals/runner.ts"))
+) {
 	void main();
 }
