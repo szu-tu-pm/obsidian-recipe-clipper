@@ -4,7 +4,7 @@ Overall result: **PASS**
 
 ## Reproducibility metadata
 
-- Git commit: `54750343ef23a6488cdc2342f32cdc3d14ee3531`
+- Git commit: `8cfcc6708bf2e5f5962867f45ab71ce335a276e2`
 - Working tree dirty: `false`
 - Fixture corpus: `phase2-v3`
 - Fixture manifest SHA-256: `1c2306b9a0794fd1d2bfb1a8d9747cb09f1e7579843b7026e76c899cd44e0ddb`
@@ -109,12 +109,7 @@ Safe-merge recall: 50/50 (100.0%).
 
 ## Known gaps
 
-The remaining 27 quantity/unit mismatches are tracked as P2-9:
-
-- Unicode mixed fractions: 6 lines.
-- Rounded thirds: 2 lines.
-- Fluid-ounce units: 12 lines.
-- Count units: 7 lines.
+- None.
 
 ## Method
 
