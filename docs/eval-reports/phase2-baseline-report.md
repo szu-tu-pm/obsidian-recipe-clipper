@@ -4,11 +4,11 @@ Overall result: **PASS**
 
 ## Reproducibility metadata
 
-- Git commit: `28e04cf7c21af55355abe514ee6718029568d649`
+- Git commit: `54750343ef23a6488cdc2342f32cdc3d14ee3531`
 - Working tree dirty: `false`
 - Fixture corpus: `phase2-v3`
 - Fixture manifest SHA-256: `1c2306b9a0794fd1d2bfb1a8d9747cb09f1e7579843b7026e76c899cd44e0ddb`
-- Aggregation rules: `v1`
+- Aggregation rules: `v2`
 - Ollama model(s): `qwen2.5:7b-instruct`
 - Ollama prompt version: `ollama-recipe-extraction-v1` (fingerprint `69a97961`)
 - Evaluation mode: deterministic local fixtures; Ollama responses are recorded and network access is not used
