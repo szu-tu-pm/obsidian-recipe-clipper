@@ -7,6 +7,7 @@
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && node scripts/check-bundle-size.mjs",
 		"eval": "vite-node --script tests/evals/runner.ts",
+		"eval:held-out": "vite-node --script tests/evals/heldOut.ts",
 		"eval:live": "vite-node --script tests/evals/live-url-smoke.ts",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",

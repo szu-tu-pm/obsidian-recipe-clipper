@@ -1,0 +1,31 @@
+# Recipe clipper
+
+Obsidian desktop plugin. TypeScript, React 18, Zod, Vitest. Read `AGENTS.md` and `docs/adr/` before changing behavior.
+
+## Boundaries
+
+- `src/ui` and `src/domain` do not import `obsidian`. Talk to the app through `PluginServiceAdapter`.
+- Build only what the task's deliverables and acceptance criteria ask for. Put files at the paths those deliverables name.
+- Every acceptance criterion code can satisfy needs a test that fails without the change. Tests stay deterministic and offline. Live Ollama checks belong in a script CI does not run.
+- Do not weaken CI, coverage thresholds, or eval gates to make a change pass.
+
+## Recipes and shopping lists
+
+- Save units as typed. Canonicalize units only inside shopping-list aggregation.
+- Merge a shopping-list row only when `rules/v1/` proves identity, dimension, canonical unit, and blocking qualifiers. Otherwise keep the lines separate.
+- Bump `version` in every rules file when a rule's meaning changes. Do not silently retune aliases to lift an eval score.
+- Translation must keep a 1:1 ingredient id and step order, and the multiset of quantities, units, and amount-unit pairs. Aggregation uses `translation.original`.
+- If a vault file cannot be parsed, leave its bytes unchanged.
+
+## Extraction
+
+- Prefer JSON-LD, Microdata, and RDFa, then DOM card heuristics, then loopback Ollama.
+- Ollama output may contain only strings present in the page. Drop everything else.
+- Treat fetched HTML as untrusted: cap the size and strip scripts, frames, and inline handlers.
+- When structured ingredients and the visible list disagree, the person chooses. Do not auto-pick.
+
+## Evals
+
+- `tests/evals/fixtures` is the tuning corpus. `tests/evals/held-out` is the held-out corpus. Do not copy lines from one into the other, and do not edit held-out expected values to match a broken parse.
+- Expected quantities are written by hand from the line and from `rules/v1/`. Do not generate them by running the code under test.
+- Regenerate `docs/eval-reports/` only from a clean commit when the report records that commit. A report that records a dirty tree is not the committed baseline.

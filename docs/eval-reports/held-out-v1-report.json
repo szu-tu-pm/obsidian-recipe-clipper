@@ -1,0 +1,267 @@
+{
+	"reportVersion": 2,
+	"gitCommit": "29105b31d758c818b76d95aac2154a0829a8433d",
+	"workingTreeDirty": false,
+	"fixtureVersion": "held-out-v1",
+	"fixtureManifestSha256": "8ff0ec7db6cb22bcd615c2f4946d54d31010b253153225f41dcb1f661e8dddda",
+	"rulesVersion": "v2",
+	"ollama": null,
+	"metrics": {
+		"tier1": {
+			"fixtures": 3,
+			"recipes": 3,
+			"ingredientRecall": {
+				"matched": 60,
+				"total": 60,
+				"rate": 1
+			},
+			"quantityUnitFidelity": {
+				"matched": 60,
+				"total": 60,
+				"rate": 1
+			},
+			"quantityUnitFidelityByCategory": {
+				"mixed-fraction": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"unicode-fraction": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"range": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"dual-unit": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"abbrev-period": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"fl-oz": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"unknown-unit": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"non-numeric": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"comma-prep": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"simple": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				}
+			},
+			"instructionFidelity": {
+				"matched": 6,
+				"total": 6,
+				"rate": 1
+			},
+			"extractionMethodFidelity": {
+				"matched": 3,
+				"total": 3,
+				"rate": 1
+			},
+			"expectedScalarFidelity": {
+				"matched": 21,
+				"total": 21,
+				"rate": 1
+			}
+		},
+		"tier2": {
+			"fixtures": 3,
+			"recipes": 3,
+			"ingredientRecall": {
+				"matched": 60,
+				"total": 60,
+				"rate": 1
+			},
+			"quantityUnitFidelity": {
+				"matched": 60,
+				"total": 60,
+				"rate": 1
+			},
+			"quantityUnitFidelityByCategory": {
+				"mixed-fraction": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"unicode-fraction": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"range": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"dual-unit": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"abbrev-period": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"fl-oz": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"unknown-unit": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"non-numeric": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"comma-prep": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				},
+				"simple": {
+					"matched": 6,
+					"total": 6,
+					"rate": 1
+				}
+			},
+			"instructionFidelity": {
+				"matched": 6,
+				"total": 6,
+				"rate": 1
+			},
+			"extractionMethodFidelity": {
+				"matched": 3,
+				"total": 3,
+				"rate": 1
+			},
+			"expectedScalarFidelity": {
+				"matched": 3,
+				"total": 3,
+				"rate": 1
+			}
+		},
+		"schemaValidity": {
+			"matched": 6,
+			"total": 6,
+			"rate": 1
+		},
+		"hallucinatedFields": {
+			"matched": 0,
+			"total": 159,
+			"rate": 0
+		},
+		"falseMerges": {
+			"matched": 0,
+			"total": 50,
+			"rate": 0
+		},
+		"safeMergeRecall": {
+			"matched": 50,
+			"total": 50,
+			"rate": 1
+		}
+	},
+	"hallucinatedFieldDetails": [],
+	"quantityUnitMismatchDetails": [],
+	"missingExpectedScalarDetails": [],
+	"extractionMethodMismatchDetails": [],
+	"falseMergeDetails": [],
+	"missedSafeMergeDetails": [],
+	"wrongQuantityMergeDetails": [],
+	"incorrectSafeMergeDetails": [],
+	"unsafeMergeRuleMismatchDetails": [],
+	"corpusMinimums": {
+		"tier1Ingredients": {
+			"actual": 60,
+			"minimum": 50,
+			"passed": true
+		},
+		"tier2Ingredients": {
+			"actual": 60,
+			"minimum": 50,
+			"passed": true
+		},
+		"safeMergePairs": {
+			"actual": 50,
+			"minimum": 50,
+			"passed": true
+		},
+		"unsafeMergePairs": {
+			"actual": 50,
+			"minimum": 50,
+			"passed": true
+		}
+	},
+	"gates": {
+		"schemaValidity": {
+			"threshold": 1,
+			"actual": 1,
+			"passed": true
+		},
+		"hallucinatedFieldRate": {
+			"threshold": 0,
+			"actual": 0,
+			"passed": true
+		},
+		"tier1IngredientRecall": {
+			"threshold": 0.98,
+			"actual": 1,
+			"passed": true
+		},
+		"tier1QuantityUnitFidelity": {
+			"threshold": 0.96,
+			"actual": 1,
+			"passed": true
+		},
+		"tier2IngredientRecall": {
+			"threshold": 0.9,
+			"actual": 1,
+			"passed": true
+		},
+		"tier2QuantityUnitFidelity": {
+			"threshold": 0.88,
+			"actual": 1,
+			"passed": true
+		},
+		"falseMergeRate": {
+			"threshold": 0,
+			"actual": 0,
+			"passed": true
+		},
+		"safeMergeRecall": {
+			"threshold": 0.92,
+			"actual": 1,
+			"passed": true
+		}
+	},
+	"passed": true
+}

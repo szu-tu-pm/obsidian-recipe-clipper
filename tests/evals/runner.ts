@@ -199,6 +199,7 @@ interface MutableTier {
 }
 
 export interface EvaluationOptions {
+	fixtureRoot?: string;
 	aggregationCorpus?: AggregationCorpus;
 	aggregatePair?: (pair: AggregationPair) => AggregatedIngredient[];
 	transformCandidates?: (fixtureId: string, candidates: ExtractionCandidate[]) => ExtractionCandidate[];
@@ -512,10 +513,11 @@ function matchCandidates(
 
 export async function runEvaluation(options: EvaluationOptions = {}): Promise<EvaluationReport> {
 	ensureDomParser();
-	const manifestPath = resolve(FIXTURE_ROOT, "manifest.json");
+	const fixtureRoot = options.fixtureRoot ?? FIXTURE_ROOT;
+	const manifestPath = resolve(fixtureRoot, "manifest.json");
 	const manifestText = readFileSync(manifestPath, "utf8").replace(/\r\n/g, "\n");
 	const manifest = JSON.parse(manifestText) as FixtureManifest;
-	const aggregation = options.aggregationCorpus ?? readJson<AggregationCorpus>(resolve(FIXTURE_ROOT, "aggregation/pairs.json"));
+	const aggregation = options.aggregationCorpus ?? readJson<AggregationCorpus>(resolve(fixtureRoot, "aggregation/pairs.json"));
 	const pairEvaluator = options.aggregatePair ?? evaluatePair;
 	const mutable: Record<1 | 2, MutableTier> = {
 		1: { fixtures: 0, recipes: 0, ingredientsMatched: 0, ingredientsTotal: 0, quantityUnitMatched: 0, quantityUnitTotal: 0, quantityUnitByCategory: emptyCategoryCounts(), instructionsMatched: 0, instructionsTotal: 0, methodsMatched: 0, methodsTotal: 0, expectedScalarsMatched: 0, expectedScalarsTotal: 0 },
@@ -532,9 +534,9 @@ export async function runEvaluation(options: EvaluationOptions = {}): Promise<Ev
 
 	for (const fixture of manifest.fixtures) {
 		mutable[fixture.tier].fixtures++;
-		const html = readFileSync(resolve(FIXTURE_ROOT, fixture.file), "utf8");
+		const html = readFileSync(resolve(fixtureRoot, fixture.file), "utf8");
 		const recorded = fixture.ollama
-			? readJson<unknown>(resolve(FIXTURE_ROOT, fixture.ollama.responseFile))
+			? readJson<unknown>(resolve(fixtureRoot, fixture.ollama.responseFile))
 			: null;
 		if (fixture.ollama) {
 			models.add(fixture.ollama.model);
@@ -721,7 +723,7 @@ function textDetails(items: string[]): string {
 	return items.length === 0 ? "- None." : items.map((item) => `- ${item}`).join("\n");
 }
 
-export function renderMarkdown(report: EvaluationReport): string {
+export function renderMarkdown(report: EvaluationReport, title = "Phase 2 Baseline Evaluation Report"): string {
 	const rows = (Object.entries(report.gates) as Array<[string, EvaluationReport["gates"][keyof typeof EXIT_GATES]]>)
 		.map(([name, gate]) => `| ${name} | ${percent(gate.actual)} | ${percent(gate.threshold)} | ${gate.passed ? "PASS" : "FAIL"} |`)
 		.join("\n");
@@ -747,7 +749,7 @@ export function renderMarkdown(report: EvaluationReport): string {
 		: report.incorrectSafeMergeDetails.map((item) =>
 			`- **${item.id}**: expected unit \`${item.expectedUnit}\` and rule \`${item.expectedMergeRuleId}\`; observed unit \`${item.actualUnit}\` and rule \`${item.actualMergeRuleId}\`.`,
 		).join("\n");
-	return `# Phase 2 Baseline Evaluation Report
+	return `# ${title}
 
 Overall result: **${report.passed ? "PASS" : "FAIL"}**
 

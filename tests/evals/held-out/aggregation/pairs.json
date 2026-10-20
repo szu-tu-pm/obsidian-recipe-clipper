@@ -1,0 +1,806 @@
+{
+	"safeMerges": [
+		{
+			"id": "barley-cup-tbsp",
+			"left": "1 cup barley",
+			"right": "2 tbsp barley",
+			"expectedQuantity": 54,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "millet-cup-tsp",
+			"left": "2 cups millet",
+			"right": "1 tsp millet",
+			"expectedQuantity": 97,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "quinoa-tbsp-tsp",
+			"left": "1 tbsp quinoa",
+			"right": "1 tsp quinoa",
+			"expectedQuantity": 4,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "farro-floz-cup",
+			"left": "4 fl oz farro water",
+			"right": "1 cup farro water",
+			"expectedQuantity": 72,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "tahini-pint-cup",
+			"left": "1 pint tahini",
+			"right": "1 cup tahini",
+			"expectedQuantity": 144,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "molasses-quart-tbsp",
+			"left": "1 quart molasses",
+			"right": "2 tbsp molasses",
+			"expectedQuantity": 198,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "bulgur-cup-tbsp",
+			"left": "3 cups bulgur",
+			"right": "1 tbsp bulgur",
+			"expectedQuantity": 147,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "polenta-tbsp-tsp",
+			"left": "2 tbsp polenta",
+			"right": "2 tsp polenta",
+			"expectedQuantity": 8,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "honey-cups",
+			"left": "1 cup honey",
+			"right": "1 cup honey",
+			"expectedQuantity": 96,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "buttermilk-floz-tbsp",
+			"left": "2 fl oz buttermilk",
+			"right": "1 tbsp buttermilk",
+			"expectedQuantity": 15,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "lentils-g-oz",
+			"left": "100 g lentils",
+			"right": "1 oz lentils",
+			"expectedQuantity": 128.349523125,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "chickpeas-lb-oz",
+			"left": "1 lb chickpeas",
+			"right": "8 oz chickpeas",
+			"expectedQuantity": 680.388555,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "tempeh-kg-g",
+			"left": "1 kg tempeh",
+			"right": "250 g tempeh",
+			"expectedQuantity": 1250,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "walnuts-ounces",
+			"left": "2 oz walnuts",
+			"right": "2 oz walnuts",
+			"expectedQuantity": 113.3980925,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "pecans-g-lb",
+			"left": "500 g pecans",
+			"right": "1 lb pecans",
+			"expectedQuantity": 953.5923700000001,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "rice-oz-g",
+			"left": "3 oz rice",
+			"right": "100 g rice",
+			"expectedQuantity": 185.048569375,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "oats-oz-lb",
+			"left": "1 oz oats",
+			"right": "1 lb oats",
+			"expectedQuantity": 481.94189312500004,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "potatoes-kg",
+			"left": "2 kg potatoes",
+			"right": "1 kg potatoes",
+			"expectedQuantity": 3000,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "spinach-g-oz",
+			"left": "50 g spinach",
+			"right": "2 oz spinach",
+			"expectedQuantity": 106.69904625000001,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "tofu-oz-lb",
+			"left": "4 oz tofu",
+			"right": "1 lb tofu",
+			"expectedQuantity": 566.9904625,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "broth-ml-l",
+			"left": "500 ml broth",
+			"right": "1 l broth",
+			"expectedQuantity": 1500,
+			"expectedQuantityMax": null,
+			"expectedUnit": "ml",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "stock-ml",
+			"left": "250 ml stock",
+			"right": "250 ml stock",
+			"expectedQuantity": 500,
+			"expectedQuantityMax": null,
+			"expectedUnit": "ml",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "whey-liter-ml",
+			"left": "1 liter whey",
+			"right": "200 ml whey",
+			"expectedQuantity": 1200,
+			"expectedQuantityMax": null,
+			"expectedUnit": "ml",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "dashi-liters",
+			"left": "2 l dashi",
+			"right": "1 l dashi",
+			"expectedQuantity": 3000,
+			"expectedQuantityMax": null,
+			"expectedUnit": "ml",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "cider-ml-liter",
+			"left": "100 ml cider",
+			"right": "1 liter cider",
+			"expectedQuantity": 1100,
+			"expectedQuantityMax": null,
+			"expectedUnit": "ml",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "juice-ml",
+			"left": "750 ml juice",
+			"right": "250 ml juice",
+			"expectedQuantity": 1000,
+			"expectedQuantityMax": null,
+			"expectedUnit": "ml",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "tomatoes-cans",
+			"left": "3 cans artichoke hearts",
+			"right": "1 can artichoke hearts",
+			"expectedQuantity": 4,
+			"expectedQuantityMax": null,
+			"expectedUnit": "can",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "beans-cans",
+			"left": "2 cans beans",
+			"right": "2 cans beans",
+			"expectedQuantity": 4,
+			"expectedQuantityMax": null,
+			"expectedUnit": "can",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "ginger-pieces",
+			"left": "1 piece ginger",
+			"right": "3 pieces ginger",
+			"expectedQuantity": 4,
+			"expectedQuantityMax": null,
+			"expectedUnit": "piece",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "parsley-bunches",
+			"left": "2 bunches marjoram",
+			"right": "1 bunch marjoram",
+			"expectedQuantity": 3,
+			"expectedQuantityMax": null,
+			"expectedUnit": "bunch",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "scallion-alias",
+			"left": "3 cups scallions",
+			"right": "1 tbsp green onions",
+			"expectedQuantity": 147,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-alias"
+		},
+		{
+			"id": "water-cups",
+			"left": "4 cups water",
+			"right": "2 tbsp water",
+			"expectedQuantity": 198,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-alias"
+		},
+		{
+			"id": "butter-tbsp-tsp",
+			"left": "3 tbsp butter",
+			"right": "2 tsp butter",
+			"expectedQuantity": 11,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-alias"
+		},
+		{
+			"id": "flour-g-oz",
+			"left": "100 g flour",
+			"right": "1 oz all-purpose flour",
+			"expectedQuantity": 128.349523125,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-alias"
+		},
+		{
+			"id": "garlic-cloves",
+			"left": "9 cloves garlic",
+			"right": "7 cloves garlic",
+			"expectedQuantity": 16,
+			"expectedQuantityMax": null,
+			"expectedUnit": "clove",
+			"expectedMergeRuleId": "v2.merge-alias"
+		},
+		{
+			"id": "cilantro-alias",
+			"left": "2 cups cilantro",
+			"right": "2 tbsp coriander leaves",
+			"expectedQuantity": 102,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-alias"
+		},
+		{
+			"id": "chicken-oz-lb",
+			"left": "8 oz chicken",
+			"right": "1 lb chicken thighs",
+			"expectedQuantity": 680.388555,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-alias"
+		},
+		{
+			"id": "salt-tsp-tbsp",
+			"left": "6 tsp salt",
+			"right": "1 tbsp salt",
+			"expectedQuantity": 9,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-alias"
+		},
+		{
+			"id": "coriander-alias",
+			"left": "2 tsp coriander",
+			"right": "2 tbsp coriander seeds",
+			"expectedQuantity": 8,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-alias"
+		},
+		{
+			"id": "scallion-floz",
+			"left": "2 cups green onions",
+			"right": "1 fl oz scallions",
+			"expectedQuantity": 102,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-alias"
+		},
+		{
+			"id": "freekeh-cup-tbsp",
+			"left": "1 cup freekeh",
+			"right": "3 tbsp freekeh",
+			"expectedQuantity": 57,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "amaranth-tsp-tbsp",
+			"left": "2 tsp amaranth",
+			"right": "2 tbsp amaranth",
+			"expectedQuantity": 8,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "sorghum-gallon-cup",
+			"left": "1 gal sorghum",
+			"right": "1 cup sorghum",
+			"expectedQuantity": 816,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "teff-pint-tsp",
+			"left": "1 pt teff",
+			"right": "2 tsp teff",
+			"expectedQuantity": 98,
+			"expectedQuantityMax": null,
+			"expectedUnit": "tsp",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "seitan-ounces",
+			"left": "6 oz seitan",
+			"right": "6 oz seitan",
+			"expectedQuantity": 340.1942775,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "lentils-pounds",
+			"left": "1 lb lentils",
+			"right": "1 lb lentils",
+			"expectedQuantity": 907.18474,
+			"expectedQuantityMax": null,
+			"expectedUnit": "g",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "kombucha-l-ml",
+			"left": "2 l kombucha",
+			"right": "500 ml kombucha",
+			"expectedQuantity": 2500,
+			"expectedQuantityMax": null,
+			"expectedUnit": "ml",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "hominy-cans",
+			"left": "3 cans hominy",
+			"right": "1 can hominy",
+			"expectedQuantity": 4,
+			"expectedQuantityMax": null,
+			"expectedUnit": "can",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "tempeh-pieces",
+			"left": "1 piece tempeh",
+			"right": "1 piece tempeh",
+			"expectedQuantity": 2,
+			"expectedQuantityMax": null,
+			"expectedUnit": "piece",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		},
+		{
+			"id": "dill-bunches",
+			"left": "1 bunch dill",
+			"right": "2 bunches dill",
+			"expectedQuantity": 3,
+			"expectedQuantityMax": null,
+			"expectedUnit": "bunch",
+			"expectedMergeRuleId": "v2.merge-same-dimension"
+		}
+	],
+	"unsafeMerges": [
+		{
+			"id": "xdim-barley",
+			"left": "1 cup barley",
+			"right": "100 g barley",
+			"category": "cross-dimension",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "xdim-millet",
+			"left": "1 cup millet",
+			"right": "100 g millet",
+			"category": "cross-dimension",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "xdim-quinoa",
+			"left": "1 cup quinoa",
+			"right": "50 g quinoa",
+			"category": "cross-dimension",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "xdim-farro",
+			"left": "1 cup farro",
+			"right": "200 g farro",
+			"category": "cross-dimension",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "xdim-lentils",
+			"left": "2 cups lentils",
+			"right": "1 oz lentils",
+			"category": "cross-dimension",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "xdim-flour",
+			"left": "2 cups flour",
+			"right": "200 g all-purpose flour",
+			"category": "cross-dimension",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "xdim-water",
+			"left": "5 cups water",
+			"right": "50 g water",
+			"category": "cross-dimension",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "xdim-butter",
+			"left": "4 tbsp butter",
+			"right": "30 g butter",
+			"category": "cross-dimension",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "xdim-chicken",
+			"left": "1 cup chicken",
+			"right": "200 g chicken",
+			"category": "cross-dimension",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "xdim-salt",
+			"left": "3 tsp salt",
+			"right": "6 g salt",
+			"category": "cross-dimension",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "count-garlic-clove-bunch",
+			"left": "6 cloves garlic",
+			"right": "2 bunches garlic",
+			"category": "count-unit",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "count-tomatoes-can-piece",
+			"left": "3 cans artichoke hearts",
+			"right": "1 piece artichoke hearts",
+			"category": "count-unit",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "count-parsley-bunch-piece",
+			"left": "2 bunches marjoram",
+			"right": "4 pieces marjoram",
+			"category": "count-unit",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "count-beans-can-bunch",
+			"left": "2 cans beans",
+			"right": "1 bunch beans",
+			"category": "count-unit",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "count-ginger-piece-bunch",
+			"left": "1 piece ginger",
+			"right": "1 bunch ginger",
+			"category": "count-unit",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "count-garlic-clove-can",
+			"left": "8 cloves garlic",
+			"right": "1 can garlic",
+			"category": "count-unit",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "count-dill-bunch-can",
+			"left": "1 bunch dill",
+			"right": "1 can dill",
+			"category": "count-unit",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "count-tofu-piece-can",
+			"left": "3 pieces tofu",
+			"right": "1 can tofu",
+			"category": "count-unit",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "count-scallion-bunch-piece",
+			"left": "2 bunches scallions",
+			"right": "1 piece scallions",
+			"category": "count-unit",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "count-chicken-can-clove",
+			"left": "1 can chicken",
+			"right": "2 cloves chicken",
+			"category": "count-unit",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "fresh-basil",
+			"left": "1 cup fresh basil",
+			"right": "1 cup dried basil",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "fresh-thyme",
+			"left": "1 tbsp fresh thyme",
+			"right": "1 tbsp dried thyme",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "fresh-mint",
+			"left": "2 cups fresh mint",
+			"right": "2 cups dried mint",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "fresh-oregano",
+			"left": "2 tsp fresh oregano",
+			"right": "2 tsp dried oregano",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "fresh-ginger",
+			"left": "1 lb fresh ginger",
+			"right": "1 lb dried ginger",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "fresh-turmeric",
+			"left": "100 g fresh turmeric",
+			"right": "100 g dried turmeric",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "salted-butter",
+			"left": "3 tbsp salted butter",
+			"right": "3 tbsp unsalted butter",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "salted-butter-volume",
+			"left": "2 tbsp salted butter",
+			"right": "1 tsp unsalted butter",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "raw-chicken-cup",
+			"left": "1 cup raw chicken",
+			"right": "1 cup cooked chicken",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "raw-chicken-mass",
+			"left": "2 lb raw chicken",
+			"right": "4 oz cooked chicken",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "whole-coriander",
+			"left": "2 tsp whole coriander",
+			"right": "2 tsp ground coriander",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "whole-coriander-seeds",
+			"left": "1 tbsp whole coriander",
+			"right": "2 tsp ground coriander seeds",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "bone-chicken",
+			"left": "2 lb boneless chicken",
+			"right": "8 oz bone-in chicken",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "bone-chicken-thigh",
+			"left": "2 cups boneless chicken",
+			"right": "1 cup bone-in chicken thighs",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "dried-cilantro",
+			"left": "2 cups fresh cilantro",
+			"right": "2 tbsp dried cilantro",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "metric-barley",
+			"left": "1 cup barley",
+			"right": "240 ml barley",
+			"category": "cross-system-volume",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "metric-millet",
+			"left": "1 tbsp millet",
+			"right": "15 ml millet",
+			"category": "cross-system-volume",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "metric-quinoa",
+			"left": "1 tsp quinoa",
+			"right": "5 ml quinoa",
+			"category": "cross-system-volume",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "metric-farro",
+			"left": "1 fl oz farro water",
+			"right": "30 ml farro water",
+			"category": "cross-system-volume",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "metric-broth",
+			"left": "3 cups broth",
+			"right": "50 ml broth",
+			"category": "cross-system-volume",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "metric-stock",
+			"left": "2 cups stock",
+			"right": "100 ml stock",
+			"category": "cross-system-volume",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "metric-whey",
+			"left": "1 pint whey",
+			"right": "100 ml whey",
+			"category": "cross-system-volume",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "metric-dashi",
+			"left": "1 quart dashi",
+			"right": "1 l dashi",
+			"category": "cross-system-volume",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "salted-butter-mass",
+			"left": "1 oz salted butter",
+			"right": "1 oz unsalted butter",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "raw-shrimp",
+			"left": "100 g raw shrimp",
+			"right": "100 g cooked shrimp",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "whole-flour",
+			"left": "1 cup whole flour",
+			"right": "1 cup ground flour",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "fresh-basil-mixed",
+			"left": "2 tsp fresh basil",
+			"right": "1 tbsp dried basil",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "bone-thigh-mass",
+			"left": "2 lb boneless chicken thighs",
+			"right": "8 oz bone-in chicken thighs",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "fresh-garlic",
+			"left": "3 cloves fresh garlic",
+			"right": "1 clove dried garlic",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		},
+		{
+			"id": "salted-water",
+			"left": "1 cup salted water",
+			"right": "1 cup unsalted water",
+			"category": "blocking-qualifier",
+			"expectedMergeRuleId": "v2.keep-separate"
+		}
+	]
+}
