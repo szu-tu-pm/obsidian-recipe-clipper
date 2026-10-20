@@ -7,12 +7,25 @@ export default defineConfig({
 		alias: { obsidian: fileURLToPath(new URL("./tests/helpers/obsidianStub.ts", import.meta.url)) },
 	},
 	test: {
-		environment: "node",
-		include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
-		environmentMatchGlobs: [
-			["**/*.test.tsx", "jsdom"],
-			["tests/unit/extraction/**/*.test.ts", "jsdom"],
-			["tests/evals/**/*.test.ts", "jsdom"],
+		// Vitest 3+ dropped `environmentMatchGlobs`; each environment is now a project.
+		projects: [
+			{
+				extends: true,
+				test: {
+					name: "node",
+					environment: "node",
+					include: ["tests/**/*.test.ts"],
+					exclude: ["tests/unit/extraction/**", "tests/evals/**"],
+				},
+			},
+			{
+				extends: true,
+				test: {
+					name: "jsdom",
+					environment: "jsdom",
+					include: ["tests/**/*.test.tsx", "tests/unit/extraction/**/*.test.ts", "tests/evals/**/*.test.ts"],
+				},
+			},
 		],
 		coverage: {
 			include: ["src/**/*.{ts,tsx}"],

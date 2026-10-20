@@ -21,7 +21,7 @@
 	"author": "Greg Szu-Tu",
 	"license": "MIT",
 	"engines": {
-		"node": ">=20"
+		"node": ">=20.19"
 	},
 	"dependencies": {
 		"@jlucaspains/sharp-recipe-parser": "^2.1.0",
@@ -34,13 +34,14 @@
 		"@types/node": "^22.10.1",
 		"@types/react": "^18.3.12",
 		"@types/react-dom": "^18.3.1",
-		"@vitest/coverage-v8": "^2.1.9",
+		"@vitest/coverage-v8": "5.0.5",
 		"builtin-modules": "4.0.0",
-		"esbuild": "^0.24.2",
+		"esbuild": "^0.28.2",
 		"jsdom": "^26.0.0",
 		"obsidian": "latest",
 		"tslib": "2.8.1",
 		"typescript": "^5.6.3",
-		"vitest": "^2.1.9"
+		"vite-node": "6.0.0",
+		"vitest": "5.0.5"
 	}
 }
