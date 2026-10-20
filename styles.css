@@ -317,3 +317,29 @@
 	text-align: left;
 	vertical-align: top;
 }
+
+.recipe-clipper-mismatch-flag {
+	display: inline-block;
+	margin-right: 0.6em;
+	padding: 0 0.4em;
+	border: 1px solid var(--text-warning, currentColor);
+	border-radius: 4px;
+	color: var(--text-warning, inherit);
+	font-size: 0.85em;
+}
+
+.recipe-clipper-ingredient-disagreements {
+	margin: 0.75em 0;
+}
+
+.recipe-clipper-disagreement {
+	display: grid;
+	gap: 0.2em;
+	margin: 0.5em 0;
+}
+
+.recipe-clipper-disagreement label {
+	display: flex;
+	align-items: baseline;
+	gap: 0.4em;
+}

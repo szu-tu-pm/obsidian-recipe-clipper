@@ -1,3 +1,4 @@
+import type { IngredientDisagreement } from "./ingredientDisagreement";
 import type { ExtractionMethod, RecipeDocument, RecipeIngredient } from "../schema/recipeSchema";
 
 export interface CandidateImage {
@@ -43,6 +44,8 @@ export interface ExtractionCandidate {
 	candidateImages: CandidateImage[];
 	attribution: Attribution;
 	extractionMethod: MachineExtractionMethod;
+	/** Ingredients where the structured data and the page's visible list differ. Empty when they agree or there is no visible list. */
+	ingredientDisagreements: IngredientDisagreement[];
 	draft: RecipeDocument;
 }
 
