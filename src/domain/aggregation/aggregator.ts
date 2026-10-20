@@ -184,20 +184,20 @@ function decisionFor(
 	const refusal = list[0].refusal;
 	if (refusal === "non-numeric") {
 		return {
-			mergeRuleId: "v1.keep-separate",
+			mergeRuleId: `${RULES_VERSION}.keep-separate`,
 			mergeReason: "Non-numeric quantity; entries were not merged.",
 		};
 	}
 	if (refusal === "unsupported-unit") {
 		return {
-			mergeRuleId: "v1.keep-separate",
+			mergeRuleId: `${RULES_VERSION}.keep-separate`,
 			mergeReason: "Unsupported unit; entries were not merged.",
 		};
 	}
 	if (list.length > 1) {
 		const usedAlias = list.some((item) => item.usedAlias);
 		return {
-			mergeRuleId: usedAlias ? "v1.merge-alias" : "v1.merge-same-dimension",
+			mergeRuleId: usedAlias ? `${RULES_VERSION}.merge-alias` : `${RULES_VERSION}.merge-same-dimension`,
 			mergeReason: usedAlias
 				? "Alias and compatible units were summed in the canonical unit."
 				: "Compatible units were summed in the canonical unit.",
@@ -205,12 +205,12 @@ function decisionFor(
 	}
 	if (related.length > 1) {
 		return {
-			mergeRuleId: "v1.keep-separate",
+			mergeRuleId: `${RULES_VERSION}.keep-separate`,
 			mergeReason: conflictReason(related),
 		};
 	}
 	return {
-		mergeRuleId: "v1.no-merge",
+		mergeRuleId: `${RULES_VERSION}.no-merge`,
 		mergeReason: "No compatible ingredient to merge.",
 	};
 }

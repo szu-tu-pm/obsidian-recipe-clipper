@@ -104,6 +104,25 @@ const CUSTOM_UNIT_AFTER_QUANTITY = new RegExp(
 	"i",
 );
 
+const PACKAGE_SIZE_UNIT = String.raw`(?:g|grams?|kg|kilograms?|oz\.?|ounces?|lb|lbs|pounds?)`;
+const PACKAGE_CONTAINER = String.raw`(?:cans?)`;
+const PARENTHESIZED_PACKAGE = new RegExp(
+	String.raw`^\s*(${QUANTITY_PART})\s+\(\s*(${QUANTITY_PART})\s+(${PACKAGE_SIZE_UNIT})\s*\)\s+(${PACKAGE_CONTAINER})\s+(.+)$`,
+	"i",
+);
+const HYPHENATED_PACKAGE = new RegExp(
+	String.raw`^\s*(${QUANTITY_PART})\s+(${QUANTITY_PART})-(${PACKAGE_SIZE_UNIT})\s+(${PACKAGE_CONTAINER})\s+(.+)$`,
+	"i",
+);
+const UNPARENTHESIZED_PACKAGE = new RegExp(
+	String.raw`^\s*(${QUANTITY_PART})\s+(${QUANTITY_PART})\s+(${PACKAGE_SIZE_UNIT})\s+(${PACKAGE_CONTAINER})\s+(.+)$`,
+	"i",
+);
+const HYPHENATED_PIECE = new RegExp(
+	String.raw`^\s*(?:a|an|one)\s+(${QUANTITY_PART})-(inch|inches)\s+(piece)\s+of\s+(.+)$`,
+	"i",
+);
+
 const DUAL_UNIT_PAREN = /^\s*[\d./\s-]+\s*[a-zA-Zµμ.]+\s*$/;
 
 export function normalizeVulgarFractions(text: string): string {
@@ -123,14 +142,65 @@ export function isNonNumericQualifier(text: string): boolean {
 
 function extractParentheticals(text: string): { text: string; notes: string[] } {
 	const notes: string[] = [];
-	const stripped = text.replace(/\(([^)]*)\)/g, (_match, inner: string) => {
-		const trimmed = inner.trim();
-		if (trimmed) {
-			notes.push(trimmed);
+	const pairs: Record<string, string> = { "(": ")", "[": "]", "{": "}" };
+	const closers = new Set(Object.values(pairs));
+	const stack: string[] = [];
+	let stripped = "";
+	let note = "";
+	for (const character of text) {
+		if (pairs[character]) {
+			stack.push(pairs[character]);
+			continue;
 		}
-		return " ";
-	});
-	return { text: stripped.replace(/\s+/g, " ").trim(), notes };
+		if (closers.has(character)) {
+			if (stack.length > 0) {
+				const expected = stack.at(-1);
+				if (character === expected) {
+					stack.pop();
+				}
+				if (stack.length === 0) {
+					const trimmed = note.replace(/[()[\]{}]/g, " ").replace(/\s+/g, " ").trim();
+					if (trimmed) {
+						notes.push(trimmed);
+					}
+					note = "";
+					stripped += " ";
+				}
+			}
+			continue;
+		}
+		if (stack.length > 0) {
+			note += character;
+		} else {
+			stripped += character;
+		}
+	}
+	if (note.trim()) {
+		notes.push(note.replace(/[()[\]{}]/g, " ").replace(/\s+/g, " ").trim());
+	}
+	return { text: stripped.replace(/[()[\]{}]/g, " ").replace(/\s+/g, " ").trim(), notes };
+}
+
+function extractTrailingNotes(text: string): {
+	text: string;
+	qualifiers: string[];
+	preparations: string[];
+} {
+	const qualifiers: string[] = [];
+	const preparations: string[] = [];
+	let remaining = text;
+	for (const pattern of [
+		{ regex: /(?:,\s*)?(plus more if needed)\s*$/i, destination: qualifiers },
+		{ regex: /(?:,\s*)?(or to taste)\s*$/i, destination: qualifiers },
+		{ regex: /(?:,\s*)?(divided)\s*$/i, destination: preparations },
+	]) {
+		const match = remaining.match(pattern.regex);
+		if (match) {
+			pattern.destination.push(match[1]);
+			remaining = remaining.slice(0, match.index).replace(/[\s,]+$/g, "");
+		}
+	}
+	return { text: remaining.trim(), qualifiers, preparations };
 }
 
 /** Canonicalize unit tokens so aliases like `fl. oz.`, `T`, and `c` classify correctly. */
@@ -157,6 +227,14 @@ export function normalizeUnit(unit: string): string {
 export function inferUnitSystem(unit: string | null): UnitSystem | null {
 	if (!unit) {
 		return null;
+	}
+	const compoundDescriptor = unit
+		.trim()
+		.toLowerCase()
+		.replace(/([a-z])\./g, "$1")
+		.match(/^\d+(?:\.\d+)?(?:\s*-\s*|\s+)([a-z]+)\s+[a-z]+$/i)?.[1];
+	if (compoundDescriptor) {
+		return inferUnitSystem(compoundDescriptor);
 	}
 	const key = normalizeUnit(unit);
 	if (METRIC_UNITS.has(key)) {
@@ -211,23 +289,27 @@ export function parseIngredientLine(raw: string): RecipeIngredient {
 		return emptyIngredient(rawText, "ambiguous");
 	}
 
-	const { text: withoutParens, notes: parentheticals } = extractParentheticals(
-		normalizeVulgarFractions(trimmed).replace(/[\u2013\u2014]/g, "-"),
-	);
-	const exactQuantity = parseLeadingQuantity(withoutParens);
-	const customUnit = replaceCustomUnit(withoutParens);
+	const normalized = normalizeVulgarFractions(trimmed).replace(/[\u2013\u2014]/g, "-");
+	const sizedUnit = replaceSizedUnit(normalized);
+	const { text: withoutParens, notes: parentheticals } = extractParentheticals(sizedUnit.text);
+	const trailing = extractTrailingNotes(withoutParens);
+	const exactQuantity = parseLeadingQuantity(trailing.text);
+	const customUnit = sizedUnit.unit
+		? { text: trailing.text, unit: sizedUnit.unit }
+		: replaceCustomUnit(trailing.text);
 
 	if (isNonNumericQualifier(trimmed) && !hasExplicitNumericQuantity(trimmed)) {
 		const qualifiers = [
 			...parentheticals,
-			...NON_NUMERIC_PATTERNS.filter((pattern) => pattern.test(trimmed)).map((pattern) => {
-				const match = trimmed.match(pattern);
+			...trailing.qualifiers,
+			...NON_NUMERIC_PATTERNS.filter((pattern) => pattern.test(trailing.text)).map((pattern) => {
+				const match = trailing.text.match(pattern);
 				return match?.[0] ?? "";
 			}),
 		].filter(Boolean);
 		return {
 			...emptyIngredient(rawText, "non_numeric"),
-			name: stripNonNumeric(withoutParens) || trimmed,
+			name: stripNonNumeric(trailing.text) || trimmed,
 			qualifiers: unique(qualifiers),
 			optional: /\boptional\b/i.test(trimmed),
 		};
@@ -243,14 +325,14 @@ export function parseIngredientLine(raw: string): RecipeIngredient {
 	} catch {
 		return {
 			...emptyIngredient(rawText, "ambiguous"),
-			qualifiers: parentheticals,
+			qualifiers: unique([...parentheticals, ...trailing.qualifiers]),
 		};
 	}
 
 	if (!parsed || !parsed.ingredient) {
 		return {
 			...emptyIngredient(rawText, classify(trimmed, null, null)),
-			qualifiers: parentheticals,
+			qualifiers: unique([...parentheticals, ...trailing.qualifiers]),
 		};
 	}
 
@@ -261,10 +343,15 @@ export function parseIngredientLine(raw: string): RecipeIngredient {
 	const isRange = quantity !== quantityMax;
 	const hasQuantity = Number.isFinite(quantity) && quantity > 0;
 	const unit = customUnit.unit ?? (parsed.unitText || parsed.unit || null);
-	const preparation = parsed.extra?.trim() ? parsed.extra.trim() : null;
+	const preparationParts = unique([
+		...(parsed.extra?.trim() ? [parsed.extra.trim()] : []),
+		...trailing.preparations,
+	]);
+	const preparation = preparationParts.length > 0 ? preparationParts.join(", ") : null;
 	const dualUnits = parentheticals.filter((note) => DUAL_UNIT_PAREN.test(note));
 	const qualifiers = unique([
 		...parentheticals,
+		...trailing.qualifiers,
 		...dualUnits.map((note) => `dual-unit:${note}`),
 	]);
 
@@ -277,7 +364,7 @@ export function parseIngredientLine(raw: string): RecipeIngredient {
 			quantity: null,
 			quantityMax: null,
 			unit: unit || null,
-			unitSystem: inferUnitSystem(parsed.unit || unit),
+			unitSystem: inferUnitSystem(unit || parsed.unit),
 			preparation,
 			qualifiers,
 			optional: /\boptional\b/i.test(trimmed),
@@ -293,12 +380,44 @@ export function parseIngredientLine(raw: string): RecipeIngredient {
 		quantity,
 		quantityMax: isRange ? quantityMax : null,
 		unit,
-		unitSystem: inferUnitSystem(parsed.unit || unit),
+		unitSystem: inferUnitSystem(unit || parsed.unit),
 		preparation,
 		qualifiers,
 		optional: /\boptional\b/i.test(trimmed),
 		parseConfidence: classify(trimmed, quantity, isRange ? quantityMax : quantity),
 	};
+}
+
+function replaceSizedUnit(text: string): { text: string; unit: string | null } {
+	const parenthesized = text.match(PARENTHESIZED_PACKAGE);
+	if (parenthesized) {
+		return {
+			text: `${parenthesized[1]} piece ${parenthesized[5]}`,
+			unit: `${parenthesized[2]} ${parenthesized[3]} ${parenthesized[4]}`,
+		};
+	}
+	const hyphenated = text.match(HYPHENATED_PACKAGE);
+	if (hyphenated) {
+		return {
+			text: `${hyphenated[1]} piece ${hyphenated[5]}`,
+			unit: `${hyphenated[2]}-${hyphenated[3]} ${hyphenated[4]}`,
+		};
+	}
+	const plain = text.match(UNPARENTHESIZED_PACKAGE);
+	if (plain) {
+		return {
+			text: `${plain[1]} piece ${plain[5]}`,
+			unit: `${plain[2]} ${plain[3]} ${plain[4]}`,
+		};
+	}
+	const piece = text.match(HYPHENATED_PIECE);
+	if (piece) {
+		return {
+			text: `1 piece ${piece[4]}`,
+			unit: `${piece[1]}-${piece[2]} ${piece[3]}`,
+		};
+	}
+	return { text, unit: null };
 }
 
 function replaceCustomUnit(text: string): { text: string; unit: string | null } {

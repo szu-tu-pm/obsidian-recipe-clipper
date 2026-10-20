@@ -7,7 +7,7 @@
       "expectedQuantity": 54,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "mass-butter",
@@ -16,7 +16,7 @@
       "expectedQuantity": 453.59237,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "count-onion",
@@ -25,7 +25,7 @@
       "expectedQuantity": 3,
       "expectedQuantityMax": null,
       "expectedUnit": "piece",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "count-garlic",
@@ -34,7 +34,7 @@
       "expectedQuantity": 5,
       "expectedQuantityMax": null,
       "expectedUnit": "clove",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "metric-flour",
@@ -43,7 +43,7 @@
       "expectedQuantity": 1000,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "volume-salt",
@@ -52,7 +52,7 @@
       "expectedQuantity": 3,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "alias-cilantro",
@@ -61,7 +61,7 @@
       "expectedQuantity": 72,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "volume-flour",
@@ -70,7 +70,7 @@
       "expectedQuantity": 54,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "fresh-cilantro",
@@ -79,7 +79,7 @@
       "expectedQuantity": 96,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "unknown-name-paprika",
@@ -88,7 +88,7 @@
       "expectedQuantity": 3,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "diacritic-jalapeno",
@@ -97,7 +97,7 @@
       "expectedQuantity": 3,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "tablespoon-alias",
@@ -106,7 +106,7 @@
       "expectedQuantity": 9,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "range-salt",
@@ -115,7 +115,7 @@
       "expectedQuantity": 2,
       "expectedQuantityMax": 3,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "tsp-salt-nine",
@@ -124,7 +124,7 @@
       "expectedQuantity": 9,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "tbsp-sugar",
@@ -133,7 +133,7 @@
       "expectedQuantity": 18,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "cup-water",
@@ -142,7 +142,7 @@
       "expectedQuantity": 192,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "ml-broth",
@@ -151,7 +151,7 @@
       "expectedQuantity": 1000,
       "expectedQuantityMax": null,
       "expectedUnit": "ml",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "g-rice",
@@ -160,7 +160,7 @@
       "expectedQuantity": 500,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "kg-beans",
@@ -169,7 +169,7 @@
       "expectedQuantity": 1000,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "oz-butter",
@@ -178,7 +178,7 @@
       "expectedQuantity": 453.59237,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "count-apples",
@@ -187,7 +187,7 @@
       "expectedQuantity": 5,
       "expectedQuantityMax": null,
       "expectedUnit": "piece",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "clove-garlic-five",
@@ -196,7 +196,7 @@
       "expectedQuantity": 5,
       "expectedQuantityMax": null,
       "expectedUnit": "clove",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "can-tomatoes",
@@ -205,7 +205,7 @@
       "expectedQuantity": 3,
       "expectedQuantityMax": null,
       "expectedUnit": "can",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "bunch-parsley",
@@ -214,7 +214,7 @@
       "expectedQuantity": 3,
       "expectedQuantityMax": null,
       "expectedUnit": "bunch",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "tsp-cumin",
@@ -223,7 +223,7 @@
       "expectedQuantity": 2,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "tbsp-oil",
@@ -232,7 +232,7 @@
       "expectedQuantity": 6,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "ounce-milk",
@@ -241,7 +241,7 @@
       "expectedQuantity": 170.09713875,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "pint-stock",
@@ -250,7 +250,7 @@
       "expectedQuantity": 192,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "quart-soup",
@@ -259,7 +259,7 @@
       "expectedQuantity": 288,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "gallon-water",
@@ -268,7 +268,7 @@
       "expectedQuantity": 384,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "cup-cream",
@@ -277,7 +277,7 @@
       "expectedQuantity": 48,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "kg-lentils",
@@ -286,7 +286,7 @@
       "expectedQuantity": 500,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "lb-pasta",
@@ -295,7 +295,7 @@
       "expectedQuantity": 453.59237,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "oz-cheese",
@@ -304,7 +304,7 @@
       "expectedQuantity": 113.3980925,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "liter-vinegar",
@@ -313,7 +313,7 @@
       "expectedQuantity": 1000,
       "expectedQuantityMax": null,
       "expectedUnit": "ml",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "ml-juice",
@@ -322,7 +322,7 @@
       "expectedQuantity": 500,
       "expectedQuantityMax": null,
       "expectedUnit": "ml",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "count-onions-eleven",
@@ -331,7 +331,7 @@
       "expectedQuantity": 11,
       "expectedQuantityMax": null,
       "expectedUnit": "piece",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "count-mushrooms",
@@ -340,7 +340,7 @@
       "expectedQuantity": 15,
       "expectedQuantityMax": null,
       "expectedUnit": "piece",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "kg-flour-second",
@@ -349,7 +349,7 @@
       "expectedQuantity": 1000,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "kg-rice",
@@ -358,7 +358,7 @@
       "expectedQuantity": 3000,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "kg-oats",
@@ -367,7 +367,7 @@
       "expectedQuantity": 1000,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "kg-sugar",
@@ -376,7 +376,7 @@
       "expectedQuantity": 500,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "kg-salt",
@@ -385,7 +385,7 @@
       "expectedQuantity": 30,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "tbsp-cocoa",
@@ -394,7 +394,7 @@
       "expectedQuantity": 9,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "tsp-yeast",
@@ -403,7 +403,7 @@
       "expectedQuantity": 5,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "liter-tea",
@@ -412,7 +412,7 @@
       "expectedQuantity": 1500,
       "expectedQuantityMax": null,
       "expectedUnit": "ml",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "grams-yeast",
@@ -421,7 +421,7 @@
       "expectedQuantity": 12,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "pounds-beef",
@@ -430,7 +430,7 @@
       "expectedQuantity": 1360.77711,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     },
     {
       "id": "alias-green-onion-tbsp",
@@ -439,7 +439,7 @@
       "expectedQuantity": 6,
       "expectedQuantityMax": null,
       "expectedUnit": "tsp",
-      "expectedMergeRuleId": "v1.merge-alias"
+      "expectedMergeRuleId": "v2.merge-alias"
     },
     {
       "id": "metric-tomatoes",
@@ -448,7 +448,7 @@
       "expectedQuantity": 500,
       "expectedQuantityMax": null,
       "expectedUnit": "g",
-      "expectedMergeRuleId": "v1.merge-same-dimension"
+      "expectedMergeRuleId": "v2.merge-same-dimension"
     }
   ],
   "unsafeMerges": [
@@ -457,350 +457,350 @@
       "left": "1 cup fresh cilantro",
       "right": "1 cup dried cilantro",
       "category": "qualifier:freshness",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "fresh-vs-dried-thyme",
       "left": "1 tsp fresh thyme",
       "right": "1 tsp dried thyme",
       "category": "qualifier:freshness",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "fresh-vs-dried-rosemary",
       "left": "1 tbsp fresh rosemary",
       "right": "1 tbsp dried rosemary",
       "category": "qualifier:freshness",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "plain-vs-fresh-thyme",
       "left": "1 tsp thyme",
       "right": "1 tsp fresh thyme",
       "category": "qualifier:freshness",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "plain-vs-dried-oregano",
       "left": "1 tsp oregano",
       "right": "1 tsp dried oregano",
       "category": "qualifier:freshness",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "fresh-vs-dried-parsley",
       "left": "1 cup fresh parsley",
       "right": "1 cup dried parsley",
       "category": "qualifier:freshness",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "salted-vs-unsalted-butter",
       "left": "1 tbsp salted butter",
       "right": "1 tbsp unsalted butter",
       "category": "qualifier:salt",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "plain-vs-salted-butter",
       "left": "1 tbsp butter",
       "right": "1 tbsp salted butter",
       "category": "qualifier:salt",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "plain-vs-unsalted-butter",
       "left": "1 tbsp butter",
       "right": "1 tbsp unsalted butter",
       "category": "qualifier:salt",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "salted-vs-unsalted-margarine",
       "left": "2 tbsp salted margarine",
       "right": "2 tbsp unsalted margarine",
       "category": "qualifier:salt",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "salted-vs-unsalted-peanuts",
       "left": "4 oz salted peanuts",
       "right": "4 oz unsalted peanuts",
       "category": "qualifier:salt",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "salted-vs-unsalted-stock",
       "left": "1 cup salted stock",
       "right": "1 cup unsalted stock",
       "category": "qualifier:salt",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "raw-vs-cooked-shrimp",
       "left": "8 oz raw shrimp",
       "right": "8 oz cooked shrimp",
       "category": "qualifier:doneness",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "plain-vs-raw-shrimp",
       "left": "8 oz shrimp",
       "right": "8 oz raw shrimp",
       "category": "qualifier:doneness",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "plain-vs-cooked-shrimp",
       "left": "8 oz shrimp",
       "right": "8 oz cooked shrimp",
       "category": "qualifier:doneness",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "raw-vs-cooked-chicken",
       "left": "1 lb raw chicken",
       "right": "1 lb cooked chicken",
       "category": "qualifier:doneness",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "raw-vs-cooked-salmon",
       "left": "6 oz raw salmon",
       "right": "6 oz cooked salmon",
       "category": "qualifier:doneness",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "raw-vs-cooked-rice",
       "left": "1 cup raw rice",
       "right": "1 cup cooked rice",
       "category": "qualifier:doneness",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "whole-vs-ground-coriander",
       "left": "1 tsp whole coriander",
       "right": "1 tsp ground coriander",
       "category": "qualifier:form",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "whole-vs-ground-cumin",
       "left": "1 tsp whole cumin",
       "right": "1 tsp ground cumin",
       "category": "qualifier:form",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "whole-vs-ground-pepper",
       "left": "1 tsp whole pepper",
       "right": "1 tsp ground pepper",
       "category": "qualifier:form",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "plain-vs-ground-coriander",
       "left": "1 tsp coriander",
       "right": "1 tsp ground coriander",
       "category": "qualifier:form",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "plain-vs-whole-cumin",
       "left": "1 tsp cumin",
       "right": "1 tsp whole cumin",
       "category": "qualifier:form",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "whole-vs-ground-cardamom",
       "left": "1 tsp whole cardamom",
       "right": "1 tsp ground cardamom",
       "category": "qualifier:form",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "boneless-vs-bone-in-chicken",
       "left": "1 lb boneless chicken thighs",
       "right": "1 lb bone-in chicken thighs",
       "category": "qualifier:bone",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "boneless-vs-bone-in-space",
       "left": "1 lb boneless chicken",
       "right": "1 lb bone in chicken",
       "category": "qualifier:bone",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "plain-vs-boneless-chicken",
       "left": "1 lb chicken",
       "right": "1 lb boneless chicken",
       "category": "qualifier:bone",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "plain-vs-bone-in-chicken",
       "left": "1 lb chicken",
       "right": "1 lb bone-in chicken",
       "category": "qualifier:bone",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "boneless-vs-bone-in-pork",
       "left": "1 lb boneless pork",
       "right": "1 lb bone-in pork",
       "category": "qualifier:bone",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "boneless-vs-bone-in-space-pork",
       "left": "1 lb boneless pork",
       "right": "1 lb bone in pork",
       "category": "qualifier:bone",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "count-clove-vs-bunch-garlic",
       "left": "2 cloves garlic",
       "right": "1 bunch garlic",
       "category": "count-unit",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "count-can-vs-piece-onion",
       "left": "1 can onions",
       "right": "2 onions",
       "category": "count-unit",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "count-bunch-vs-piece-onion",
       "left": "1 bunch onions",
       "right": "2 onions",
       "category": "count-unit",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "count-can-vs-bunch-cilantro",
       "left": "1 can cilantro",
       "right": "1 bunch cilantro",
       "category": "count-unit",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "count-piece-vs-bunch-chicken",
       "left": "2 pieces chicken",
       "right": "1 bunch chicken",
       "category": "count-unit",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "count-can-vs-piece-scallion",
       "left": "1 can scallions",
       "right": "2 scallions",
       "category": "count-unit",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "count-bunch-vs-piece-butter",
       "left": "1 bunch butter",
       "right": "2 pieces butter",
       "category": "count-unit",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "count-clove-vs-piece-garlic",
       "left": "2 cloves garlic",
       "right": "1 piece garlic",
       "category": "count-unit",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "cross-dimension-flour",
       "left": "1 cup all-purpose flour",
       "right": "120 g all-purpose flour",
       "category": "cross-dimension",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "cross-dimension-almonds",
       "left": "1 cup almonds",
       "right": "100 g almonds",
       "category": "cross-dimension",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "cross-dimension-rice",
       "left": "2 cups rice",
       "right": "400 g rice",
       "category": "cross-dimension",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "cross-dimension-cheese",
       "left": "1 cup cheese",
       "right": "4 oz cheese",
       "category": "cross-dimension",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "cross-dimension-oats",
       "left": "3 cups oats",
       "right": "300 g oats",
       "category": "cross-dimension",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "cross-dimension-tomatoes",
       "left": "3 cups tomatoes",
       "right": "400 g tomatoes",
       "category": "cross-dimension",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "cross-dimension-pasta",
       "left": "4 cups pasta",
       "right": "1 lb pasta",
       "category": "cross-dimension",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "cross-dimension-spinach",
       "left": "4 cups spinach",
       "right": "200 g spinach",
       "category": "cross-dimension",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "locale-volume-water",
       "left": "1 cup water",
       "right": "240 ml water",
       "category": "locale-volume",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "locale-volume-broth",
       "left": "1 cup broth",
       "right": "250 ml broth",
       "category": "locale-volume",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "locale-volume-oil",
       "left": "2 tbsp oil",
       "right": "30 ml oil",
       "category": "locale-volume",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     },
     {
       "id": "locale-volume-vinegar",
       "left": "1 tbsp vinegar",
       "right": "15 ml vinegar",
       "category": "locale-volume",
-      "expectedMergeRuleId": "v1.keep-separate"
+      "expectedMergeRuleId": "v2.keep-separate"
     }
   ]
 }

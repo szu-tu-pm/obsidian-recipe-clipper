@@ -115,7 +115,7 @@ describe("Phase 2 deterministic evaluation gates", () => {
 		}
 		expect(report.fixtureVersion).toBe("phase2-v3");
 		expect(report.fixtureManifestSha256).toMatch(/^[0-9a-f]{64}$/);
-		expect(report.rulesVersion).toBe("v1");
+		expect(report.rulesVersion).toBe("v2");
 		expect(report.ollama).toMatchObject({
 			models: ["qwen2.5:7b-instruct"],
 			promptVersion: "ollama-recipe-extraction-v1",
@@ -262,7 +262,7 @@ describe("Phase 2 deterministic evaluation gates", () => {
 		const wrongSemantics = await runEvaluation({
 			aggregatePair: (pair) => aggregatePair(pair).map((row) =>
 				pair.id === "metric-flour" && row.sourceRefs.length === 2
-					? { ...row, mergeRuleId: "v1.merge-same-dimension" }
+					? { ...row, mergeRuleId: "v2.merge-same-dimension" }
 					: row),
 		});
 		expect(wrongSemantics.gates.safeMergeRecall.passed).toBe(true);

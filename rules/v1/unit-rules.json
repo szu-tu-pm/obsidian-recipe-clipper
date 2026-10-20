@@ -1,5 +1,9 @@
 {
-  "version": "v1",
+  "version": "v2",
+  "compoundUnits": [
+    { "containerUnitId": "can", "descriptorUnitIds": ["g", "kg", "oz", "lb"], "multiplyByDescriptor": true },
+    { "containerUnitId": "piece", "descriptorAliases": ["inch", "inches"], "multiplyByDescriptor": false }
+  ],
   "units": [
     { "id": "g", "dimension": "mass", "canonical": "g", "factor": 1, "aliases": ["g", "gram", "grams"] },
     { "id": "kg", "dimension": "mass", "canonical": "g", "factor": 1000, "aliases": ["kg", "kilogram", "kilograms"] },

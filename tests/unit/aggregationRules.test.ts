@@ -67,8 +67,8 @@ describe("aggregation rules", () => {
 		for (const [left, right] of FALSE_MERGES) {
 			const result = pair(left, right);
 			expect(result).toHaveLength(2);
-			expect(result.every((row) => row.mergeRuleId === "v1.keep-separate")).toBe(true);
-			expect(result.every((row) => row.rulesVersion === "v1" && row.mergeReason.length > 0)).toBe(true);
+			expect(result.every((row) => row.mergeRuleId === "v2.keep-separate")).toBe(true);
+			expect(result.every((row) => row.rulesVersion === "v2" && row.mergeReason.length > 0)).toBe(true);
 		}
 	});
 
@@ -85,8 +85,8 @@ describe("aggregation rules", () => {
 		expect(result.quantityMax).toBeNull();
 		expect(result.unit).toBe("tsp");
 		expect(result.dimension).toBe("us_volume");
-		expect(result.mergeRuleId).toBe("v1.merge-alias");
-		expect(result.rulesVersion).toBe("v1");
+		expect(result.mergeRuleId).toBe("v2.merge-alias");
+		expect(result.rulesVersion).toBe("v2");
 		expect(result.sourceRefs.map((ref) => ref.recipeId).sort()).toEqual(["rec_a", "rec_b"]);
 
 		const [sameRecipe] = aggregateIngredients(fromLines([
@@ -136,7 +136,7 @@ describe("aggregation rules", () => {
 	it("keeps identical unknown names together and different names apart", () => {
 		const [paprika] = pair("1 tsp paprika", "2 tsp paprika");
 		expect(paprika.quantity).toBe(3);
-		expect(paprika.mergeRuleId).toBe("v1.merge-same-dimension");
+		expect(paprika.mergeRuleId).toBe("v2.merge-same-dimension");
 		expect(paprika.canonicalId).toBe("name:paprika");
 
 		const [peppers] = pair("1 tsp jalapeño", "2 tsp jalapeno");
@@ -159,8 +159,8 @@ describe("aggregation rules", () => {
 		expect(pinch.every((row) => row.mergeReason.includes("Unsupported unit"))).toBe(true);
 
 		const [only] = aggregateIngredients(fromLines([["rec_a", "1 tsp salt"]]));
-		expect(only.mergeRuleId).toBe("v1.no-merge");
-		expect(only.rulesVersion).toBe("v1");
+		expect(only.mergeRuleId).toBe("v2.no-merge");
+		expect(only.rulesVersion).toBe("v2");
 	});
 
 	it("sums ranges by keeping the upper bound", () => {
@@ -191,7 +191,7 @@ describe("aggregation rules", () => {
 	});
 
 	it("rejects mixed rule versions and ignores empty phrases", () => {
-		expect(sharedRulesVersion("v1", "v1")).toBe("v1");
+		expect(sharedRulesVersion("v2", "v2")).toBe("v2");
 		expect(() => sharedRulesVersion("v1", "v2")).toThrow(/share one version/);
 		expect(() => sharedRulesVersion()).toThrow(/share one version/);
 		expect(containsPhrase("unsalted butter", "salted")).toBe(false);
@@ -245,7 +245,7 @@ describe("aggregation rules", () => {
 		const result = aggregateIngredients(sources);
 		expect(performance.now() - started).toBeLessThan(50);
 		expect(result.length).toBeGreaterThan(0);
-		expect(result.every((row) => row.rulesVersion === "v1")).toBe(true);
+		expect(result.every((row) => row.rulesVersion === "v2")).toBe(true);
 	});
 
 	it("does not call a model or the network", () => {

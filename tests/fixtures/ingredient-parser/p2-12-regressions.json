@@ -1,0 +1,26 @@
+[
+  { "id": "plain-10-ounce-can", "category": "package-size", "raw": "1 10 ounce can cream of chicken soup", "expected": { "quantity": 1, "unit": "10 ounce can", "name": "cream of chicken soup" } },
+  { "id": "parenthesized-10-ounce-can", "category": "package-size", "raw": "1 (10 ounce) can cream of chicken soup", "expected": { "quantity": 1, "unit": "10 ounce can", "name": "cream of chicken soup" } },
+  { "id": "hyphenated-14-point-5-ounce-cans", "category": "package-size", "raw": "2 14.5-ounce cans diced tomatoes", "expected": { "quantity": 2, "unit": "14.5-ounce cans", "name": "diced tomatoes" } },
+  { "id": "metric-400-g-cans", "category": "package-size", "raw": "3 400 g cans chickpeas", "expected": { "quantity": 3, "unit": "400 g cans", "name": "chickpeas" } },
+
+  { "id": "nested-beef-shank", "category": "brackets", "raw": "3 pounds beef shank ((1.4 kg, cut into 2-inch chunks))", "expected": { "quantity": 3, "unit": "pounds", "name": "beef shank", "qualifier": "1.4 kg, cut into 2-inch chunks" } },
+  { "id": "nested-garlic", "category": "brackets", "raw": "3 cloves garlic ((smashed))", "expected": { "name": "garlic", "qualifier": "smashed" } },
+  { "id": "nested-onion", "category": "brackets", "raw": "1 onion ((quartered))", "expected": { "name": "onion", "qualifier": "quartered" } },
+  { "id": "nested-tomato", "category": "brackets", "raw": "2 tomato ((chopped))", "expected": { "name": "tomato", "qualifier": "chopped" } },
+  { "id": "nested-scallions-lowercase", "category": "brackets", "raw": "2 scallions ((sliced))", "expected": { "name": "scallions", "qualifier": "sliced" } },
+  { "id": "nested-dried-chilies", "category": "brackets", "raw": "3 dried chilies ((stemmed))", "expected": { "name": "dried chilies", "qualifier": "stemmed" } },
+  { "id": "nested-water", "category": "brackets", "raw": "5 cups water ((divided))", "expected": { "name": "water", "qualifier": "divided" } },
+  { "id": "nested-cilantro", "category": "brackets", "raw": "Cilantro ((for garnish))", "expected": { "name": "Cilantro", "qualifier": "for garnish" } },
+  { "id": "nested-scallions-titlecase", "category": "brackets", "raw": "Scallions ((for garnish))", "expected": { "name": "Scallions", "qualifier": "for garnish" } },
+  { "id": "unbalanced-carrots", "category": "brackets", "raw": "4 carrots (peeled))", "expected": { "name": "carrots", "qualifier": "peeled" } },
+
+  { "id": "two-inch-ginger", "category": "hyphenated-measure", "raw": "A 2-inch piece of ginger ((smashed))", "expected": { "quantity": 1, "unit": "2-inch piece", "name": "ginger", "qualifier": "smashed" } },
+  { "id": "one-inch-turmeric", "category": "hyphenated-measure", "raw": "a 1-inch piece of turmeric", "expected": { "quantity": 1, "unit": "1-inch piece", "name": "turmeric" } },
+  { "id": "three-inch-cinnamon", "category": "hyphenated-measure", "raw": "one 3-inch piece of cinnamon", "expected": { "quantity": 1, "unit": "3-inch piece", "name": "cinnamon" } },
+
+  { "id": "stock-plus-more", "category": "trailing-note", "raw": "chicken stock plus more if needed", "expected": { "quantity": null, "unit": null, "name": "chicken stock", "qualifier": "plus more if needed" } },
+  { "id": "salt-or-to-taste", "category": "trailing-note", "raw": "salt or to taste", "expected": { "quantity": null, "unit": null, "name": "salt", "qualifier": "or to taste" } },
+  { "id": "flour-divided", "category": "trailing-note", "raw": "2 cups flour, divided", "expected": { "quantity": 2, "unit": "cups", "name": "flour", "preparation": "divided" } },
+  { "id": "measured-stock-plus-more", "category": "trailing-note", "raw": "5 cups chicken stock plus more if needed", "expected": { "quantity": 5, "unit": "cups", "name": "chicken stock", "qualifier": "plus more if needed" } }
+]

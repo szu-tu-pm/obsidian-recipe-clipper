@@ -52,7 +52,7 @@ describe("shopping list vault lifecycle", () => {
 		expect(listedIds.sort()).toEqual(ingredientIds.sort());
 
 		const merged = saved.frontmatter.items.find((item) => item.name === "paprika");
-		expect(merged?.mergeRuleId).toBe("v1.merge-same-dimension");
+		expect(merged?.mergeRuleId).toBe("v2.merge-same-dimension");
 		expect(merged?.mergeReason).toContain("Compatible units");
 		expect(merged?.sourceRefs).toHaveLength(2);
 		expect(merged?.status).toBe("need");
@@ -141,7 +141,7 @@ describe("shopping list editor", () => {
 		const dialog = await screen.findByRole("dialog", { name: "Paprika Night, Flour Soup" });
 		const paprikaRow = within(dialog).getByRole("listitem", { name: "paprika tsp" });
 		expect(within(paprikaRow).getByRole("button", { name: "paprika tsp: Do not have" })).toBeTruthy();
-		expect(within(paprikaRow).getByText("v1.merge-same-dimension: Compatible units were summed in the canonical unit.")).toBeTruthy();
+		expect(within(paprikaRow).getByText("v2.merge-same-dimension: Compatible units were summed in the canonical unit.")).toBeTruthy();
 		expect(within(paprikaRow).getByText("Paprika Night")).toBeTruthy();
 		expect(within(paprikaRow).getByText("Flour Soup")).toBeTruthy();
 
