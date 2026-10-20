@@ -148,4 +148,79 @@ describe("saved shopping lists follow the lists folder", () => {
 		expect(message.textContent).toContain('The shopping list "Monday" could not be opened');
 		await waitFor(() => expect(screen.queryByText("Monday")).toBeNull());
 	});
+
+	describe("overlapping reads", () => {
+		type Lists = ReturnType<typeof list>[];
+		function deferReads(services: ReturnType<typeof setup>["services"]) {
+			const pending: Array<(lists: Lists) => void> = [];
+			services.listShoppingLists = () =>
+				new Promise<Lists>((resolve) => {
+					pending.push(resolve);
+				});
+			return pending;
+		}
+
+		it("applies only the newest result when two vault events resolve out of order", async () => {
+			const { services } = setup(["Monday"]);
+			await screen.findByText("Monday");
+			const pending = deferReads(services);
+
+			await act(async () => {
+				services.emitVaultChange({ kind: "create", path: "Shopping Lists/Friday.md" });
+				services.emitVaultChange({ kind: "delete", path: "Shopping Lists/Monday.md" });
+			});
+			expect(pending).toHaveLength(2);
+
+			await act(async () => {
+				pending[1]([list("Friday")]);
+			});
+			await screen.findByText("Friday");
+			await act(async () => {
+				pending[0]([list("Monday")]); // older read, resolved last
+			});
+
+			expect(screen.getByText("Friday")).toBeTruthy();
+			expect(screen.queryByText("Monday")).toBeNull();
+		});
+
+		it("does not let a slow read that followed a plugin save undo a newer vault refresh", async () => {
+			const { services } = setup(["Monday"]);
+			await screen.findByText("Monday");
+			const pending = deferReads(services);
+
+			fireEvent.click(screen.getByRole("checkbox", { name: "Select Soup for shopping list" }));
+			fireEvent.click(screen.getByRole("button", { name: "Generate shopping list" }));
+			await waitFor(() => expect(pending).toHaveLength(1)); // post-save read is in flight
+
+			await act(async () => {
+				services.emitVaultChange({ kind: "delete", path: "Shopping Lists/Monday.md" });
+			});
+			expect(pending).toHaveLength(2);
+
+			await act(async () => {
+				pending[1]([list("Friday")]);
+			});
+			await screen.findByText("Friday");
+			await act(async () => {
+				pending[0]([list("Monday")]); // stale post-save read, resolved last
+			});
+
+			expect(screen.getByText("Friday")).toBeTruthy();
+			expect(screen.queryByText("Monday")).toBeNull();
+		});
+
+		it("ignores a read that resolves after the view unmounted", async () => {
+			const { services, unmount } = setup(["Monday"]);
+			await screen.findByText("Monday");
+			const pending = deferReads(services);
+			await act(async () => {
+				services.emitVaultChange({ kind: "create", path: "Shopping Lists/Friday.md" });
+			});
+			unmount();
+			await act(async () => {
+				pending[0]([list("Friday")]);
+			});
+			expect(screen.queryByText("Friday")).toBeNull();
+		});
+	});
 });

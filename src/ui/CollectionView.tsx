@@ -134,9 +134,9 @@ export function CollectionView({
 	}
 
 	const listRefresh = useRef(0);
-	function refreshSavedLists(): void {
+	function refreshSavedLists(): Promise<void> {
 		const request = ++listRefresh.current;
-		void services.listShoppingLists().then((lists) => {
+		return services.listShoppingLists().then((lists) => {
 			// Only the newest read may update the section; unmount invalidates all of them.
 			if (request === listRefresh.current) {
 				setSavedLists(lists);
@@ -145,7 +145,7 @@ export function CollectionView({
 	}
 
 	useEffect(() => {
-		refreshSavedLists();
+		void refreshSavedLists();
 		const unsubscribe = services.subscribeVaultChanges((event) => {
 			if (event.kind === "metadata") {
 				return;
@@ -154,7 +154,7 @@ export function CollectionView({
 			const inside = (path: string | undefined): boolean =>
 				path !== undefined && path.startsWith(`${folder}/`);
 			if (inside(event.path) || inside(event.previousPath)) {
-				refreshSavedLists();
+				void refreshSavedLists();
 			}
 		});
 		return () => {
@@ -331,7 +331,7 @@ export function CollectionView({
 			);
 			setStatus(null);
 		}
-		setSavedLists(await services.listShoppingLists());
+		await refreshSavedLists();
 	}
 
 	function scheduleShoppingListWrite(next: ShoppingListDocument, revision: number): void {
@@ -484,7 +484,7 @@ export function CollectionView({
 											setStatus(
 												`The shopping list "${list.frontmatter.title}" could not be opened: ${loaded.message}`,
 											);
-											refreshSavedLists();
+											void refreshSavedLists();
 										});
 									}}
 								>
