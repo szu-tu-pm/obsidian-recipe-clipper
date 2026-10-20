@@ -15,7 +15,7 @@ Everything automated that this task could run passed on the measured commit. Num
 - Commit: `78c890aa046cd3cc030650b0fa31ee94cd00cc55` (`main` at the merge of PR #22), on branch `claude/p3-4-release-audit`.
 - `git status --short` printed nothing before any command was run, so the tree was clean when measured. `main.js` is gitignored, so building does not dirty it.
 - Date 2026-10-20, macOS (Darwin 25.5.0), Vitest v5.0.5.
-- `npm run eval` and `npm run eval:held-out` rewrite the committed reports under `docs/eval-reports/`. The only differences were the "Git commit" and "Working tree dirty" lines (4 lines changed in each of 4 files). I reverted all four files with `git checkout -- docs/eval-reports`. The committed reports are untouched.
+- `npm run eval` and `npm run eval:held-out` rewrite the committed reports under `docs/eval-reports/`. The only differences were report metadata (the "Git commit" and "Working tree dirty" values). I reverted all four files with `git checkout -- docs/eval-reports`. The committed reports are untouched.
 - Not run: `npm run eval:live` (needs network and a live Ollama; brief excludes it).
 
 ## Gaps and blockers (read first)
@@ -154,7 +154,7 @@ All unchecked. I did none of these. Do them only after you have decided what to 
 
 - [ ] Read this summary and decide whether v1.0.0 may ship with desktop compatibility INCOMPLETE (Gap 2), or require the Obsidian round-trip first and update `docs/eval-reports/desktop-compatibility.md`.
 - [ ] Merge the P3-4 PR once you approve it.
-- [ ] On an up-to-date `main` with a clean tree, run `npm version 1.0.0`. This edits `package.json` and `package-lock.json`, then runs the `version` script (`version-bump.mjs`), which sets `manifest.json` `version` to `1.0.0` and adds `"1.0.0": "1.7.7"` to `versions.json`, stages both, and creates a commit and a git tag. Check the tag format: Obsidian release tags must exactly match `manifest.json` `version` with no leading `v`, so use `npm version 1.0.0 --no-git-tag-version` and tag `1.0.0` yourself if you want that, or accept npm's default `v1.0.0` and confirm it fits your release convention. The task text says "v1.0.0"; the Obsidian plugin guideline says no `v`. Decide before tagging.
+- [ ] On an up-to-date `main` with a clean tree, run `npm version 1.0.0`. This edits `package.json` and `package-lock.json`, then runs the `version` script (`version-bump.mjs`), which sets `manifest.json` `version` to `1.0.0` and adds `"1.0.0": "1.7.7"` to `versions.json`, stages both, and creates a commit and a git tag. Tag format: Obsidian release tags must exactly match `manifest.json` `version`, with no leading `v`. Run `npm version 1.0.0 --tag-version-prefix=""` instead, which makes the version commit and the tag `1.0.0` together (checked in a scratch clone). Plain `npm version 1.0.0` would tag `v1.0.0`. Do not use `--no-git-tag-version`: it makes no commit, so a manual tag would land on the old 0.1.0 commit. The task text says "v1.0.0"; the Obsidian plugin guideline says no `v`. Decide before tagging.
 - [ ] Run `npm ci`, `npm run build`, `npm run test:coverage` on the version-bumped commit. Confirm the bundle check prints under 500 KB.
 - [ ] Push the commit and tag.
 - [ ] Create the GitHub release for the tag and upload the three release assets: `main.js` (from `npm run build`; it is gitignored), `manifest.json`, and `styles.css`. The build copies `src/styles.css` to the root `styles.css` (`esbuild.config.mjs` line 49).
