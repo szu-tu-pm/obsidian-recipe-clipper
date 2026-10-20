@@ -559,6 +559,8 @@ export function webClipToReviewResult(options: WebClipIntakeOptions): WebClipRev
 		candidateImages: fields.images.slice(0, 5),
 		attribution,
 		extractionMethod: "json-ld",
+		// A clip note holds only the structured text, so there is no visible list to compare.
+		ingredientDisagreements: [],
 		draft,
 	};
 	return {

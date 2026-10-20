@@ -1,5 +1,10 @@
 import { useEffect, useId, useState } from "react";
 import { formatSourceAttribution } from "../../domain/extraction/attributionExtractor";
+import {
+	applyIngredientChoices,
+	type IngredientChoice,
+	type IngredientDisagreement,
+} from "../../domain/extraction/ingredientDisagreement";
 import { findDuplicateSourceUrls } from "../../domain/extraction/urlClipper";
 import {
 	applyWebClipCorrections,
@@ -59,6 +64,11 @@ export function ImportReviewModal({
 	const [changed, setChanged] = useState(false);
 	const manual = result.status === "manual-fallback";
 	const webClip = source === "web-clip";
+	const disagreements = candidate?.ingredientDisagreements ?? [];
+	const flagged = new Set(disagreements.map((item) => item.index));
+	const [choices, setChoices] = useState<Map<IngredientDisagreement, IngredientChoice>>(
+		() => new Map(),
+	);
 	const [corrections, setCorrections] = useState<WebClipCorrections>(() =>
 		correctionsFromDraft(draft),
 	);
@@ -96,7 +106,8 @@ export function ImportReviewModal({
 		setBusy(true);
 		setError(null);
 		try {
-			const toSave = webClip ? applyWebClipCorrections(draft, corrections) : draft;
+			const chosen = applyIngredientChoices(draft, disagreements, choices);
+			const toSave = webClip ? applyWebClipCorrections(chosen, corrections) : chosen;
 			let saved: RecipeDocument | null;
 			if (saveDraft) {
 				const outcome = await saveDraft(toSave);
@@ -214,8 +225,11 @@ export function ImportReviewModal({
 					<p>Not on the page</p>
 				) : (
 					<ul className="recipe-clipper-review-ingredients">
-						{draft.frontmatter.ingredients.map((ingredient) => (
+						{draft.frontmatter.ingredients.map((ingredient, position) => (
 							<li key={ingredient.id}>
+								{flagged.has(position) ? (
+									<span className="recipe-clipper-mismatch-flag">Differs from the page</span>
+								) : null}
 								<span className="recipe-clipper-confidence">
 									{confidenceLabel(ingredient.parseConfidence)}
 								</span>
@@ -224,6 +238,43 @@ export function ImportReviewModal({
 						))}
 					</ul>
 				)}
+				{disagreements.length > 0 ? (
+					<fieldset className="recipe-clipper-ingredient-disagreements">
+						<legend>Ingredients that differ from the visible page</legend>
+						<p>
+							The page&apos;s structured data and its visible ingredient list say different
+							things. The structured text is kept unless you pick the visible one.
+						</p>
+						{disagreements.map((item, position) => {
+							const picked = choices.get(item) ?? "structured";
+							const name = `ingredient-disagreement-${position}`;
+							const pick = (choice: IngredientChoice) =>
+								setChoices((current) => new Map(current).set(item, choice));
+							return (
+								<div key={position} className="recipe-clipper-disagreement">
+									<label>
+										<input
+											type="radio"
+											name={name}
+											checked={picked === "structured"}
+											onChange={() => pick("structured")}
+										/>
+										Structured data: <span>{item.structured ?? "Not in the structured data"}</span>
+									</label>
+									<label>
+										<input
+											type="radio"
+											name={name}
+											checked={picked === "visible"}
+											onChange={() => pick("visible")}
+										/>
+										Visible on page: <span>{item.visible ?? "Not on the visible page"}</span>
+									</label>
+								</div>
+							);
+						})}
+					</fieldset>
+				) : null}
 				<h4>Instructions</h4>
 				{draft.instructions.length === 0 ? (
 					<p>Not on the page</p>

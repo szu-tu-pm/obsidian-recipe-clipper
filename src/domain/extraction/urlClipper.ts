@@ -9,6 +9,7 @@ import {
 } from "../schema/recipeSchema";
 import { extractAttribution } from "./attributionExtractor";
 import { extractDomHeuristicRecipes } from "./domHeuristicExtractor";
+import { compareIngredientLists } from "./ingredientDisagreement";
 import { extractStructuredRecipes } from "./jsonLdExtractor";
 import { extractWithOllama, type OllamaExtractOptions } from "./ollamaExtractor";
 import { cleanText, normalizeRecipeSourceUrl, parseServings } from "./text";
@@ -219,6 +220,7 @@ function toCandidate(
 	ollamaAttribution: { author: string | null; siteName: string | null } | null,
 	now: string,
 	warnings: string[],
+	visible: ExtractedFields | null,
 ): ExtractionCandidate {
 	const structured =
 		fields.extractionMethod === "json-ld" || fields.extractionMethod === "microdata"
@@ -252,8 +254,35 @@ function toCandidate(
 		candidateImages: fields.images.slice(0, 5),
 		attribution,
 		extractionMethod: fields.extractionMethod,
+		ingredientDisagreements: visible
+			? compareIngredientLists(fields.ingredientsRaw, visible.ingredientsRaw)
+			: [],
 		draft,
 	};
+}
+
+/**
+ * The visible list to compare with a structured recipe: the page's only visible recipe when
+ * the page has one of each, otherwise the visible recipe with the same title. Anything less
+ * certain is not compared.
+ */
+function visibleCounterpart(
+	recipe: ExtractedFields,
+	structured: ExtractedFields[],
+	dom: ExtractedFields[],
+): ExtractedFields | null {
+	if (recipe.extractionMethod !== "json-ld" && recipe.extractionMethod !== "microdata") {
+		return null;
+	}
+	if (structured.length === 1 && dom.length === 1) {
+		return dom[0] ?? null;
+	}
+	const title = cleanText(recipe.title ?? "").toLowerCase();
+	if (!title) {
+		return null;
+	}
+	const same = dom.filter((item) => cleanText(item.title ?? "").toLowerCase() === title);
+	return same.length === 1 ? (same[0] ?? null) : null;
 }
 
 function manualDraft(
@@ -431,6 +460,7 @@ export async function extractRecipeFromPage(options: ClipPageOptions): Promise<U
 			recipe.extractionMethod === "ollama" ? ollamaAttribution : null,
 			now,
 			warnings,
+			visibleCounterpart(recipe, structured, dom),
 		),
 	);
 	if (singleStructured && candidates.length === 1 && candidates[0]?.extractionMethod !== "json-ld" && candidates[0]?.extractionMethod !== "microdata") {
