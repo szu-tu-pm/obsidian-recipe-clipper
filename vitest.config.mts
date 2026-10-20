@@ -28,6 +28,7 @@ export default defineConfig({
 			},
 		],
 		coverage: {
+			reporter: ["text", "html", "json-summary"],
 			include: ["src/**/*.{ts,tsx}"],
 			exclude: [
 				"src/main.ts", // Obsidian Plugin lifecycle requires the desktop runtime.

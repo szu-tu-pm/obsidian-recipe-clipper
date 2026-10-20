@@ -1,0 +1,894 @@
+{
+	"version": "held-out-v1",
+	"promptVersion": "ollama-recipe-extraction-v1",
+	"fixtures": [
+		{
+			"id": "heldout-tier1-barley-bowl",
+			"tier": 1,
+			"file": "tier1/barley-tahini.html",
+			"pageUrl": "https://public.example/held-out/barley-tahini",
+			"expected": [
+				{
+					"title": "Barley and Tahini Bowl",
+					"extractionMethod": "json-ld",
+					"ingredients": [
+						{
+							"raw": "1 1/2 cups pearled barley",
+							"quantity": 1.5,
+							"unit": "cups",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "1 3/4 cups millet",
+							"quantity": 1.75,
+							"unit": "cups",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "½ cup tahini",
+							"quantity": 0.5,
+							"unit": "cup",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "⅓ cup molasses",
+							"quantity": 0.3333333333333333,
+							"unit": "cup",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "2 to 3 cans chickpeas",
+							"quantity": 2,
+							"unit": "cans",
+							"category": "range",
+							"quantityMax": 3
+						},
+						{
+							"raw": "3-4 bay leaves",
+							"quantity": 3,
+							"unit": null,
+							"category": "range",
+							"quantityMax": 4
+						},
+						{
+							"raw": "8 ounces (227g) farro noodles",
+							"quantity": 8,
+							"unit": "ounces",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "2 cups (480 ml) beet juice",
+							"quantity": 2,
+							"unit": "cups",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "1 Tbsp. mustard oil",
+							"quantity": 1,
+							"unit": "Tbsp.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "½ c. freekeh",
+							"quantity": 0.5,
+							"unit": "c.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "6 fl oz grapefruit juice",
+							"quantity": 6,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "4 fl oz vegetable stock",
+							"quantity": 4,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "2 sprigs marjoram",
+							"quantity": 2,
+							"unit": "sprigs",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "3 sprigs savory",
+							"quantity": 3,
+							"unit": "sprigs",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "pepper as needed",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "herbs as desired",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "1 shallot, coarsely chopped",
+							"quantity": 1,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "1 leek, cut into wedges",
+							"quantity": 1,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "200 g brown lentils",
+							"quantity": 200,
+							"unit": "g",
+							"category": "simple"
+						},
+						{
+							"raw": "275 g beets",
+							"quantity": 275,
+							"unit": "g",
+							"category": "simple"
+						}
+					],
+					"instructions": [
+						"Toast the barley.",
+						"Whisk the tahini and fold it through."
+					],
+					"servingsRaw": "4 servings",
+					"prepTimeMinutes": 5,
+					"cookTimeMinutes": 20,
+					"totalTimeMinutes": 25,
+					"cookingMethods": [
+						"Roast"
+					],
+					"author": "Public Domain Test Kitchen",
+					"siteName": "Open Recipes"
+				}
+			]
+		},
+		{
+			"id": "heldout-tier1-millet-salad",
+			"tier": 1,
+			"file": "tier1/millet-citrus.html",
+			"pageUrl": "https://public.example/held-out/millet-citrus",
+			"expected": [
+				{
+					"title": "Millet and Citrus Salad",
+					"extractionMethod": "json-ld",
+					"ingredients": [
+						{
+							"raw": "2 1/4 tsp caraway seeds",
+							"quantity": 2.25,
+							"unit": "tsp",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "2 1/2 cups wheat berries",
+							"quantity": 2.5,
+							"unit": "cups",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "¼ tsp ground cardamom",
+							"quantity": 0.25,
+							"unit": "tsp",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "2⅓ cups mushroom stock",
+							"quantity": 2.3333333333333335,
+							"unit": "cups",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "4 to 5 cans tomatoes",
+							"quantity": 4,
+							"unit": "cans",
+							"category": "range",
+							"quantityMax": 5
+						},
+						{
+							"raw": "5-6 sage leaves",
+							"quantity": 5,
+							"unit": null,
+							"category": "range",
+							"quantityMax": 6
+						},
+						{
+							"raw": "4 ounces (113g) pecans",
+							"quantity": 4,
+							"unit": "ounces",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "1 cup (240 ml) apple cider",
+							"quantity": 1,
+							"unit": "cup",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "1 Tbsp. date syrup",
+							"quantity": 1,
+							"unit": "Tbsp.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "2 tsp. sumac",
+							"quantity": 2,
+							"unit": "tsp.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "2 fl. oz. rice vinegar",
+							"quantity": 2,
+							"unit": "fl. oz.",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "12 fl oz kombucha",
+							"quantity": 12,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "1 wedge cabbage",
+							"quantity": 1,
+							"unit": "wedge",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "4 wedges fennel",
+							"quantity": 4,
+							"unit": "wedges",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "chili oil as desired",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "paprika to taste",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "4 cloves garlic, crushed",
+							"quantity": 4,
+							"unit": "cloves",
+							"category": "comma-prep"
+						},
+						{
+							"raw": "8 cloves garlic, crushed",
+							"quantity": 8,
+							"unit": "cloves",
+							"category": "comma-prep"
+						},
+						{
+							"raw": "1 tsp turmeric",
+							"quantity": 1,
+							"unit": "tsp",
+							"category": "simple"
+						},
+						{
+							"raw": "1 cup quinoa",
+							"quantity": 1,
+							"unit": "cup",
+							"category": "simple"
+						}
+					],
+					"instructions": [
+						"Simmer the millet.",
+						"Dress it with citrus and herbs."
+					],
+					"servingsRaw": "4 servings",
+					"prepTimeMinutes": 10,
+					"cookTimeMinutes": 15,
+					"totalTimeMinutes": 25,
+					"cookingMethods": [
+						"Simmer"
+					],
+					"author": "Public Domain Test Kitchen",
+					"siteName": "Open Recipes"
+				}
+			]
+		},
+		{
+			"id": "heldout-tier1-lentil-stew",
+			"tier": 1,
+			"file": "tier1/lentil-grapefruit.html",
+			"pageUrl": "https://public.example/held-out/lentil-grapefruit",
+			"expected": [
+				{
+					"title": "Lentil and Grapefruit Stew",
+					"extractionMethod": "json-ld",
+					"ingredients": [
+						{
+							"raw": "3 1/2 tbsp sesame oil",
+							"quantity": 3.5,
+							"unit": "tbsp",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "1 1/4 tsp fennel seed",
+							"quantity": 1.25,
+							"unit": "tsp",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "¾ cup coconut milk",
+							"quantity": 0.75,
+							"unit": "cup",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "⅛ tsp ground cloves",
+							"quantity": 0.125,
+							"unit": "tsp",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "1 to 2 cans pumpkin",
+							"quantity": 1,
+							"unit": "cans",
+							"category": "range",
+							"quantityMax": 2
+						},
+						{
+							"raw": "2-3 mint leaves",
+							"quantity": 2,
+							"unit": null,
+							"category": "range",
+							"quantityMax": 3
+						},
+						{
+							"raw": "12 ounces (340g) tempeh strips",
+							"quantity": 12,
+							"unit": "ounces",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "3 cups (720 ml) mushroom broth",
+							"quantity": 3,
+							"unit": "cups",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "½ c. bulgur",
+							"quantity": 0.5,
+							"unit": "c.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "3 oz. halloumi",
+							"quantity": 3,
+							"unit": "oz.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "7 fl oz ginger beer",
+							"quantity": 7,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "5 fl. oz. coconut water",
+							"quantity": 5,
+							"unit": "fl. oz.",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "2 stalks lemongrass",
+							"quantity": 2,
+							"unit": "stalks",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "1 stalk celery",
+							"quantity": 1,
+							"unit": "stalk",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "vinegar as needed",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "broth as needed",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "7 cloves garlic, finely minced",
+							"quantity": 7,
+							"unit": "cloves",
+							"category": "comma-prep"
+						},
+						{
+							"raw": "11 cloves garlic, finely minced",
+							"quantity": 11,
+							"unit": "cloves",
+							"category": "comma-prep"
+						},
+						{
+							"raw": "180 g chard",
+							"quantity": 180,
+							"unit": "g",
+							"category": "simple"
+						},
+						{
+							"raw": "2 tbsp honey",
+							"quantity": 2,
+							"unit": "tbsp",
+							"category": "simple"
+						}
+					],
+					"instructions": [
+						"Soften the shallot and leek.",
+						"Bake until the lentils are tender."
+					],
+					"servingsRaw": "4 servings",
+					"prepTimeMinutes": 15,
+					"cookTimeMinutes": 40,
+					"totalTimeMinutes": 55,
+					"cookingMethods": [
+						"Bake"
+					],
+					"author": "Public Domain Test Kitchen",
+					"siteName": "Open Recipes"
+				}
+			]
+		},
+		{
+			"id": "heldout-tier2-polenta",
+			"tier": 2,
+			"file": "tier2/polenta-chili.html",
+			"pageUrl": "https://public.example/held-out/polenta-chili",
+			"expected": [
+				{
+					"title": "Polenta with Chili Crisp",
+					"extractionMethod": "dom-heuristic",
+					"ingredients": [
+						{
+							"raw": "2 1/2 cups polenta",
+							"quantity": 2.5,
+							"unit": "cups",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "3 1/4 cups buckwheat",
+							"quantity": 3.25,
+							"unit": "cups",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "½ cup miso",
+							"quantity": 0.5,
+							"unit": "cup",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "⅓ cup maple syrup",
+							"quantity": 0.3333333333333333,
+							"unit": "cup",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "6 to 7 cans artichokes",
+							"quantity": 6,
+							"unit": "cans",
+							"category": "range",
+							"quantityMax": 7
+						},
+						{
+							"raw": "7-8 thyme leaves",
+							"quantity": 7,
+							"unit": null,
+							"category": "range",
+							"quantityMax": 8
+						},
+						{
+							"raw": "6 ounces (170g) soba",
+							"quantity": 6,
+							"unit": "ounces",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "4 cups (960 ml) dashi",
+							"quantity": 4,
+							"unit": "cups",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "2 Tbsp. black vinegar",
+							"quantity": 2,
+							"unit": "Tbsp.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "½ c. teff",
+							"quantity": 0.5,
+							"unit": "c.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "3 fl oz yuzu juice",
+							"quantity": 3,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "10 fl oz barley tea",
+							"quantity": 10,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "5 sprigs dill",
+							"quantity": 5,
+							"unit": "sprigs",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "6 sprigs tarragon",
+							"quantity": 6,
+							"unit": "sprigs",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "fish sauce as needed",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "garnish as desired",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "1 fennel bulb, coarsely chopped",
+							"quantity": 1,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "2 plums, thinly sliced",
+							"quantity": 2,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "320 g black beans",
+							"quantity": 320,
+							"unit": "g",
+							"category": "simple"
+						},
+						{
+							"raw": "400 g potatoes",
+							"quantity": 400,
+							"unit": "g",
+							"category": "simple"
+						}
+					],
+					"instructions": [
+						"Stir the polenta until thick.",
+						"Spoon the chili crisp over the top."
+					],
+					"servingsRaw": null,
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": null,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": null
+				}
+			]
+		},
+		{
+			"id": "heldout-tier2-buckwheat",
+			"tier": 2,
+			"file": "tier2/buckwheat-yuzu.html",
+			"pageUrl": "https://public.example/held-out/buckwheat-yuzu",
+			"expected": [
+				{
+					"title": "Buckwheat and Yuzu",
+					"extractionMethod": "dom-heuristic",
+					"ingredients": [
+						{
+							"raw": "1 1/4 tsp smoked paprika",
+							"quantity": 1.25,
+							"unit": "tsp",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "1 1/2 lb parsnips",
+							"quantity": 1.5,
+							"unit": "lb",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "¼ cup harissa paste",
+							"quantity": 0.25,
+							"unit": "cup",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "⅛ cup yogurt",
+							"quantity": 0.125,
+							"unit": "cup",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "2 to 4 cans coconut cream",
+							"quantity": 2,
+							"unit": "cans",
+							"category": "range",
+							"quantityMax": 4
+						},
+						{
+							"raw": "4-5 oregano leaves",
+							"quantity": 4,
+							"unit": null,
+							"category": "range",
+							"quantityMax": 5
+						},
+						{
+							"raw": "10 ounces (283g) tofu",
+							"quantity": 10,
+							"unit": "ounces",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "5 cups (1200 ml) whey",
+							"quantity": 5,
+							"unit": "cups",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "3 Tbsp. chili oil",
+							"quantity": 3,
+							"unit": "Tbsp.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "4 tsp. zaatar",
+							"quantity": 4,
+							"unit": "tsp.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "8 fl. oz. clam juice",
+							"quantity": 8,
+							"unit": "fl. oz.",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "11 fl oz aloe juice",
+							"quantity": 11,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "2 wedges radicchio",
+							"quantity": 2,
+							"unit": "wedges",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "2 wedges endive",
+							"quantity": 2,
+							"unit": "wedges",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "sesame as desired",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "tea as needed",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "6 cloves garlic, crushed",
+							"quantity": 6,
+							"unit": "cloves",
+							"category": "comma-prep"
+						},
+						{
+							"raw": "12 cloves garlic, crushed",
+							"quantity": 12,
+							"unit": "cloves",
+							"category": "comma-prep"
+						},
+						{
+							"raw": "2 tsp cumin",
+							"quantity": 2,
+							"unit": "tsp",
+							"category": "simple"
+						},
+						{
+							"raw": "2 cups oats",
+							"quantity": 2,
+							"unit": "cups",
+							"category": "simple"
+						}
+					],
+					"instructions": [
+						"Boil the buckwheat.",
+						"Finish with yuzu juice."
+					],
+					"servingsRaw": null,
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": null,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": null
+				}
+			]
+		},
+		{
+			"id": "heldout-tier2-soba",
+			"tier": 2,
+			"file": "tier2/soba-tamarind.html",
+			"pageUrl": "https://public.example/held-out/soba-tamarind",
+			"expected": [
+				{
+					"title": "Soba and Tamarind",
+					"extractionMethod": "dom-heuristic",
+					"ingredients": [
+						{
+							"raw": "4 1/2 tbsp chili crisp",
+							"quantity": 4.5,
+							"unit": "tbsp",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "2 3/4 tsp anise seed",
+							"quantity": 2.75,
+							"unit": "tsp",
+							"category": "mixed-fraction"
+						},
+						{
+							"raw": "¾ tsp allspice",
+							"quantity": 0.75,
+							"unit": "tsp",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "½ tsp cinnamon",
+							"quantity": 0.5,
+							"unit": "tsp",
+							"category": "unicode-fraction"
+						},
+						{
+							"raw": "8 to 9 cans hominy",
+							"quantity": 8,
+							"unit": "cans",
+							"category": "range",
+							"quantityMax": 9
+						},
+						{
+							"raw": "9-10 curry leaves",
+							"quantity": 9,
+							"unit": null,
+							"category": "range",
+							"quantityMax": 10
+						},
+						{
+							"raw": "5 ounces (142g) feta",
+							"quantity": 5,
+							"unit": "ounces",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "6 cups (1440 ml) aquafaba",
+							"quantity": 6,
+							"unit": "cups",
+							"category": "dual-unit"
+						},
+						{
+							"raw": "½ c. amaranth",
+							"quantity": 0.5,
+							"unit": "c.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "6 oz. paneer",
+							"quantity": 6,
+							"unit": "oz.",
+							"category": "abbrev-period"
+						},
+						{
+							"raw": "9 fl oz tamarind water",
+							"quantity": 9,
+							"unit": "fl oz",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "1 fl. oz. bitters",
+							"quantity": 1,
+							"unit": "fl. oz.",
+							"category": "fl-oz"
+						},
+						{
+							"raw": "3 stalks rhubarb",
+							"quantity": 3,
+							"unit": "stalks",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "4 stalks chard",
+							"quantity": 4,
+							"unit": "stalks",
+							"category": "unknown-unit"
+						},
+						{
+							"raw": "stock to taste",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "sauce as needed",
+							"quantity": null,
+							"unit": null,
+							"category": "non-numeric"
+						},
+						{
+							"raw": "9 cloves garlic, finely minced",
+							"quantity": 9,
+							"unit": "cloves",
+							"category": "comma-prep"
+						},
+						{
+							"raw": "3 pears, peeled and diced",
+							"quantity": 3,
+							"unit": null,
+							"category": "comma-prep"
+						},
+						{
+							"raw": "150 g spinach",
+							"quantity": 150,
+							"unit": "g",
+							"category": "simple"
+						},
+						{
+							"raw": "3 eggs",
+							"quantity": 3,
+							"unit": null,
+							"category": "simple"
+						}
+					],
+					"instructions": [
+						"Cook the soba.",
+						"Toss with the tamarind water."
+					],
+					"servingsRaw": null,
+					"prepTimeMinutes": null,
+					"cookTimeMinutes": null,
+					"totalTimeMinutes": null,
+					"cookingMethods": [],
+					"author": null,
+					"siteName": null
+				}
+			]
+		}
+	]
+}

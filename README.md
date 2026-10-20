@@ -49,6 +49,34 @@ To load the plugin locally, copy or symlink this folder into `.obsidian/plugins/
 - **Greg Szu-Tu**: plugin scaffold, React-to-Obsidian wrapper, vault storage, URL extraction, ratings/images, PR merge sign-off.
 - **Lin**: test harness (Vitest, Playwright, isolated temp vault, GitHub Actions), ingredient rules engine, shopping lists, evaluations, Antigravity CLI audits.
 
+## Architecture notes
+
+- [ADR-001](docs/adr/001-react-obsidian-wrapper.md) — React UI talks to Obsidian only through an adapter.
+- [ADR-002](docs/adr/002-local-ingredient-rules-engine.md) — shopping lists merge with versioned local rules, not a model.
+- [ADR-003](docs/adr/003-three-tier-url-extraction.md) — structured data, then DOM cards, then grounded loopback Ollama.
+- [ADR-004](docs/adr/004-markdown-schema-v1.md) — versioned Markdown notes; the plugin writes schema v2.
+
+Agent constraints for this repo live in `AGENTS.md` and `.cursorrules`.
+
+## Evaluation
+
+`npm run eval` scores the tuning corpus and writes `docs/eval-reports/phase2-baseline-report.md`. `npm run eval:held-out` scores a separate corpus under `tests/evals/held-out/` and writes `docs/eval-reports/held-out-v1-report.md`. Neither command uses the network. `npm run test:coverage` enforces 80% coverage overall and 90% for aggregation and extraction.
+
+The held-out pages use the host `public.example` and the byline Public Domain Test Kitchen. They are not copies of anyone's published recipes.
+
+## Demo script
+
+Record this against a vault that contains only the public fixtures in `tests/evals/held-out/`. Do not open a personal vault, and do not paste a private note, a home-directory path, or a photo you do not have rights to.
+
+1. Build with `npm run build` and load the plugin from a dedicated test vault.
+2. Open **Open recipe manager**. The recipe list should be empty until you import one of the held-out pages.
+3. Import `https://public.example/held-out/barley-tahini` only if that host is served by your own fixture. Otherwise use **New recipe** and type the barley bowl from `tests/evals/held-out/manifest.json`.
+4. Save the note and show the frontmatter: `schemaVersion: 2`, units as typed, and a `rec_` id.
+5. Add a second recipe that shares an ingredient in a compatible unit, then open the shopping list and show one merged row. Add a fresh-versus-dried pair and show that those rows stay separate.
+6. Translate one saved recipe, then show that the shopping list still aggregates the original amounts.
+
+Screenshots and the Loom walkthrough are recorded by a person from this script. They are not checked in until that recording exists, so the repo does not ship images from a private vault.
+
 ## License
 
 MIT
