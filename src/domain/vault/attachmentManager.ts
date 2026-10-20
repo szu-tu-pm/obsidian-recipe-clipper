@@ -38,6 +38,29 @@ export function isAllowedImageExtension(ext: string): ext is ImageExtension {
 	return (IMAGE_EXTENSIONS as readonly string[]).includes(ext);
 }
 
+export function isSafeAttachmentPath(imagePath: string, attachmentsFolder: string): boolean {
+	if (!imagePath || typeof imagePath !== "string") {
+		return false;
+	}
+	const cleanFolder = joinVaultPath(attachmentsFolder);
+	const cleanPath = joinVaultPath(imagePath);
+	if (!cleanFolder || !cleanPath) {
+		return false;
+	}
+	const segments = cleanPath.split("/");
+	if (segments.some((segment) => segment === ".." || segment === "." || segment === "")) {
+		return false;
+	}
+	if (!cleanPath.startsWith(`${cleanFolder}/`)) {
+		return false;
+	}
+	const ext = extensionOf(cleanPath);
+	if (!isAllowedImageExtension(ext)) {
+		return false;
+	}
+	return true;
+}
+
 export class AttachmentManager {
 	constructor(
 		private readonly vault: VaultPort,
@@ -104,6 +127,14 @@ export class AttachmentManager {
 	}
 
 	async removeImage(image: RecipeImage): Promise<void> {
+		if (!image?.path || typeof image.path !== "string") {
+			throw new AttachmentError("Image path is required.");
+		}
+		if (!isSafeAttachmentPath(image.path, this.attachmentsFolder)) {
+			throw new AttachmentError(
+				`Refusing to delete image outside attachments folder: ${image.path}`,
+			);
+		}
 		if (await this.vault.exists(image.path)) {
 			await this.vault.remove(image.path);
 		}
