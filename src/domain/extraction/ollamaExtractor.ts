@@ -177,6 +177,7 @@ export function parseModelContent(content: string): unknown {
 	return JSON.parse(trimmed);
 }
 
+/** Maximum decoded Ollama response body, enforced incrementally while streaming (5 MiB). */
 export const MAX_OLLAMA_RESPONSE_BYTES = 5 * 1024 * 1024;
 
 export type CleanupResponse = Response & { cleanup: () => void };
@@ -185,30 +186,34 @@ export async function readBodyWithCap(
 	response: Response,
 	maxBytes: number,
 	controller: AbortController,
+	fallbackText: () => Promise<string> = () => response.text(),
 ): Promise<string> {
 	if (controller.signal.aborted) {
 		throw new DOMException("The operation was aborted", "AbortError");
+	}
+	const declaredLength = response.headers.get("content-length");
+	if (declaredLength !== null) {
+		const contentLength = Number(declaredLength);
+		if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+			controller.abort();
+			throw new Error(`Ollama response exceeded maximum allowed size of ${maxBytes} bytes.`);
+		}
 	}
 	if (response.body && typeof response.body.getReader === "function") {
 		const reader = response.body.getReader();
 		const decoder = new TextDecoder();
 		let totalBytes = 0;
 		let result = "";
+		let rejectOnAbort: ((reason: DOMException) => void) | undefined;
+		const abortPromise = new Promise<never>((_, reject) => {
+			rejectOnAbort = reject;
+		});
+		const onAbort = () =>
+			rejectOnAbort?.(new DOMException("The operation was aborted", "AbortError"));
+		controller.signal.addEventListener("abort", onAbort, { once: true });
 		try {
 			while (true) {
-				const readPromise = reader.read();
-				const abortPromise = new Promise<never>((_, reject) => {
-					if (controller.signal.aborted) {
-						reject(new DOMException("The operation was aborted", "AbortError"));
-					} else {
-						controller.signal.addEventListener(
-							"abort",
-							() => reject(new DOMException("The operation was aborted", "AbortError")),
-							{ once: true },
-						);
-					}
-				});
-				const { done, value } = await Promise.race([readPromise, abortPromise]);
+				const { done, value } = await Promise.race([reader.read(), abortPromise]);
 				if (done) {
 					break;
 				}
@@ -226,28 +231,34 @@ export async function readBodyWithCap(
 			}
 			result += decoder.decode();
 			return result;
+		} catch (error) {
+			if (isAbortError(error)) {
+				await reader.cancel(error).catch(() => {});
+			}
+			throw error;
 		} finally {
+			controller.signal.removeEventListener("abort", onAbort);
 			reader.releaseLock?.();
 		}
 	}
-	const rawTextPromise = response.text();
+	const rawTextPromise = fallbackText();
+	let rejectOnAbort: ((reason: DOMException) => void) | undefined;
 	const abortPromise = new Promise<never>((_, reject) => {
-		if (controller.signal.aborted) {
-			reject(new DOMException("The operation was aborted", "AbortError"));
-		} else {
-			controller.signal.addEventListener(
-				"abort",
-				() => reject(new DOMException("The operation was aborted", "AbortError")),
-				{ once: true },
-			);
-		}
+		rejectOnAbort = reject;
 	});
-	const text = await Promise.race([rawTextPromise, abortPromise]);
-	if (new TextEncoder().encode(text).byteLength > maxBytes) {
-		controller.abort();
-		throw new Error(`Ollama response exceeded maximum allowed size of ${maxBytes} bytes.`);
+	const onAbort = () =>
+		rejectOnAbort?.(new DOMException("The operation was aborted", "AbortError"));
+	controller.signal.addEventListener("abort", onAbort, { once: true });
+	try {
+		const text = await Promise.race([rawTextPromise, abortPromise]);
+		if (new TextEncoder().encode(text).byteLength > maxBytes) {
+			controller.abort();
+			throw new Error(`Ollama response exceeded maximum allowed size of ${maxBytes} bytes.`);
+		}
+		return text;
+	} finally {
+		controller.signal.removeEventListener("abort", onAbort);
 	}
-	return text;
 }
 
 export async function requestWithTimeout(
@@ -285,24 +296,32 @@ export async function requestWithTimeout(
 			redirect: "error",
 			signal: controller.signal,
 		})) as CleanupResponse;
+		const originalText = response.text.bind(response);
 
 		response.cleanup = cleanup;
 
 		let cachedText: string | null = null;
-		response.text = async () => {
-			if (cachedText !== null) {
-				return cachedText;
+		const readText = async () => {
+			if (cachedText === null) {
+				cachedText = await readBodyWithCap(
+					response,
+					MAX_OLLAMA_RESPONSE_BYTES,
+					controller,
+					originalText,
+				);
 			}
+			return cachedText;
+		};
+		response.text = async () => {
 			try {
-				cachedText = await readBodyWithCap(response, MAX_OLLAMA_RESPONSE_BYTES, controller);
-				return cachedText;
+				return await readText();
 			} finally {
 				cleanup();
 			}
 		};
 		response.json = async () => {
 			try {
-				const text = await response.text();
+				const text = await readText();
 				return JSON.parse(text);
 			} finally {
 				cleanup();
@@ -350,7 +369,7 @@ export async function extractWithOllama(
 			warnings.push("Local Ollama is not reachable.");
 			return { fields: null, warnings, cancelled: false };
 		}
-		await health.text().catch(() => "");
+		await health.text();
 		const body = buildOllamaChatBody(model, pageUrl, sourceText);
 		const chat = await requestWithTimeout(fetchImpl, `${endpoint}/api/chat`, options.timeoutMs, options.signal, {
 			method: "POST",

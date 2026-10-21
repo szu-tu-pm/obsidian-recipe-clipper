@@ -393,6 +393,40 @@ describe("translateWithOllama", () => {
 		);
 		expect(outcome.status).toBe("cancelled");
 	});
+
+	it("keeps the translation timeout active after headers arrive and cancels a stalled body", async () => {
+		vi.useFakeTimers();
+		let bodyCancelled = false;
+		const stalled = new Response(
+			new ReadableStream<Uint8Array>({
+				pull: () => new Promise(() => {}),
+				cancel: () => {
+					bodyCancelled = true;
+				},
+			}),
+			{ headers: { "content-type": "application/json" } },
+		);
+		const fetchImpl = vi.fn(async (url: string | URL | Request) =>
+			String(url).endsWith("/api/tags") ? jsonResponse({ models: [] }) : stalled,
+		);
+
+		try {
+			const pending = translateWithOllama(
+				SHRIMP,
+				"French",
+				options(fetchImpl as unknown as typeof fetch, { timeoutMs: 25 }),
+			);
+			await vi.advanceTimersByTimeAsync(25);
+
+			await expect(pending).resolves.toEqual({
+				status: "failed",
+				warnings: ["Local Ollama timed out."],
+			});
+			expect(bodyCancelled).toBe(true);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
 });
 
 describe("applying and reverting a translation", () => {
