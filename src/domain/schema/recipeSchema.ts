@@ -42,6 +42,7 @@ export const extractionMethodSchema = z.enum([
 	"dom-heuristic",
 	"ollama",
 	"manual",
+	"pasted-text",
 ]);
 
 export const unitSystemSchema = z.enum(["metric", "imperial", "unknown"]);
@@ -132,6 +133,9 @@ export const recipeFrontmatterSchema = z.object({
 	bodyHash: z.string().optional(),
 	// Keep last: bodyHash is computed over key order, and new keys are appended.
 	translation: recipeTranslationSchema.optional(),
+	// Name of the AI assistant that wrote a pasted recipe. Present only when the user marked
+	// the paste as AI-written. Appended after `translation` so existing files keep their bodyHash.
+	generatedBy: z.string().min(1).optional(),
 });
 
 export type ExtractionMethod = z.infer<typeof extractionMethodSchema>;
