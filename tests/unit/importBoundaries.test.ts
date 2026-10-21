@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
+import ts from "typescript";
 import { afterEach, describe, expect, it } from "vitest";
 
 // The only modules allowed to import `obsidian`. Keep in sync with docs/adr/001-react-obsidian-wrapper.md.
@@ -26,14 +27,40 @@ function getSourceFiles(dir: string): string[] {
 	return files;
 }
 
+/**
+ * Parses the file with the TypeScript compiler so comments, strings and formatting cannot hide an
+ * import. Covers static imports, `export ... from`, `import()`, `import x = require()` and `require()`.
+ */
 export function hasObsidianImport(filePath: string): boolean {
-	const content = readFileSync(filePath, "utf8");
-	return (
-		/from\s+["']obsidian["']/.test(content) ||
-		/import\s+["']obsidian["']/.test(content) ||
-		/require\s*\(\s*["']obsidian["']\s*\)/.test(content) ||
-		/import\s*\(\s*["']obsidian["']\s*\)/.test(content)
+	const source = ts.createSourceFile(
+		filePath,
+		readFileSync(filePath, "utf8"),
+		ts.ScriptTarget.Latest,
+		true,
+		filePath.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
 	);
+	const isObsidian = (node: ts.Node | undefined): boolean =>
+		node !== undefined && ts.isStringLiteralLike(node) && node.text === "obsidian";
+	let found = false;
+	const visit = (node: ts.Node): void => {
+		if (found) {
+			return;
+		}
+		if (
+			((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && isObsidian(node.moduleSpecifier)) ||
+			(ts.isExternalModuleReference(node) && isObsidian(node.expression)) ||
+			(ts.isCallExpression(node) &&
+				(node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+					(ts.isIdentifier(node.expression) && node.expression.text === "require")) &&
+				isObsidian(node.arguments[0]))
+		) {
+			found = true;
+			return;
+		}
+		ts.forEachChild(node, visit);
+	};
+	visit(source);
+	return found;
 }
 
 /** Repo-relative, forward-slash paths of every file under `<root>/src` that imports obsidian. */
@@ -97,7 +124,8 @@ describe("ADR-001 architectural import boundaries", () => {
 		}
 
 		it("passes a tree with only allowed importers", () => {
-			expect(unexpectedImporters(scratchTree({ "src/domain/schema/ok.ts": "export const a = 1;\n" }))).toEqual([]);
+			const ok = '// import { x } from "obsidian";\nexport const a = "from \'obsidian\'";\n';
+			expect(unexpectedImporters(scratchTree({ "src/domain/schema/ok.ts": ok }))).toEqual([]);
 		});
 
 		it.each([
@@ -106,6 +134,8 @@ describe("ADR-001 architectural import boundaries", () => {
 			["src/domain/vault/other.ts", 'export type { Vault } from "obsidian";\n'],
 			["src/ui/Side.ts", 'import "obsidian";\n'],
 			["src/wrapper/PluginServiceAdapter.ts", 'const o = require("obsidian");\n'],
+			["src/domain/schema/commented.ts", 'void import(/* webpackIgnore: true */ "obsidian");\n'],
+			["src/ui/Equals.ts", 'import o = require("obsidian");\n'],
 		])("reports a new importer at %s", (path, content) => {
 			expect(unexpectedImporters(scratchTree({ [path]: content }))).toEqual([path]);
 		});

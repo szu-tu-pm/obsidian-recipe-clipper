@@ -14,7 +14,7 @@ React components in `src/ui` receive a `PluginServiceAdapter`. That adapter deco
 - `src/ui` never imports `obsidian`.
 - Core domain logic (`src/domain/aggregation`, `src/domain/extraction`, `src/domain/schema`, `src/domain/translation`) never imports `obsidian`.
 - The vault boundary (`src/domain/vault/vaultPort.ts`) defines an agnostic interface (`VaultPort`). Tests use `MockPluginServices` and `InMemoryVault`.
-- Exactly six modules import `obsidian`. Nothing else under `src` does, including `PluginServiceAdapter`, which reaches Obsidian only through the host object it is given:
+- Exactly six modules import `obsidian`. Nothing else under `src` does, including `PluginServiceAdapter`, which has no direct Obsidian import. It reaches host APIs (settings, vault events, logging) through the injected `PluginServiceHost`, and vault-backed operations (load, save, index) through the injected `RecipeWorkspace`, whose repositories sit on `VaultPort`. In production `main.ts` supplies both, backed by the modules below:
   - `src/domain/vault/obsidianVault.ts` is the concrete `VaultPort` and frontmatter-cache adapter over Obsidian's `Vault` and `MetadataCache`. It is the one Obsidian-bound file inside `src/domain`; the rest of `src/domain/vault` does not import `obsidian`.
   - `src/wrapper/createObsidianPluginHost.ts` builds the production host that `PluginServiceAdapter` uses, and wires vault events.
   - `src/wrapper/RecipeItemView.ts` is the `ItemView` that mounts React.
@@ -23,7 +23,7 @@ React components in `src/ui` receive a `PluginServiceAdapter`. That adapter deco
   - `src/settings.ts` is the settings tab.
 - `tests/unit/importBoundaries.test.ts` holds this list and fails if any other file under `src` imports `obsidian`, or if a listed file stops doing so. Changing the list means changing this ADR.
 
-The view mounts React from `RecipeItemView`. Closing the view unmounts the tree and drops vault listeners.
+The view mounts React from `RecipeItemView`. Closing the view unmounts the React tree. The adapter, and the host vault listeners it registered, are disposed when the plugin unloads (`onunload` in `main.ts`).
 
 ## Consequences
 
