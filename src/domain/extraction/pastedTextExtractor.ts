@@ -363,6 +363,14 @@ function readMeta(lines: string[]): MetaResult {
 				const kind = /^prep/i.test(time[1] ?? "") ? "prep" : /^cook/i.test(time[1] ?? "") ? "cook" : "total";
 				const field = fieldFor[kind];
 				const minutes = RANGE.test(time[2]) ? null : parseDurationMinutes(time[2]);
+				// Only a duration with an explicit Prep, Cook or Total label fills a time field.
+				if (!time[1]) {
+					meta.notes.push(`Time as written: ${time[2]}`);
+					meta.warnings.push(
+						`The time "${time[2]}" has no Prep, Cook or Total label, so no time field was filled. The original text is in Notes.`,
+					);
+					continue;
+				}
 				if (minutes !== null && meta[field] === null) {
 					meta[field] = minutes;
 					continue;

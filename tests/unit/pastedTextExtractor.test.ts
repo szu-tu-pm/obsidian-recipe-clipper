@@ -136,7 +136,7 @@ describe("fixtures: ChatGPT Thai curry", () => {
 		expect(parsed.cookTimeMinutes).toBeNull();
 		expect(parsed.totalTimeMinutes).toBeNull();
 		expect(parsed.notes).toContain("Time as written: 35–40 min");
-		expect(parsed.warnings.some((warning) => /35–40 min.*range/.test(warning))).toBe(true);
+		expect(parsed.warnings.some((warning) => /35–40 min.*no Prep, Cook or Total label/.test(warning))).toBe(true);
 	});
 
 	it("keeps the quick cooking tips and My preferred version in Notes", () => {
@@ -349,7 +349,10 @@ describe("extra paste shapes", () => {
 		expect(parsed.servings).toEqual({ raw: "Serves 4", amount: 4 });
 		expect(parsed.warnings).toEqual([]);
 		const headline = parsePastedText("Quick Rice\n45 min   4 servings\nIngredients\n1 cup rice\nInstructions\nCook.\n");
-		expect(headline.totalTimeMinutes).toBe(45);
+		expect(headline.totalTimeMinutes).toBeNull();
+		expect(headline.notes).toBe("Time as written: 45 min");
+		expect(headline.warnings).toHaveLength(1);
+		expect(headline.warnings[0]).toMatch(/no Prep, Cook or Total label/);
 		expect(headline.servings).toEqual({ raw: "4 servings", amount: 4 });
 		const hours = parsePastedText("Slow Beans\nTotal time: 1.5 hours\nIngredients\n1 cup beans\nInstructions\nCook.\n");
 		expect(hours.totalTimeMinutes).toBe(90);
@@ -357,12 +360,13 @@ describe("extra paste shapes", () => {
 
 	it("warns, and keeps the text, for a time that is a range or cannot be read as minutes", () => {
 		const parsed = parsePastedText(
-			"Soup\nPrep time: 10-15 minutes  Time: 30 min  Total time: 45 min  Active time: 20 min\nIngredients\n1 cup stock\nInstructions\nSimmer.\n",
+			"Soup\nPrep time: 10-15 minutes  Total time: 30 min  Total time: 45 min  Active time: 20 min\nIngredients\n1 cup stock\nInstructions\nSimmer.\n",
 		);
 		expect(parsed.prepTimeMinutes).toBeNull();
 		expect(parsed.totalTimeMinutes).toBe(30);
 		expect(parsed.notes).toContain("Prep time as written: 10-15 minutes");
 		expect(parsed.notes).toContain("Time as written: 45 min");
+		expect(parsed.notes).not.toContain("Time as written: 30 min");
 		expect(parsed.notes).toContain("Active time: 20 min");
 		expect(parsed.warnings).toHaveLength(2);
 		expect(parsed.warnings[1]).toMatch(/could not be saved as minutes/);
@@ -508,6 +512,20 @@ function measureRebuiltIngredients(parse: ParseFn): number {
 	return parse(markdown).ingredients.length;
 }
 
+const UNLABELED_TEXTS = [
+	"Quick Rice\n45 min   4 servings\nIngredients\n1 cup rice\nInstructions\nCook.\n",
+	"Soup\nTime: 30 min\nIngredients\n1 cup stock\nInstructions\nSimmer.\n",
+	visible,
+];
+
+/** Time fields filled from durations that carry no Prep, Cook or Total label. */
+function measureUnlabeledTimesAssigned(parse: ParseFn): number {
+	return UNLABELED_TEXTS.reduce((count, text) => {
+		const p = parse(text);
+		return count + [p.prepTimeMinutes, p.cookTimeMinutes, p.totalTimeMinutes].filter((v) => v !== null).length;
+	}, 0);
+}
+
 const MODEL_TEXT =
 	"Weeknight lentil soup\n\nI simmered 1 cup red lentils with 4 cups water and a diced onion for 25 minutes.\nThen I stirred in lemon juice.\n";
 const MODEL_REPLY = {
@@ -615,6 +633,24 @@ describe("noise dropping", () => {
 			"Salt to taste. ",
 			"If you like, serve with lime.",
 		]);
+	});
+});
+
+describe("unlabeled durations", () => {
+	it("leaves every time field empty for a duration with no explicit label", () => {
+		expect(measureUnlabeledTimesAssigned(real)).toBe(0);
+	});
+
+	it("catches a parser that assigns an unlabeled duration to total time (measured 0 becomes 2)", () => {
+		// Hand count: "45 min" and "Time: 30 min" would each become a total time; the fixture's 35–40 min range cannot.
+		const mutant: ParseFn = (text) => {
+			const parsed = parsePastedText(text);
+			const unlabeled = /^(?:Time: )?(\d+) min\b/m.exec(text.replace(/^[^\n]*\n/, ""));
+			return unlabeled && parsed.totalTimeMinutes === null
+				? { ...parsed, totalTimeMinutes: Number(unlabeled[1]) }
+				: parsed;
+		};
+		expect(measureUnlabeledTimesAssigned(mutant)).toBe(2);
 	});
 });
 

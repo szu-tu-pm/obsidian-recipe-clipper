@@ -28,3 +28,7 @@ Web Clipper intake uses `type: recipe-clip` until review promotes the note to `t
 - Translation review can revert to `translation.original`, and it asks before replacing a translation the person has edited.
 - Eval reports require 100% Zod validity on extracted drafts before they count as a pass.
 - The filename of this ADR says v1 because that was the first versioned contract. The body describes v2, which is the schema the plugin writes.
+
+## Addendum: pasted recipes (P2-13)
+
+The `pasted-text` extraction method and the optional `generatedBy` key were added under `schemaVersion: 2` as additive changes, with no version bump. Existing files still validate and keep their `bodyHash`; a test pins the hash `42218546` of a pre-change recipe. An older plugin build would reject a `pasted-text` note, but the plugin is unreleased (0.1.0), so no such build exists. A future change that older readers cannot accept should bump the version.

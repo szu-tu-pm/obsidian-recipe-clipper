@@ -118,14 +118,14 @@ describe("paste, review, save", () => {
 		expect(store.recipes).toHaveLength(0);
 	});
 
-	it("shows the parsed recipe, the time-range warning and the notes in the review", async () => {
+	it("shows the parsed recipe, the unlabeled-time warning and the notes in the review", async () => {
 		renderCollection(emptyStore());
 		paste(visible);
 		await review();
 		const dialog = screen.getByRole("dialog");
 		expect(within(dialog).getByText("High-Protein Thai Red Chicken Curry")).toBeTruthy();
 		expect(within(dialog).getByText("2–3 servings")).toBeTruthy();
-		expect(within(dialog).getByText(/"35–40 min" is a range/)).toBeTruthy();
+		expect(within(dialog).getByText(/"35–40 min" has no Prep, Cook or Total label/)).toBeTruthy();
 		expect(within(dialog).getAllByRole("listitem").length).toBeGreaterThanOrEqual(43);
 		expect(dialog.textContent).toContain("My preferred version:");
 		expect(dialog.textContent).not.toMatch(/Portion size|Current selection unavailable|image_group/);
