@@ -13,8 +13,15 @@ React components in `src/ui` receive a `PluginServiceAdapter`. That adapter deco
 
 - `src/ui` never imports `obsidian`.
 - Core domain logic (`src/domain/aggregation`, `src/domain/extraction`, `src/domain/schema`, `src/domain/translation`) never imports `obsidian`.
-- The vault boundary (`src/domain/vault/vaultPort.ts`) defines an agnostic interface (`VaultPort`). Tests use `MockPluginServices` and `InMemoryVault`. The production runtime uses `ObsidianVaultAdapter` (`src/domain/vault/obsidianVault.ts`), which is the sole domain adapter with direct bindings to Obsidian's `Vault` and `MetadataCache`.
-- The production host (`createObsidianPluginHost` in `src/wrapper/createObsidianPluginHost.ts`) implements `PluginServiceAdapter` using the Obsidian runtime and provides it to the React tree.
+- The vault boundary (`src/domain/vault/vaultPort.ts`) defines an agnostic interface (`VaultPort`). Tests use `MockPluginServices` and `InMemoryVault`.
+- Exactly six modules import `obsidian`. Nothing else under `src` does, including `PluginServiceAdapter`, which reaches Obsidian only through the host object it is given:
+  - `src/domain/vault/obsidianVault.ts` is the concrete `VaultPort` and frontmatter-cache adapter over Obsidian's `Vault` and `MetadataCache`. It is the one Obsidian-bound file inside `src/domain`; the rest of `src/domain/vault` does not import `obsidian`.
+  - `src/wrapper/createObsidianPluginHost.ts` builds the production host that `PluginServiceAdapter` uses, and wires vault events.
+  - `src/wrapper/RecipeItemView.ts` is the `ItemView` that mounts React.
+  - `src/wrapper/RecipeViewRoot.tsx` shows `Notice` messages for the React root.
+  - `src/main.ts` is the `Plugin` lifecycle entry point and constructs the vault adapter.
+  - `src/settings.ts` is the settings tab.
+- `tests/unit/importBoundaries.test.ts` holds this list and fails if any other file under `src` imports `obsidian`, or if a listed file stops doing so. Changing the list means changing this ADR.
 
 The view mounts React from `RecipeItemView`. Closing the view unmounts the tree and drops vault listeners.
 
