@@ -52,7 +52,7 @@ export function RecipeEditorModal({
 		return () => {
 			const pending = sessionUploads.current.splice(0);
 			for (const image of pending) {
-				void servicesRef.current.removeRecipeImage(image);
+				void servicesRef.current.removeRecipeImage(image).catch(() => {});
 			}
 		};
 	}, []);
@@ -144,10 +144,13 @@ export function RecipeEditorModal({
 			return;
 		}
 		setBusy(true);
+		setImageError(null);
 		try {
 			await services.removeRecipeImage(target);
 			sessionUploads.current = sessionUploads.current.filter((image) => image.path !== path);
 			updateImages(images.filter((image) => image.path !== path));
+		} catch (caught) {
+			setImageError(caught instanceof Error ? caught.message : "Could not remove image.");
 		} finally {
 			setBusy(false);
 		}

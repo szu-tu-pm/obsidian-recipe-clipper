@@ -38,27 +38,47 @@ export function isAllowedImageExtension(ext: string): ext is ImageExtension {
 	return (IMAGE_EXTENSIONS as readonly string[]).includes(ext);
 }
 
-export function isSafeAttachmentPath(imagePath: string, attachmentsFolder: string): boolean {
+function normalizeSafeAttachmentPath(
+	imagePath: string,
+	attachmentsFolder: string,
+): string | null {
 	if (!imagePath || typeof imagePath !== "string") {
-		return false;
+		return null;
+	}
+	// Vault paths are relative and slash-separated. Reject these forms before
+	// joinVaultPath can turn a backslash trick or absolute path into a plausible
+	// managed path. Encoded segments are not valid Obsidian vault paths either.
+	if (
+		imagePath.includes("\\") ||
+		imagePath.startsWith("/") ||
+		/^[a-zA-Z]:\//.test(imagePath) ||
+		/%[0-9a-fA-F]{2}/.test(imagePath)
+	) {
+		return null;
+	}
+	const rawSegments = imagePath.split("/");
+	if (rawSegments.some((segment) => segment === ".." || segment === "." || segment === "")) {
+		return null;
 	}
 	const cleanFolder = joinVaultPath(attachmentsFolder);
 	const cleanPath = joinVaultPath(imagePath);
 	if (!cleanFolder || !cleanPath) {
-		return false;
+		return null;
 	}
-	const segments = cleanPath.split("/");
-	if (segments.some((segment) => segment === ".." || segment === "." || segment === "")) {
-		return false;
-	}
+	// Deliberately compare case-sensitively: accepting a differently-cased folder
+	// is unsafe on case-sensitive vaults and is explicitly refused on every OS.
 	if (!cleanPath.startsWith(`${cleanFolder}/`)) {
-		return false;
+		return null;
 	}
 	const ext = extensionOf(cleanPath);
 	if (!isAllowedImageExtension(ext)) {
-		return false;
+		return null;
 	}
-	return true;
+	return cleanPath;
+}
+
+export function isSafeAttachmentPath(imagePath: string, attachmentsFolder: string): boolean {
+	return normalizeSafeAttachmentPath(imagePath, attachmentsFolder) !== null;
 }
 
 export class AttachmentManager {
@@ -130,13 +150,14 @@ export class AttachmentManager {
 		if (!image?.path || typeof image.path !== "string") {
 			throw new AttachmentError("Image path is required.");
 		}
-		if (!isSafeAttachmentPath(image.path, this.attachmentsFolder)) {
+		const path = normalizeSafeAttachmentPath(image.path, this.attachmentsFolder);
+		if (!path) {
 			throw new AttachmentError(
 				`Refusing to delete image outside attachments folder: ${image.path}`,
 			);
 		}
-		if (await this.vault.exists(image.path)) {
-			await this.vault.remove(image.path);
+		if (await this.vault.exists(path)) {
+			await this.vault.remove(path);
 		}
 	}
 
