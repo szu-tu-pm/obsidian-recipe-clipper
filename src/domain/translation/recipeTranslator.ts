@@ -584,7 +584,7 @@ export async function translateWithOllama(
 			health.cleanup?.();
 			return failed("Local Ollama is not reachable.");
 		}
-		await health.text().catch(() => "");
+		await health.text();
 		const body = buildTranslationChatBody(options.model, language, source);
 		const chat = await requestWithTimeout(
 			fetchImpl,
