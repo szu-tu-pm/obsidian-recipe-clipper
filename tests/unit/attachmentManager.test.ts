@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
 	AttachmentError,
 	AttachmentManager,
@@ -20,63 +20,62 @@ const nullProcessor: ImageProcessor = {
 	},
 };
 
+function imageAt(path: string) {
+	return { path, alt: "", sourceUrl: null, isPrimary: true };
+}
+
 describe("AttachmentManager", () => {
-	it("correctly identifies safe vs unsafe attachment paths", () => {
+	it("accepts only image paths strictly beneath the case-sensitive attachment folder", () => {
 		const folder = "Recipe Attachments";
 		expect(isSafeAttachmentPath("Recipe Attachments/rec-123/img.webp", folder)).toBe(true);
 		expect(isSafeAttachmentPath("Recipe Attachments/rec-123/img.png", folder)).toBe(true);
 		expect(isSafeAttachmentPath("Recipe Attachments/rec-123/img.jpg", folder)).toBe(true);
 
-		// Traversal attempts
-		expect(isSafeAttachmentPath("Recipe Attachments/../Secrets.md", folder)).toBe(false);
-		expect(isSafeAttachmentPath("Recipe Attachments/rec-123/../../Secrets.md", folder)).toBe(false);
-		expect(isSafeAttachmentPath("../Secrets.md", folder)).toBe(false);
-
-		// Outside folder
-		expect(isSafeAttachmentPath("Notes/MyRecipe.md", folder)).toBe(false);
-		expect(isSafeAttachmentPath("OtherFolder/photo.webp", folder)).toBe(false);
-
-		// Disallowed extensions
-		expect(isSafeAttachmentPath("Recipe Attachments/rec-123/script.sh", folder)).toBe(false);
-		expect(isSafeAttachmentPath("Recipe Attachments/rec-123/recipe.md", folder)).toBe(false);
-		expect(isSafeAttachmentPath("Recipe Attachments/rec-123/data.json", folder)).toBe(false);
-
-		// Empty / invalid
-		expect(isSafeAttachmentPath("", folder)).toBe(false);
+		for (const unsafe of [
+			"Recipe Attachments/../Secrets.png",
+			"Recipe Attachments/rec-123/../../Secrets.png",
+			"../Secrets.png",
+			"/Recipe Attachments/rec-123/img.png",
+			"C:/Recipe Attachments/rec-123/img.png",
+			"Recipe Attachments\\rec-123\\img.png",
+			"Recipe Attachments/rec-123\\img.png",
+			"recipe attachments/rec-123/img.png",
+			"Recipe Attachments-evil/img.png",
+			"Recipe Attachments/./rec-123/img.png",
+			"Recipe Attachments/%2e%2e/Secrets.png",
+			"Recipe Attachments/rec-123/%2FSecrets.png",
+			"Recipe Attachments",
+			"Notes/MyRecipe.png",
+			"",
+		]) {
+			expect(isSafeAttachmentPath(unsafe, folder), unsafe).toBe(false);
+		}
 	});
 
-	it("prevents removeImage from deleting files outside the attachments folder", async () => {
+	it.each([
+		["unrelated vault note", "Notes/ImportantNote.md"],
+		["unrelated vault path", "Notes/ImportantNote.png"],
+		["parent traversal", "Recipe Attachments/../ImportantNote.png"],
+		["nested parent traversal", "Recipe Attachments/rec-1/../../ImportantNote.png"],
+		["absolute path", "/Recipe Attachments/rec-1/ImportantNote.png"],
+		["Windows absolute path", "C:/Recipe Attachments/rec-1/ImportantNote.png"],
+		["backslash path", "Recipe Attachments\\rec-1\\ImportantNote.png"],
+		["mixed separator path", "Recipe Attachments/rec-1\\ImportantNote.png"],
+		["differently-cased folder", "recipe attachments/rec-1/ImportantNote.png"],
+		["prefix sibling", "Recipe Attachments-evil/ImportantNote.png"],
+		["current-directory segment", "Recipe Attachments/./rec-1/ImportantNote.png"],
+		["percent-encoded traversal", "Recipe Attachments/%2e%2e/ImportantNote.png"],
+		["percent-encoded separator", "Recipe Attachments/rec-1/%2FImportantNote.png"],
+		["folder itself", "Recipe Attachments"],
+		["empty path", ""],
+	])("refuses a %s and leaves unrelated vault content intact", async (_case, unsafePath) => {
 		const vault = new InMemoryVault();
 		await vault.write("Notes/ImportantNote.md", "Do not delete");
-		await vault.write("Recipes/Pasta.md", "Pasta content");
-
 		const manager = new AttachmentManager(vault, dummyProcessor, "Recipe Attachments");
 
-		// Attempt to delete note outside attachments folder
-		await expect(
-			manager.removeImage({
-				path: "Notes/ImportantNote.md",
-				alt: "",
-				sourceUrl: null,
-				isPrimary: true,
-			}),
-		).rejects.toThrow(AttachmentError);
-
-		// Verify note was NOT deleted
+		await expect(manager.removeImage(imageAt(unsafePath))).rejects.toThrow(AttachmentError);
 		expect(await vault.exists("Notes/ImportantNote.md")).toBe(true);
 		expect(await vault.read("Notes/ImportantNote.md")).toBe("Do not delete");
-
-		// Attempt path traversal
-		await expect(
-			manager.removeImage({
-				path: "Recipe Attachments/../Recipes/Pasta.md",
-				alt: "",
-				sourceUrl: null,
-				isPrimary: true,
-			}),
-		).rejects.toThrow(AttachmentError);
-
-		expect(await vault.exists("Recipes/Pasta.md")).toBe(true);
 	});
 
 	it("removes images safely when they reside in the managed attachments folder", async () => {
@@ -87,14 +86,20 @@ describe("AttachmentManager", () => {
 
 		expect(await vault.exists(imagePath)).toBe(true);
 
-		await manager.removeImage({
-			path: imagePath,
-			alt: "Test photo",
-			sourceUrl: null,
-			isPrimary: true,
-		});
+		await manager.removeImage(imageAt(imagePath));
 
 		expect(await vault.exists(imagePath)).toBe(false);
+	});
+
+	it("does nothing when a legitimate managed image is already missing", async () => {
+		const vault = new InMemoryVault();
+		const remove = vi.spyOn(vault, "remove");
+		const manager = new AttachmentManager(vault, dummyProcessor, "Recipe Attachments");
+
+		await expect(
+			manager.removeImage(imageAt("Recipe Attachments/rec-1/missing.webp")),
+		).resolves.toBeUndefined();
+		expect(remove).not.toHaveBeenCalled();
 	});
 
 	it("enforces image limit and file constraints in addImage", async () => {

@@ -316,6 +316,7 @@ export class PluginServiceAdapter implements PluginServices {
 			await this.workspace.removeImage(image);
 		} catch (error) {
 			this.host.logError("Failed to remove recipe image", error);
+			throw error;
 		}
 	}
 
